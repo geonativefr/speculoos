@@ -34,8 +34,12 @@ const mercure = new Mercure('https://example.org/.well-known/mercure', {
 ### Subscribe to topics
 
 ```js
-const handleUpdate = ({id, data}) => { // ... }
+const handleUpdate = ({id, data}) => { /* ... */ }
 mercure.addListener(handleUpdate)
 mercure.subscribe(['/foos', '/bars']); // To subscribe to specific topics
 mercure.subscribe(); // Otherwise
 ```
+
+## Item synchronization
+
+See [Mercure Synchronization](../hydra/docs/hydra-mercure.md).
