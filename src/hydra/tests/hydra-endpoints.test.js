@@ -1,4 +1,9 @@
-import { HydraEndpoint, HydraEndpoints } from '../hydra-endpoints.js';
+import { HydraEndpoint, HydraEndpoints, useEndpoint } from '../hydra-endpoints.js';
+import { createStore } from '../../store/index.js';
+import { createTestApp, useSetup } from '../../../vue-tests-setup.js';
+import { useItemForm } from '../hydra-forms.js';
+import { HydraPlugin } from '../hydra-plugin.js';
+import { ApiClient } from '../../api-client/index.js';
 
 const endpoints = new HydraEndpoints({
   Author: '/api/authors',
@@ -57,4 +62,14 @@ it('returns a new instance synchronized with the current location', () => {
   const filtered = endpoints.for('Book').withQuery({foo: 'bar'}).paginated(12);
   expect(`${filtered.synchronize()}`)
     .toBe('/api/books?foo=baz&pagination=1&itemsPerPage=12&page=2');
+});
+
+it('returns an endpoint in a setup context', async () => {
+  const plugin = new HydraPlugin(new ApiClient(), {endpoints: {Foo: '/api/foos', Bar: '/api/bars'}});
+  const storeFactory = await (await createStore()).use(plugin);
+  const endpoint = await useSetup(createTestApp(storeFactory), async () => {
+    return useEndpoint('Bar');
+  });
+  expect(endpoint).toBeInstanceOf(HydraEndpoint);
+  expect(`${endpoint}`).toBe('/api/bars');
 });
