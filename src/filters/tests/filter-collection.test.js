@@ -29,6 +29,7 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 DateRangeFilter.userTimezone = 'Europe/Paris';
 
+beforeEach(() => mockRoute.query = {});
 it('should work', async () => {
   let filters = new FilterCollection({
     name: new TextFilter(),
@@ -76,7 +77,26 @@ it('should work', async () => {
   });
 });
 
-it('binds the current query string to the given filters', async () => {
+it('dismisses the current query string by default', async () => {
+  mockRoute.query.foo = 'bar';
+  const {buildQueryParams} = await useSetup(createTestApp(), async () => {
+    const initialState = () => new FilterCollection({
+      name: new TextFilter(),
+      country: new TextFilter('UK'),
+    });
+    const {filters, buildQueryParams, submit} = await useFilters(initialState);
+    unref(filters).country.value = 'GB';
+
+    return {initialState, filters, buildQueryParams, submit};
+  });
+  expect(buildQueryParams({page: 1})).toEqual({
+    //foo: 'bar', // Initial query string is dismissed
+    page: 1,
+    country: 'GB',
+  });
+});
+
+it('updates the query string with the applied filters, preserving original query string', async () => {
   mockRoute.query.foo = 'bar';
   mockRoute.query.name = 'Johnson';
   const {initialState, filters, buildQueryParams, submit} = await useSetup(createTestApp(), async () => {
@@ -85,7 +105,7 @@ it('binds the current query string to the given filters', async () => {
       city: new TextFilter('London'),
       country: new TextFilter('UK'),
     });
-    const {filters, buildQueryParams, submit} = await useFilters(initialState);
+    const {filters, buildQueryParams, submit} = await useFilters(initialState, {preserveQuery: true});
     unref(filters).country.value = 'GB';
 
     return {initialState, filters, buildQueryParams, submit};

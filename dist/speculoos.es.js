@@ -649,7 +649,7 @@ class FilterCollection {
     return this;
   }
 }
-async function useFilters(initialState = {}, options = {}) {
+async function useFilters(initialState = {}, options = { preserveQuery: false }) {
   if (typeof initialState !== "function") {
     throw Error("initialState should be provided as a function.");
   }
@@ -663,7 +663,11 @@ async function useFilters(initialState = {}, options = {}) {
     filters.value = clone(initialState());
   }
   function buildQueryParams(additionalParams = {}) {
-    return Object.assign({}, route.query, unref(filters).normalize(), additionalParams);
+    const output = {};
+    if (options.preserveQuery === true) {
+      Object.assign(output, route.query);
+    }
+    return Object.assign(output, unref(filters).normalize(), additionalParams);
   }
   async function submit(additionalParams = {}) {
     await router.push(Object.assign(__spreadValues({}, route), { query: buildQueryParams(additionalParams) }));

@@ -87,7 +87,7 @@ export class FilterCollection {
   }
 }
 
-export async function useFilters(initialState = {}, options = {}) {
+export async function useFilters(initialState = {}, options = {preserveQuery: false}) {
   if ('function' !== typeof initialState) {
     throw Error('initialState should be provided as a function.');
   }
@@ -104,7 +104,11 @@ export async function useFilters(initialState = {}, options = {}) {
   }
 
   function buildQueryParams(additionalParams = {}) {
-    return Object.assign({}, route.query, unref(filters).normalize(), additionalParams);
+    const output = {};
+    if (true === options.preserveQuery) {
+      Object.assign(output, route.query);
+    }
+    return Object.assign(output, unref(filters).normalize(), additionalParams);
   }
 
   async function submit(additionalParams = {}) {
