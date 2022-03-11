@@ -1,4 +1,5 @@
 import { QueryString, URI } from 'psr7-js';
+import { useStore } from '../store/index.js';
 
 export class HydraEndpoints {
   constructor(data) {
@@ -58,3 +59,11 @@ export class HydraEndpoint {
     return this.withQuery(new QueryString(new URI(location)).getParams());
   }
 }
+
+/**
+ * @returns HydraEndpoint
+ */
+export const useEndpoint = (endpoint, storeName) => {
+  const store = useStore(storeName);
+  return store.state.endpoints[endpoint];
+};

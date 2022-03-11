@@ -677,6 +677,27 @@ async function useFilters(initialState = {}, options = {}) {
     clear
   };
 }
+const createStore = async ({ state = {}, methods = {}, name = "store" } = {}) => {
+  state = reactive(state);
+  const store = __spreadProps(__spreadValues({
+    name,
+    state
+  }, Object.keys(methods).reduce(function(resolvedMethods, name2) {
+    const func = methods[name2];
+    resolvedMethods[name2] = function() {
+      return func(state, ...arguments);
+    };
+    return resolvedMethods;
+  }, {})), {
+    async use(plugin) {
+      await plugin.install(this);
+      return this;
+    }
+  });
+  store.install = (app) => app.provide(name, __spreadProps(__spreadValues({}, store), { state: readonly(state) }));
+  return store;
+};
+const useStore = (name = "store") => inject(name);
 class HydraEndpoints {
   constructor(data) {
     Object.keys(data).forEach((type) => {
@@ -725,6 +746,10 @@ class HydraEndpoint {
     return this.withQuery(new QueryString(new URI(location)).getParams());
   }
 }
+const useEndpoint = (endpoint, storeName) => {
+  const store = useStore(storeName);
+  return store.state.endpoints[endpoint];
+};
 function hasIri(item) {
   item = unref(item);
   if (item == null) {
@@ -814,27 +839,6 @@ function partialItem(item, mergeWith) {
   checkValidItem(item);
   return Object.assign({ "@id": item["@id"], "@type": item["@type"] }, mergeWith);
 }
-const createStore = async ({ state = {}, methods = {}, name = "store" } = {}) => {
-  state = reactive(state);
-  const store = __spreadProps(__spreadValues({
-    name,
-    state
-  }, Object.keys(methods).reduce(function(resolvedMethods, name2) {
-    const func = methods[name2];
-    resolvedMethods[name2] = function() {
-      return func(state, ...arguments);
-    };
-    return resolvedMethods;
-  }, {})), {
-    async use(plugin) {
-      await plugin.install(this);
-      return this;
-    }
-  });
-  store.install = (app) => app.provide(name, __spreadProps(__spreadValues({}, store), { state: readonly(state) }));
-  return store;
-};
-const useStore = (name = "store") => inject(name);
 class HydraError extends Error {
   constructor() {
     super(...arguments);
@@ -1490,4 +1494,4 @@ class Vulcain {
 function vulcain({ fields, preload } = {}) {
   return Object.assign(new Vulcain(), { fields }, { preload }).headers;
 }
-export { ApiClient, ConstraintViolationList, DateRangeFilter, FakeEventSource, FilterCollection, HttpError, HydraCollection, HydraEndpoint, HydraEndpoints, HydraError, HydraPlugin, ItemFilter, Mercure, OrderFilter, TextFilter, TruthyFilter, Violation, areSameIris, checkValidItem, containsIri, createMercure, createStore, getId, getIds, getIri, getIris, getItemByIri, getItemIndexByIri, getItemsByType, hasIri, mercureSync, normalizeIris, partialItem, useFilters, useFormValidation, useItemForm, useMercure, useMercureSync, useStore, vulcain, withoutDuplicates, withoutIri };
+export { ApiClient, ConstraintViolationList, DateRangeFilter, FakeEventSource, FilterCollection, HttpError, HydraCollection, HydraEndpoint, HydraEndpoints, HydraError, HydraPlugin, ItemFilter, Mercure, OrderFilter, TextFilter, TruthyFilter, Violation, areSameIris, checkValidItem, containsIri, createMercure, createStore, getId, getIds, getIri, getIris, getItemByIri, getItemIndexByIri, getItemsByType, hasIri, mercureSync, normalizeIris, partialItem, useEndpoint, useFilters, useFormValidation, useItemForm, useMercure, useMercureSync, useStore, vulcain, withoutDuplicates, withoutIri };

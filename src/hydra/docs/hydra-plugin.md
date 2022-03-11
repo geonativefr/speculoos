@@ -99,12 +99,25 @@ for (const item of items) { // HydraCollection is a generator
 Endpoints are needed to create items, so that we know what collection URL to hit given an item's `@type`.
 
 ```js
+import { HydraPlugin } from 'speculoos';
+
 const plugin = new HydraPlugin(client, {
   endpoints: {
     Book: '/api/books',
     Author: '/api/authors',
   },
 });
+```
+
+### Retrieving an endpoint
+You can request an endpoint via `store.state.endpoints` or with the following composable:
+
+```vue
+<script setup>
+import { useEndpoint } from 'speculoos'
+
+const bookEndpoint = useEndpoint('Book'); // HydraEndpoint: /api/books
+</script>
 ```
 
 ### Pagination
