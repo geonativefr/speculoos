@@ -649,7 +649,7 @@ class FilterCollection {
     return this;
   }
 }
-async function useFilters(initialState = {}, options = { preserveQuery: true }) {
+async function useFilters(initialState = {}, options = { preserveQuery: false }) {
   if (typeof initialState !== "function") {
     throw Error("initialState should be provided as a function.");
   }

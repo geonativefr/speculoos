@@ -87,7 +87,7 @@ export class FilterCollection {
   }
 }
 
-export async function useFilters(initialState = {}, options = {preserveQuery: true}) {
+export async function useFilters(initialState = {}, options = {preserveQuery: false}) {
   if ('function' !== typeof initialState) {
     throw Error('initialState should be provided as a function.');
   }
