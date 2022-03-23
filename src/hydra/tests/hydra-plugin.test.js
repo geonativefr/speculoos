@@ -274,3 +274,16 @@ it('returns a typed error', async () => {
   throw ShouldNotHappen;
 });
 
+it('filters items by type', async () => {
+  const storeFactory = await (await createStore()).use(plugin);
+  const store = await getInjectedStore(storeFactory);
+  const items = [
+    {'@type': 'Foo', '@id': '/api/foos/1', name: 'foo'},
+    {'@type': 'Foo', '@id': '/api/foos/2', name: 'foobar'},
+    {'@type': 'Bar', '@id': '/api/bars/1', name: 'bar'},
+  ];
+  items.forEach(store.storeItem);
+  const filtered = store.getItemsByType('Foo');
+  expect(filtered.length).toBe(2);
+  expect(filtered.map(item => item.name)).toEqual(['foo', 'foobar']);
+});
