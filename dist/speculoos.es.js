@@ -1138,6 +1138,26 @@ function mercureSync(mercure, items, topics = ["*"], onUpdate = defaultUpdater, 
   mercure.subscribe(topics);
   return listener;
 }
+const on = (mercure, topics, callback) => {
+  if (!Array.isArray(topics)) {
+    topics = [topics];
+  }
+  const wrapper = (event) => {
+    try {
+      const item = JSON.parse(event.data);
+      for (const topic of topics) {
+        if (typeof uriTemplate(topic).fromUri(getIri(item)) !== "undefined") {
+          callback(item);
+          break;
+        }
+      }
+    } catch (e) {
+    }
+  };
+  mercure.addListener(wrapper);
+  mercure.subscribe(topics);
+  return wrapper;
+};
 const useMercureSync = (mercure) => {
   mercure = mercure != null ? mercure : useMercure();
   const listeners = [];
@@ -1149,27 +1169,14 @@ const useMercureSync = (mercure) => {
   const synchronize = (items, topics = ["*"], onUpdate = defaultUpdater, onDelete = defaultRemover) => {
     listeners.push(mercureSync(mercure, items, topics, onUpdate, onDelete));
   };
-  const on = (topics, callback) => {
-    if (!Array.isArray(topics)) {
-      topics = [topics];
+  return {
+    synchronize,
+    on(topics, callback) {
+      const listener = on(mercure, topics, callback);
+      listeners.push(listener);
+      return listener;
     }
-    const wrapper = (event) => {
-      try {
-        const item = JSON.parse(event.data);
-        for (const topic of topics) {
-          if (typeof uriTemplate(topic).fromUri(getIri(item)) !== "undefined") {
-            callback(item);
-            break;
-          }
-        }
-      } catch (e) {
-      }
-    };
-    listeners.push(wrapper);
-    mercure.addListener(wrapper);
-    mercure.subscribe(topics);
   };
-  return { synchronize, on };
 };
 const DEFAULT_CLASSMAP = {
   "hydra:Collection": HydraCollection,
@@ -1498,4 +1505,4 @@ class Vulcain {
 function vulcain({ fields, preload } = {}) {
   return Object.assign(new Vulcain(), { fields }, { preload }).headers;
 }
-export { ApiClient, ConstraintViolationList, DateRangeFilter, FakeEventSource, FilterCollection, HttpError, HydraCollection, HydraEndpoint, HydraEndpoints, HydraError, HydraPlugin, ItemFilter, Mercure, OrderFilter, TextFilter, TruthyFilter, Violation, areSameIris, checkValidItem, containsIri, createMercure, createStore, getId, getIds, getIri, getIris, getItemByIri, getItemIndexByIri, getItemsByType, hasIri, mercureSync, normalizeIris, partialItem, useEndpoint, useFilters, useFormValidation, useItemForm, useMercure, useMercureSync, useStore, vulcain, withoutDuplicates, withoutIri };
+export { ApiClient, ConstraintViolationList, DateRangeFilter, FakeEventSource, FilterCollection, HttpError, HydraCollection, HydraEndpoint, HydraEndpoints, HydraError, HydraPlugin, ItemFilter, Mercure, OrderFilter, TextFilter, TruthyFilter, Violation, areSameIris, checkValidItem, containsIri, createMercure, createStore, getId, getIds, getIri, getIris, getItemByIri, getItemIndexByIri, getItemsByType, hasIri, mercureSync, normalizeIris, on, partialItem, useEndpoint, useFilters, useFormValidation, useItemForm, useMercure, useMercureSync, useStore, vulcain, withoutDuplicates, withoutIri };

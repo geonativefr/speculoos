@@ -38,6 +38,29 @@ export function mercureSync(mercure, items, topics = ['*'], onUpdate = defaultUp
   return listener;
 }
 
+export const on = (mercure, topics, callback) => {
+  if (!Array.isArray(topics)) {
+    topics = [topics];
+  }
+  const wrapper = (event) => {
+    try {
+      const item = JSON.parse(event.data);
+      for (const topic of topics) {
+        if ('undefined' !== typeof uriTemplate(topic).fromUri(getIri(item))) {
+          callback(item);
+          break;
+        }
+      }
+    } catch (e) {
+      // Silently ignore
+    }
+  };
+  mercure.addListener(wrapper);
+  mercure.subscribe(topics);
+
+  return wrapper;
+};
+
 export const useMercureSync = (mercure) => {
   mercure = mercure ?? useMercure();
   const listeners = [];
@@ -52,27 +75,12 @@ export const useMercureSync = (mercure) => {
     listeners.push(mercureSync(mercure, items, topics, onUpdate, onDelete));
   };
 
-  const on = (topics, callback) => {
-    if (!Array.isArray(topics)) {
-      topics = [topics];
-    }
-    const wrapper = (event) => {
-      try {
-        const item = JSON.parse(event.data);
-        for (const topic of topics) {
-          if ('undefined' !== typeof uriTemplate(topic).fromUri(getIri(item))) {
-            callback(item);
-            break;
-          }
-        }
-      } catch (e) {
-        // Silently ignore
-      }
-    };
-    listeners.push(wrapper);
-    mercure.addListener(wrapper);
-    mercure.subscribe(topics);
+  return {
+    synchronize,
+    on(topics, callback) {
+      const listener = on(mercure, topics, callback);
+      listeners.push(listener);
+      return listener;
+    },
   };
-
-  return {synchronize, on};
 };
