@@ -1364,6 +1364,7 @@ class HydraPlugin {
     store.deleteItem = (itemOrIri, options) => this.deleteItem(store, itemOrIri, options);
     store.getRelation = (itemOrIri, options) => this.getRelation(store, itemOrIri, options);
     store.getRelations = (itemsOrIris, options) => this.getRelations(store, itemsOrIris, options);
+    store.endpoint = (name) => store.state.endpoints[name];
   }
 }
 function normalizeSingle(item) {

@@ -73,3 +73,11 @@ it('returns an endpoint in a setup context', async () => {
   expect(endpoint).toBeInstanceOf(HydraEndpoint);
   expect(`${endpoint}`).toBe('/api/bars');
 });
+
+it('returns an endpoint', async () => {
+  const plugin = new HydraPlugin(new ApiClient(), {endpoints: {Foo: '/api/foos', Bar: '/api/bars'}});
+  const store = await (await createStore()).use(plugin);
+  const endpoint = await store.endpoint('Bar');
+  expect(`${endpoint}`).toBe('/api/bars');
+});
+
