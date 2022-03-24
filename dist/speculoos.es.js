@@ -1365,6 +1365,7 @@ class HydraPlugin {
     store.getRelation = (itemOrIri, options) => this.getRelation(store, itemOrIri, options);
     store.getRelations = (itemsOrIris, options) => this.getRelations(store, itemsOrIris, options);
     store.endpoint = (name) => store.state.endpoints[name];
+    store.getItemsByType = (type) => store.state.items.filter((item) => type === item["@type"]);
   }
 }
 function normalizeSingle(item) {
