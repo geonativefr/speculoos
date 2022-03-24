@@ -81,6 +81,7 @@ export class Mercure {
     this.connection.onerror = error => {
       this.emitter.emit('error', error);
       if ('number' === typeof this.options.reconnectInterval) {
+        this.stop();
         setTimeout(() => this.connect(), this.options.reconnectInterval);
       }
     };

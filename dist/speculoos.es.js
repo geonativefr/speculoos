@@ -1114,6 +1114,7 @@ class Mercure {
     this.connection.onerror = (error) => {
       this.emitter.emit("error", error);
       if (typeof this.options.reconnectInterval === "number") {
+        this.stop();
         setTimeout(() => this.connect(), this.options.reconnectInterval);
       }
     };
