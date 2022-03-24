@@ -120,6 +120,12 @@ const bookEndpoint = useEndpoint('Book'); // HydraEndpoint: /api/books
 </script>
 ```
 
+Out of `setup` scope:
+
+```js
+const endpoint = store.endpoint('Book')
+```
+
 ### Pagination
 
 ```js
