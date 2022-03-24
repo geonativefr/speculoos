@@ -31,6 +31,7 @@ await store.updateItem(item, options); // Updates an item (API PUT), store it
 await store.upsert(item, options); // Creates or updates an item, depending whether it has an IRI
 await store.storeItem(item); // Stores an item (no API involved)
 await store.removeItem(item); // Removes an item from the store (no API involved)
+store.getItemsByType('Book'); // Returns all stored items having `@type` set to `Book`.
 ```
 
 ## Item typing
