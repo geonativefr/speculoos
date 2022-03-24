@@ -14,13 +14,18 @@ export class Mercure {
   subscribedTopics;
   endpoint;
   emitter;
+  lastEventId;
 
   constructor(hub, options = {}) {
     Object.assign(this, {hub, options: reactive(options)});
+    this.lastEventId = ref();
     this.subscribedTopics = ref([]);
     this.endpoint = computed(() => {
       const url = new URL(this.hub);
       unref(this.subscribedTopics).forEach(topic => url.searchParams.append('topic', topic));
+      if (unref(this.lastEventId)) {
+        url.searchParams.append('Last-Event-ID', unref(this.lastEventId));
+      }
       return url.toString();
     });
     this.emitter = mitt();
@@ -49,11 +54,11 @@ export class Mercure {
   }
 
   addListener(callback) {
-    return this.emitter.on('mercure', callback);
+    return this.emitter.on('message', callback);
   }
 
   removeListener(callback) {
-    return this.emitter.off('mercure', callback);
+    return this.emitter.off('message', callback);
   }
 
   listen() {
@@ -68,7 +73,18 @@ export class Mercure {
   connect() {
     this.stop();
     this.connection = new EventSource(unref(this.endpoint), this.options);
-    this.connection.onmessage = event => this.emitter.emit('mercure', event);
+    this.connection.onopen = () => this.emitter.emit('open', {endpoint: unref(this.endpoint)});
+    this.connection.onmessage = event => {
+      this.lastEventId.value = event.lastEventId;
+      return this.emitter.emit('message', event);
+    };
+    this.connection.onerror = error => {
+      this.emitter.emit('error', error);
+      if ('number' === typeof this.options.reconnectInterval) {
+        this.stop();
+        setTimeout(() => this.connect(), this.options.reconnectInterval);
+      }
+    };
   }
 
   stop() {

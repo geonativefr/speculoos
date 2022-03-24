@@ -61,7 +61,7 @@ it('listens to updates', () => {
   expect(client.connection).toBeInstanceOf(FakeEventSource);
   client.addListener((event) => Object.assign(update, event));
   client.connection.triggerEvent({
-    id: 1,
+    lastEventId: 1,
     data: JSON.stringify({
       '@id': '/api/foos/foo',
       name: 'foo',
@@ -82,4 +82,45 @@ it('closes the connection when requested', () => {
   client.stop();
   expect(connection.readyState).toBe(2);
   expect(client.connection).toBeUndefined();
+});
+
+it('adds a Last-Event-ID query string parameter when reconnecting', async () => {
+  jest.useFakeTimers();
+  const client = new Mercure('https://example.com/.well-known/mercure', {reconnectInterval: 1000});
+  client.subscribe('/api/foos/foo');
+  client.connection.triggerEvent({
+    lastEventId: 'foo',
+    data: JSON.stringify({
+      '@id': '/api/foos/foo',
+      name: 'foo',
+    }),
+  });
+  client.connection.triggerError(new Error());
+  jest.runAllTimers();
+  expect(client.connection.url).toBe('https://example.com/.well-known/mercure?topic=%2Fapi%2Ffoos%2Ffoo&Last-Event-ID=foo');
+});
+
+it('emits messages', () => {
+  jest.useFakeTimers();
+  const client = new Mercure('https://example.com/.well-known/mercure');
+  const event = {
+    lastEventId: 'foo',
+    data: JSON.stringify({
+      '@id': '/api/foos/foo',
+      name: 'foo',
+    }),
+  };
+  let open = false;
+  let received;
+  let error;
+  client.emitter.on('open', () => open = true);
+  client.emitter.on('message', (event) => received = event);
+  client.emitter.on('error', (e) => error = e);
+  client.connect();
+  client.connection.triggerEvent(event);
+  client.connection.triggerError(new Error('Something wrong occured'));
+  jest.runAllTimers();
+  expect(open).toBe(true);
+  expect(received).toEqual(event);
+  expect(error?.message).toBe('Something wrong occured');
 });

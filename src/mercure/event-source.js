@@ -15,10 +15,15 @@ export class FakeEventSource {
   constructor(url, configuration) {
     this.url = url;
     this.withCredentials = configuration?.withCredentials ?? false;
+    setTimeout(() => this.onopen(), 10);
   }
 
   triggerEvent(event) {
     this.onmessage(event);
+  }
+
+  triggerError(error) {
+    this.onerror(error);
   }
 }
 

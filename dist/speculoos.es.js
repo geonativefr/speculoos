@@ -999,6 +999,7 @@ class FakeEventSource {
     var _a;
     this.url = url;
     this.withCredentials = (_a = configuration == null ? void 0 : configuration.withCredentials) != null ? _a : false;
+    setTimeout(() => this.onopen(), 10);
   }
   onerror() {
   }
@@ -1011,6 +1012,9 @@ class FakeEventSource {
   }
   triggerEvent(event) {
     this.onmessage(event);
+  }
+  triggerError(error) {
+    this.onerror(error);
   }
 }
 const isTestEnv = () => {
@@ -1051,11 +1055,16 @@ class Mercure {
     __publicField(this, "subscribedTopics");
     __publicField(this, "endpoint");
     __publicField(this, "emitter");
+    __publicField(this, "lastEventId");
     Object.assign(this, { hub, options: reactive(options) });
+    this.lastEventId = ref();
     this.subscribedTopics = ref([]);
     this.endpoint = computed(() => {
       const url = new URL(this.hub);
       unref(this.subscribedTopics).forEach((topic) => url.searchParams.append("topic", topic));
+      if (unref(this.lastEventId)) {
+        url.searchParams.append("Last-Event-ID", unref(this.lastEventId));
+      }
       return url.toString();
     });
     this.emitter = mitt();
@@ -1081,10 +1090,10 @@ class Mercure {
     }
   }
   addListener(callback) {
-    return this.emitter.on("mercure", callback);
+    return this.emitter.on("message", callback);
   }
   removeListener(callback) {
-    return this.emitter.off("mercure", callback);
+    return this.emitter.off("message", callback);
   }
   listen() {
     const subscribedTopics = unref(this.subscribedTopics);
@@ -1097,7 +1106,18 @@ class Mercure {
   connect() {
     this.stop();
     this.connection = new EventSource$1(unref(this.endpoint), this.options);
-    this.connection.onmessage = (event) => this.emitter.emit("mercure", event);
+    this.connection.onopen = () => this.emitter.emit("open", { endpoint: unref(this.endpoint) });
+    this.connection.onmessage = (event) => {
+      this.lastEventId.value = event.lastEventId;
+      return this.emitter.emit("message", event);
+    };
+    this.connection.onerror = (error) => {
+      this.emitter.emit("error", error);
+      if (typeof this.options.reconnectInterval === "number") {
+        this.stop();
+        setTimeout(() => this.connect(), this.options.reconnectInterval);
+      }
+    };
   }
   stop() {
     var _a;
