@@ -23,7 +23,6 @@
     "@vueuse/core": "^7.5.5",
     "clone-deep": "^4.0.1",
     "dayjs": "^1.10.7",
-    "deepmerge": "^4.2.2",
     "is-empty": "^1.2.0",
     "md5": "^2.3.0",
     "mitt": "^3.0.0",

@@ -1,7 +1,7 @@
 import Filter from './filter.js';
 import { ref, unref } from 'vue';
 import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router';
-import clone from 'clone-deep';
+import { clone } from '../clone/index.js';
 
 function isBlank(val) {
 

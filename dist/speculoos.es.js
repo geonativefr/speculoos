@@ -23,7 +23,7 @@ var __publicField = (obj, key, value) => {
 };
 const import_meta = {};
 import { unref, isRef, ref, reactive, readonly, inject, computed, watch, onUnmounted } from "vue";
-import clone from "clone-deep";
+import clone$1 from "clone-deep";
 import md5 from "md5";
 import empty from "is-empty";
 import { useRoute, useRouter, onBeforeRouteUpdate } from "vue-router";
@@ -109,7 +109,7 @@ class ApiClient {
       if (Object.keys(options2).includes("headers")) {
         options2.headers = __spreadValues({}, normalizeHeaders(options2.headers));
       }
-      output = __spreadValues(__spreadValues({}, clone(output)), clone(options2));
+      output = __spreadValues(__spreadValues({}, clone$1(output)), clone$1(options2));
     }
     return output;
   }
@@ -582,6 +582,31 @@ const _DateRangeFilter = class extends Filter {
 };
 let DateRangeFilter = _DateRangeFilter;
 __publicField(DateRangeFilter, "userTimezone");
+const clone = (orig, deep = true, duplicates = []) => {
+  if (typeof orig !== "object" || orig == null) {
+    return orig;
+  }
+  const duplicate = duplicates.find((item) => item.orig === orig);
+  if (duplicate != null) {
+    return duplicate.cloned;
+  }
+  let cloned = Object.assign(Object.create(Object.getPrototypeOf(orig)), orig);
+  if (Array.isArray(orig)) {
+    cloned = Object.values(cloned);
+  }
+  duplicates.push({ orig, cloned });
+  if (deep) {
+    for (const prop in cloned) {
+      if (typeof cloned[prop] === "object" && cloned[prop] != null) {
+        cloned[prop] = clone(cloned[prop], deep, duplicates);
+      }
+    }
+  }
+  if ("__clone" in cloned && typeof cloned.__clone === "function") {
+    cloned.__clone();
+  }
+  return cloned;
+};
 function isBlank(val) {
   if (val == null) {
     return true;

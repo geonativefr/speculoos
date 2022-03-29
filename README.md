@@ -10,6 +10,7 @@
 - [Hydra Plugin](src/hydra) - A hydra plugin for the store.
 - [Filters](src/filters) - Manage filters from query string.
 - [Vulcain](src/vulcain) - Generate Vulcain headers.
+- [Clone](src/clone) - (Deep) clone objects, keeping their prototypes.
 
 ## Tests
 
