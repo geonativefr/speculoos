@@ -184,6 +184,31 @@ class PreventDuplicates {
 function withoutDuplicates(fetcher = void 0) {
   return new PreventDuplicates(fetcher);
 }
+const clone = (orig, deep = true, duplicates = []) => {
+  if (typeof orig !== "object" || orig == null) {
+    return orig;
+  }
+  const duplicate = duplicates.find((item) => item.orig === orig);
+  if (duplicate != null) {
+    return duplicate.cloned;
+  }
+  let cloned = Object.assign(Object.create(Object.getPrototypeOf(orig)), orig);
+  if (Array.isArray(orig)) {
+    cloned = Object.values(cloned);
+  }
+  duplicates.push({ orig, cloned });
+  if (deep) {
+    for (const prop in cloned) {
+      if (typeof cloned[prop] === "object" && cloned[prop] != null) {
+        cloned[prop] = clone(cloned[prop], deep, duplicates);
+      }
+    }
+  }
+  if ("__clone" in cloned && typeof cloned.__clone === "function") {
+    cloned.__clone();
+  }
+  return cloned;
+};
 class Filter {
   normalize() {
     throw Error("This method is meant to be overriden.");
@@ -582,31 +607,6 @@ const _DateRangeFilter = class extends Filter {
 };
 let DateRangeFilter = _DateRangeFilter;
 __publicField(DateRangeFilter, "userTimezone");
-const clone = (orig, deep = true, duplicates = []) => {
-  if (typeof orig !== "object" || orig == null) {
-    return orig;
-  }
-  const duplicate = duplicates.find((item) => item.orig === orig);
-  if (duplicate != null) {
-    return duplicate.cloned;
-  }
-  let cloned = Object.assign(Object.create(Object.getPrototypeOf(orig)), orig);
-  if (Array.isArray(orig)) {
-    cloned = Object.values(cloned);
-  }
-  duplicates.push({ orig, cloned });
-  if (deep) {
-    for (const prop in cloned) {
-      if (typeof cloned[prop] === "object" && cloned[prop] != null) {
-        cloned[prop] = clone(cloned[prop], deep, duplicates);
-      }
-    }
-  }
-  if ("__clone" in cloned && typeof cloned.__clone === "function") {
-    cloned.__clone();
-  }
-  return cloned;
-};
 function isBlank(val) {
   if (val == null) {
     return true;
@@ -1552,4 +1552,4 @@ class Vulcain {
 function vulcain({ fields, preload } = {}) {
   return Object.assign(new Vulcain(), { fields }, { preload }).headers;
 }
-export { ApiClient, ConstraintViolationList, DateRangeFilter, FakeEventSource, FilterCollection, HttpError, HydraCollection, HydraEndpoint, HydraEndpoints, HydraError, HydraPlugin, ItemFilter, Mercure, OrderFilter, TextFilter, TruthyFilter, Violation, areSameIris, checkValidItem, containsIri, createMercure, createStore, getId, getIds, getIri, getIris, getItemByIri, getItemIndexByIri, getItemsByType, hasIri, mercureSync, normalizeIris, on, partialItem, useEndpoint, useFilters, useFormValidation, useItemForm, useMercure, useMercureSync, useStore, vulcain, withoutDuplicates, withoutIri };
+export { ApiClient, ConstraintViolationList, DateRangeFilter, FakeEventSource, FilterCollection, HttpError, HydraCollection, HydraEndpoint, HydraEndpoints, HydraError, HydraPlugin, ItemFilter, Mercure, OrderFilter, TextFilter, TruthyFilter, Violation, areSameIris, checkValidItem, clone, containsIri, createMercure, createStore, getId, getIds, getIri, getIris, getItemByIri, getItemIndexByIri, getItemsByType, hasIri, mercureSync, normalizeIris, on, partialItem, useEndpoint, useFilters, useFormValidation, useItemForm, useMercure, useMercureSync, useStore, vulcain, withoutDuplicates, withoutIri };
