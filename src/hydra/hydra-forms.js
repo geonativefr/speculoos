@@ -1,7 +1,7 @@
 import { computed, reactive, ref, unref, watch } from 'vue';
 import { hasIri } from './iri-functions.js';
 import { useStore } from '../store/index.js';
-import clone from 'clone-deep';
+import { clone } from '../clone/index.js';
 
 function clearObject(object) {
   if ('object' !== typeof object || null == object) {
