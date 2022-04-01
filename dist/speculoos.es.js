@@ -1522,14 +1522,11 @@ class TruthyFilter extends Filter {
     return this.value ? "true" : "false";
   }
   static denormalize(input) {
-    var _a;
-    if ([void 0, null, ""].includes(input == null ? void 0 : input.trim())) {
+    if (input == null) {
       return new this(false);
     }
-    if (typeof input === "boolean") {
-      return new this(input);
-    }
-    return new this(["true", "on", "yes", "1"].includes((_a = input == null ? void 0 : input.trim()) == null ? void 0 : _a.toLowerCase()));
+    input = `${input}`.trim();
+    return new this(["true", "on", "yes", "1"].includes(input.trim().toLowerCase()));
   }
 }
 class Vulcain {
