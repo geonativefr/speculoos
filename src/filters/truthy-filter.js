@@ -13,14 +13,12 @@ export class TruthyFilter extends Filter {
   }
 
   static denormalize(input) {
-    if ([undefined, null, ''].includes(input?.trim())) {
+    if (null == input) {
       return new this(false);
     }
 
-    if ('boolean' === typeof input) {
-      return new this(input);
-    }
+    input = `${input}`.trim();
 
-    return new this(['true', 'on', 'yes', '1'].includes(input?.trim()?.toLowerCase()));
+    return new this(['true', 'on', 'yes', '1'].includes(input.trim().toLowerCase()));
   }
 }

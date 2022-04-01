@@ -18,4 +18,20 @@ it('should work', () => {
   filter = TruthyFilter.denormalize('false');
   expect(filter.value).toBe(false);
   expect(filter.normalize()).toBe('false');
+
+  filter = TruthyFilter.denormalize(1);
+  expect(filter.value).toBe(true);
+  expect(filter.normalize()).toBe('true');
+
+  filter = TruthyFilter.denormalize(0);
+  expect(filter.value).toBe(false);
+  expect(filter.normalize()).toBe('false');
+
+  filter = TruthyFilter.denormalize(false);
+  expect(filter.value).toBe(false);
+  expect(filter.normalize()).toBe('false');
+
+  filter = TruthyFilter.denormalize(true);
+  expect(filter.value).toBe(true);
+  expect(filter.normalize()).toBe('true');
 });
