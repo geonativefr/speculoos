@@ -29,6 +29,22 @@ it('subscribes to topics', () => {
   expect(client.connection).toBeInstanceOf(FakeEventSource);
 });
 
+it('avoids building complex query strings when wildcard topic is used', () => {
+  const client = new Mercure('https://example.org/.well-known/mercure');
+  client.subscribe('/api/foos/1');
+  client.subscribe(['/api/foos/2', '*', '/api/foos/3']);
+  client.subscribe('/api/foos/1');
+  client.subscribe('*');
+  expect(unref(client.subscribedTopics)).toEqual([
+    '/api/foos/1',
+    '/api/foos/2',
+    '*', // This makes other topics unrelevant
+    '/api/foos/3',
+  ]);
+  expect(unref(client.endpoint)).toEqual('https://example.org/.well-known/mercure?topic=*');
+  expect(client.connection).toBeInstanceOf(FakeEventSource);
+});
+
 it('subscribes to everything by default', () => {
   const client = new Mercure('https://example.org/.well-known/mercure');
   client.subscribe();

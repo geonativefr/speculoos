@@ -1086,7 +1086,12 @@ class Mercure {
     this.subscribedTopics = ref([]);
     this.endpoint = computed(() => {
       const url = new URL(this.hub);
-      unref(this.subscribedTopics).forEach((topic) => url.searchParams.append("topic", topic));
+      const subscribedTopics = unref(this.subscribedTopics);
+      if (subscribedTopics.includes("*")) {
+        url.searchParams.append("topic", "*");
+      } else {
+        subscribedTopics.forEach((topic) => url.searchParams.append("topic", topic));
+      }
       if (unref(this.lastEventId)) {
         url.searchParams.append("Last-Event-ID", unref(this.lastEventId));
       }
@@ -1126,7 +1131,9 @@ class Mercure {
       this.stop();
       return;
     }
-    this.connect();
+    if (!this.connection) {
+      this.connect();
+    }
   }
   connect() {
     this.stop();
