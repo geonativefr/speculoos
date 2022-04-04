@@ -169,16 +169,22 @@ class PreventDuplicates {
         const promise = this.fetch(url, options).then(tapResponse);
         this.pendingRequests.push({ hash, promise });
         return promise.then((result) => {
-          const index2 = this.pendingRequests.findIndex((pending) => hash === pending.hash);
-          if (index2 >= 0) {
-            this.pendingRequests.splice(index2, 1);
-          }
+          this.removePendingRequest(hash);
           return result;
+        }, (error) => {
+          this.removePendingRequest(hash);
+          throw error;
         });
       } catch (e) {
         return this.fetch(url, options);
       }
     };
+  }
+  removePendingRequest(hash) {
+    const index = this.pendingRequests.findIndex((pending) => hash === pending.hash);
+    if (index >= 0) {
+      this.pendingRequests.splice(index, 1);
+    }
   }
 }
 function withoutDuplicates(fetcher = void 0) {
