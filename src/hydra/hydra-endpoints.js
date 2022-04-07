@@ -35,6 +35,12 @@ export class HydraEndpoint {
     return this.endpoint;
   }
 
+  buildIri(id) {
+    let uri =  new URI(this.endpoint);
+    uri = uri.withPath(`${uri.getPath()}/${id}`);
+    return uri.toString();
+  }
+
   withQuery(params) {
     const uri = new URI(this.endpoint);
     const qs = new QueryString(uri).withParams(params);
