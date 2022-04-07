@@ -127,6 +127,13 @@ Out of `setup` scope:
 const endpoint = store.endpoint('Book')
 ```
 
+For a specific item:
+
+```js
+const endpoint = store.endpoint('Book').buildIri('123456'); // i.e. /api/books/123456
+```
+
+
 ### Pagination
 
 ```js
