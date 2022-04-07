@@ -77,7 +77,13 @@ it('returns an endpoint in a setup context', async () => {
 it('returns an endpoint', async () => {
   const plugin = new HydraPlugin(new ApiClient(), {endpoints: {Foo: '/api/foos', Bar: '/api/bars'}});
   const store = await (await createStore()).use(plugin);
-  const endpoint = await store.endpoint('Bar');
+  const endpoint = store.endpoint('Bar');
   expect(`${endpoint}`).toBe('/api/bars');
 });
 
+it('builds an item IRI', async () => {
+  const plugin = new HydraPlugin(new ApiClient(), {endpoints: {Foo: '/api/foos', Bar: '/api/bars'}});
+  const store = await (await createStore()).use(plugin);
+  const iri = store.endpoint('Bar').buildIri('123456');
+  expect(`${iri}`).toBe('/api/bars/123456');
+});
