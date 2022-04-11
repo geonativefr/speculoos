@@ -1,4 +1,5 @@
 export * from './date-range-filter.js';
+export * from './datetime-range-filter.js';
 export * from './filter-collection.js';
 export * from './item-filter.js';
 export * from './order-filter.js';
