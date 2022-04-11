@@ -599,10 +599,10 @@ class DateRangeFilter extends Filter {
     let after = null;
     let before = null;
     if (!empty(input.after)) {
-      after = dayjs.tz(input.after, "UTC").tz(this.prototype.constructor.userTimezone).hour(0).minute(0).second(0).format("YYYY-MM-DD");
+      after = dayjs.tz(input.after, "UTC").tz(this.userTimezone).hour(0).minute(0).second(0).format("YYYY-MM-DD");
     }
     if (!empty(input.before)) {
-      before = dayjs.tz(input.before, "UTC").tz(this.prototype.constructor.userTimezone).hour(0).minute(0).second(0).add(1, "day").subtract(1, "second").format("YYYY-MM-DD");
+      before = dayjs.tz(input.before, "UTC").tz(this.userTimezone).hour(0).minute(0).second(0).add(1, "day").subtract(1, "second").format("YYYY-MM-DD");
     }
     return new this({ after, before });
   }
@@ -639,10 +639,10 @@ class DatetimeRangeFilter extends Filter {
     let after = null;
     let before = null;
     if (!empty(input.after)) {
-      after = dayjs.tz(input.after, "UTC").tz(this.prototype.constructor.userTimezone).format("YYYY-MM-DD[T]HH:mm:ss[Z]");
+      after = dayjs.tz(input.after, "UTC").tz(this.userTimezone).format("YYYY-MM-DD[T]HH:mm:ss[Z]");
     }
     if (!empty(input.before)) {
-      before = dayjs.tz(input.before, "UTC").tz(this.prototype.constructor.userTimezone).format("YYYY-MM-DD[T]HH:mm:ss[Z]");
+      before = dayjs.tz(input.before, "UTC").tz(this.userTimezone).format("YYYY-MM-DD[T]HH:mm:ss[Z]");
     }
     return new this({ after, before });
   }

@@ -42,12 +42,12 @@ export class DatetimeRangeFilter extends Filter {
     let before = null;
     if (!empty(input.after)) {
       after = dayjs.tz(input.after, 'UTC')
-        .tz(this.prototype.constructor.userTimezone)
+        .tz(this.userTimezone)
         .format('YYYY-MM-DD[T]HH:mm:ss[Z]');
     }
     if (!empty(input.before)) {
       before = dayjs.tz(input.before, 'UTC')
-        .tz(this.prototype.constructor.userTimezone)
+        .tz(this.userTimezone)
         .format('YYYY-MM-DD[T]HH:mm:ss[Z]');
     }
 

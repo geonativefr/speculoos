@@ -50,7 +50,7 @@ export class DateRangeFilter extends Filter {
     let before = null;
     if (!empty(input.after)) {
       after = dayjs.tz(input.after, 'UTC')
-        .tz(this.prototype.constructor.userTimezone)
+        .tz(this.userTimezone)
         .hour(0)
         .minute(0)
         .second(0)
@@ -58,7 +58,7 @@ export class DateRangeFilter extends Filter {
     }
     if (!empty(input.before)) {
       before = dayjs.tz(input.before, 'UTC')
-        .tz(this.prototype.constructor.userTimezone)
+        .tz(this.userTimezone)
         .hour(0)
         .minute(0)
         .second(0)
