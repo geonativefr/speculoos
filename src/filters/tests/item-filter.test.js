@@ -29,3 +29,13 @@ it('should work with a single item', async () => {
   filter = new ItemFilter('/api/foos/3');
   expect(filter.normalize()).toBe('/api/foos/3');
 });
+
+it('should work with several items', async () => {
+  let filter = await ItemFilter.denormalize(['/api/foos/1', '/api/bars/1'], {store});
+  expect(filter.items).toEqual([foo, bar]);
+  expect(filter.normalize()).toEqual(['/api/foos/1', '/api/bars/1']);
+
+  filter = await ItemFilter.denormalize(['/api/foos/1', '/api/foos/2'], {store});
+  expect(filter.items).toEqual([foo, null]);
+  expect(filter.normalize()).toEqual(['/api/foos/1', null]);
+});

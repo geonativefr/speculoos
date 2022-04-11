@@ -1475,7 +1475,7 @@ class ItemFilter extends Filter {
   }
   static async denormalize(input, { store, multiple }) {
     if (Array.isArray(input)) {
-      return new this(await denormalizeMultiple(input), multiple != null ? multiple : true);
+      return new this(await denormalizeMultiple(input, store), multiple != null ? multiple : true);
     }
     return new this([await denormalizeSingle(input, store)], multiple != null ? multiple : false);
   }
