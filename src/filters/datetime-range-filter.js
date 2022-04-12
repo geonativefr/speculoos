@@ -7,7 +7,7 @@ import timezone from 'dayjs/plugin/timezone';
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-export class DateRangeFilter extends Filter {
+export class DatetimeRangeFilter extends Filter {
   static userTimezone;
   after;
   before;
@@ -24,19 +24,11 @@ export class DateRangeFilter extends Filter {
     let before = null;
     if (!empty(this.after)) {
       after = dayjs.tz(this.after, this.constructor.userTimezone)
-        .hour(0)
-        .minute(0)
-        .second(0)
         .tz('UTC')
         .format('YYYY-MM-DD[T]HH:mm:ss[Z]');
     }
     if (!empty(this.before)) {
       before = dayjs.tz(this.before, this.constructor.userTimezone)
-        .hour(0)
-        .minute(0)
-        .second(0)
-        .add(1, 'day')
-        .subtract(1, 'second')
         .tz('UTC')
         .format('YYYY-MM-DD[T]HH:mm:ss[Z]');
     }
@@ -51,20 +43,12 @@ export class DateRangeFilter extends Filter {
     if (!empty(input.after)) {
       after = dayjs.tz(input.after, 'UTC')
         .tz(this.userTimezone)
-        .hour(0)
-        .minute(0)
-        .second(0)
-        .format('YYYY-MM-DD');
+        .format('YYYY-MM-DD[T]HH:mm:ss[Z]');
     }
     if (!empty(input.before)) {
       before = dayjs.tz(input.before, 'UTC')
         .tz(this.userTimezone)
-        .hour(0)
-        .minute(0)
-        .second(0)
-        .add(1, 'day')
-        .subtract(1, 'second')
-        .format('YYYY-MM-DD');
+        .format('YYYY-MM-DD[T]HH:mm:ss[Z]');
     }
 
     return new this({after, before});

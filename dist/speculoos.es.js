@@ -574,7 +574,7 @@ var timezone$1 = { exports: {} };
 var timezone = timezone$1.exports;
 dayjs.extend(utc);
 dayjs.extend(timezone);
-const _DateRangeFilter = class extends Filter {
+class DateRangeFilter extends Filter {
   constructor({ after = null, before = null } = {}) {
     super();
     __publicField(this, "after");
@@ -599,10 +599,10 @@ const _DateRangeFilter = class extends Filter {
     let after = null;
     let before = null;
     if (!empty(input.after)) {
-      after = dayjs.tz(input.after, "UTC").tz(_DateRangeFilter.userTimezone).hour(0).minute(0).second(0).format("YYYY-MM-DD");
+      after = dayjs.tz(input.after, "UTC").tz(this.userTimezone).hour(0).minute(0).second(0).format("YYYY-MM-DD");
     }
     if (!empty(input.before)) {
-      before = dayjs.tz(input.before, "UTC").tz(_DateRangeFilter.userTimezone).hour(0).minute(0).second(0).add(1, "day").subtract(1, "second").format("YYYY-MM-DD");
+      before = dayjs.tz(input.before, "UTC").tz(this.userTimezone).hour(0).minute(0).second(0).add(1, "day").subtract(1, "second").format("YYYY-MM-DD");
     }
     return new this({ after, before });
   }
@@ -610,9 +610,48 @@ const _DateRangeFilter = class extends Filter {
     var _a;
     this.userTimezone = (_a = this.userTimezone) != null ? _a : dayjs.tz.guess() || "UTC";
   }
-};
-let DateRangeFilter = _DateRangeFilter;
+}
 __publicField(DateRangeFilter, "userTimezone");
+dayjs.extend(utc);
+dayjs.extend(timezone);
+class DatetimeRangeFilter extends Filter {
+  constructor({ after = null, before = null } = {}) {
+    super();
+    __publicField(this, "after");
+    __publicField(this, "before");
+    this.after = after;
+    this.before = before;
+  }
+  normalize() {
+    this.constructor.ensureTimezoneIsSet();
+    let after = null;
+    let before = null;
+    if (!empty(this.after)) {
+      after = dayjs.tz(this.after, this.constructor.userTimezone).tz("UTC").format("YYYY-MM-DD[T]HH:mm:ss[Z]");
+    }
+    if (!empty(this.before)) {
+      before = dayjs.tz(this.before, this.constructor.userTimezone).tz("UTC").format("YYYY-MM-DD[T]HH:mm:ss[Z]");
+    }
+    return { after, before };
+  }
+  static denormalize(input) {
+    this.ensureTimezoneIsSet();
+    let after = null;
+    let before = null;
+    if (!empty(input.after)) {
+      after = dayjs.tz(input.after, "UTC").tz(this.userTimezone).format("YYYY-MM-DD[T]HH:mm:ss[Z]");
+    }
+    if (!empty(input.before)) {
+      before = dayjs.tz(input.before, "UTC").tz(this.userTimezone).format("YYYY-MM-DD[T]HH:mm:ss[Z]");
+    }
+    return new this({ after, before });
+  }
+  static ensureTimezoneIsSet() {
+    var _a;
+    this.userTimezone = (_a = this.userTimezone) != null ? _a : dayjs.tz.guess() || "UTC";
+  }
+}
+__publicField(DatetimeRangeFilter, "userTimezone");
 function isBlank(val) {
   if (val == null) {
     return true;
@@ -1567,4 +1606,4 @@ class Vulcain {
 function vulcain({ fields, preload } = {}) {
   return Object.assign(new Vulcain(), { fields }, { preload }).headers;
 }
-export { ApiClient, ConstraintViolationList, DateRangeFilter, FakeEventSource, FilterCollection, HttpError, HydraCollection, HydraEndpoint, HydraEndpoints, HydraError, HydraPlugin, ItemFilter, Mercure, OrderFilter, TextFilter, TruthyFilter, Violation, areSameIris, checkValidItem, clone, containsIri, createMercure, createStore, getId, getIds, getIri, getIris, getItemByIri, getItemIndexByIri, getItemsByType, hasIri, mercureSync, normalizeIris, on, partialItem, useEndpoint, useFilters, useFormValidation, useItemForm, useMercure, useMercureSync, useStore, vulcain, withoutDuplicates, withoutIri };
+export { ApiClient, ConstraintViolationList, DateRangeFilter, DatetimeRangeFilter, FakeEventSource, FilterCollection, HttpError, HydraCollection, HydraEndpoint, HydraEndpoints, HydraError, HydraPlugin, ItemFilter, Mercure, OrderFilter, TextFilter, TruthyFilter, Violation, areSameIris, checkValidItem, clone, containsIri, createMercure, createStore, getId, getIds, getIri, getIris, getItemByIri, getItemIndexByIri, getItemsByType, hasIri, mercureSync, normalizeIris, on, partialItem, useEndpoint, useFilters, useFormValidation, useItemForm, useMercure, useMercureSync, useStore, vulcain, withoutDuplicates, withoutIri };
