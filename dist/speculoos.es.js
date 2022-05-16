@@ -810,6 +810,7 @@ class HydraEndpoint {
     return new HydraEndpoint(uri.withQuery(qs.toString()).toString());
   }
   paginated(itemsPerPageOrFalse) {
+    itemsPerPageOrFalse = unref(itemsPerPageOrFalse);
     if (itemsPerPageOrFalse === false) {
       return this.withQuery({
         pagination: 0

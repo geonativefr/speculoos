@@ -1,5 +1,6 @@
 import { QueryString, URI } from 'psr7-js';
 import { useStore } from '../store/index.js';
+import { unref } from 'vue';
 
 export class HydraEndpoints {
   constructor(data) {
@@ -48,6 +49,7 @@ export class HydraEndpoint {
   }
 
   paginated(itemsPerPageOrFalse) {
+    itemsPerPageOrFalse = unref(itemsPerPageOrFalse);
     if (false === itemsPerPageOrFalse) {
       return this.withQuery({
         pagination: 0,
