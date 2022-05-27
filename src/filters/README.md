@@ -4,6 +4,8 @@ Some classes to denormalize / normalize filters from / to the query string.
 
 ## Example usage
 
+`useFilters<Promise>(initialState: Function, options: Object)`
+
 ```js
 import { FilterCollection, TextFilter, TruthyFilter, useFilters } from 'speculoos';
 
@@ -21,6 +23,11 @@ const {filters, submit} = await useFilters(() => new FilterCollection({
 
 await submit(); // will router.push [current location]?name=bar&current=true
 ```
+
+### `useFilters()` options
+
+- `preserveQuery` will keep current query string
+- `targetRoute` will allow you to specify a different route when submitting filters (instead of refreshing the current one).
 
 ## Available Filters
 

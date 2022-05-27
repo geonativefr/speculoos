@@ -719,15 +719,18 @@ class FilterCollection {
     return this;
   }
 }
-async function useFilters(initialState = {}, options = { preserveQuery: false }) {
+async function useFilters(initialState = {}, options = {
+  preserveQuery: false,
+  targetRoute: void 0
+}) {
   if (typeof initialState !== "function") {
     throw Error("initialState should be provided as a function.");
   }
-  const route = useRoute();
+  const currentRoute = useRoute();
   const router = useRouter();
   const filters = ref(initialState());
-  async function hydrateFiltersFromRoute(route2) {
-    Object.assign(unref(filters), await unref(filters).denormalize(route2.query, options));
+  async function hydrateFiltersFromRoute(route) {
+    Object.assign(unref(filters), await unref(filters).denormalize(route.query, options));
   }
   function clear() {
     filters.value = clone(initialState());
@@ -735,15 +738,17 @@ async function useFilters(initialState = {}, options = { preserveQuery: false })
   function buildQueryParams(additionalParams = {}) {
     const output = {};
     if (options.preserveQuery === true) {
-      Object.assign(output, route.query);
+      Object.assign(output, currentRoute.query);
     }
     return Object.assign(output, unref(filters).normalize(), additionalParams);
   }
   async function submit(additionalParams = {}) {
+    var _a;
+    const route = (_a = unref(options.targetRoute)) != null ? _a : currentRoute;
     await router.push(Object.assign(__spreadValues({}, route), { query: buildQueryParams(additionalParams) }));
   }
   onBeforeRouteUpdate((to) => hydrateFiltersFromRoute(to));
-  await hydrateFiltersFromRoute(route);
+  await hydrateFiltersFromRoute(currentRoute);
   return {
     filters,
     buildQueryParams,
