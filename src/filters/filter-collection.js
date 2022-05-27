@@ -87,11 +87,14 @@ export class FilterCollection {
   }
 }
 
-export async function useFilters(initialState = {}, options = {preserveQuery: false}) {
+export async function useFilters(initialState = {}, options = {
+  preserveQuery: false,
+  targetRoute: undefined,
+}) {
   if ('function' !== typeof initialState) {
     throw Error('initialState should be provided as a function.');
   }
-  const route = useRoute();
+  const currentRoute = useRoute();
   const router = useRouter();
   const filters = ref(initialState());
 
@@ -106,17 +109,18 @@ export async function useFilters(initialState = {}, options = {preserveQuery: fa
   function buildQueryParams(additionalParams = {}) {
     const output = {};
     if (true === options.preserveQuery) {
-      Object.assign(output, route.query);
+      Object.assign(output, currentRoute.query);
     }
     return Object.assign(output, unref(filters).normalize(), additionalParams);
   }
 
   async function submit(additionalParams = {}) {
+    const route = unref(options.targetRoute) ?? currentRoute;
     await router.push(Object.assign({...route}, {query: buildQueryParams(additionalParams)}));
   }
 
   onBeforeRouteUpdate((to) => hydrateFiltersFromRoute(to));
-  await hydrateFiltersFromRoute(route);
+  await hydrateFiltersFromRoute(currentRoute);
 
   return {
     filters,

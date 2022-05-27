@@ -138,3 +138,49 @@ it('updates the query string with the applied filters, preserving original query
     },
   });
 });
+
+it('can use a different route when submitting', async () => {
+  mockRoute.query.foo = 'bar';
+  mockRoute.query.name = 'Johnson';
+  const {initialState, filters, buildQueryParams, submit} = await useSetup(createTestApp(), async () => {
+    const initialState = () => new FilterCollection({
+      name: new TextFilter(),
+      city: new TextFilter('London'),
+      country: new TextFilter('UK'),
+    });
+    const {filters, buildQueryParams, submit} = await useFilters(initialState, {
+      preserveQuery: true,
+      targetRoute: {name: 'target', params: {foo: 'bar'}},
+    });
+    unref(filters).country.value = 'GB';
+
+    return {initialState, filters, buildQueryParams, submit};
+  });
+
+  expect(initialState().name.value).toBe(null);
+  expect(initialState().city.value).toBe('London');
+  expect(initialState().country.value).toBe('UK');
+  expect(unref(filters).name.value).toBe('Johnson');
+  expect(unref(filters).city.value).toBe('London');
+  expect(unref(filters).country.value).toBe('GB');
+
+  expect(buildQueryParams()).toEqual({
+    foo: 'bar',
+    name: 'Johnson',
+    city: 'London',
+    country: 'GB',
+  });
+
+  await submit({page: 1});
+  expect(mockRoute).toEqual({
+    name: 'target',
+    params: {foo: 'bar'},
+    query: {
+      foo: 'bar',
+      name: 'Johnson',
+      city: 'London',
+      country: 'GB',
+      page: 1,
+    },
+  });
+});
