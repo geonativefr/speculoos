@@ -1564,10 +1564,13 @@ class TextFilter extends Filter {
     return this.value.trim();
   }
   static denormalize(input) {
-    if ([void 0, null, ""].includes(input == null ? void 0 : input.trim())) {
+    if (typeof input === "string") {
+      input = input.trim();
+    }
+    if ([void 0, null, ""].includes(input)) {
       return new this(null);
     }
-    return new this(input.trim());
+    return new this(input);
   }
 }
 class TruthyFilter extends Filter {
@@ -1584,7 +1587,7 @@ class TruthyFilter extends Filter {
       return new this(false);
     }
     input = `${input}`.trim();
-    return new this(["true", "on", "yes", "1"].includes(input.trim().toLowerCase()));
+    return new this(["true", "on", "yes", "1"].includes(input.toLowerCase()));
   }
 }
 class Vulcain {
