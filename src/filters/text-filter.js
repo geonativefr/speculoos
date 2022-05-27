@@ -17,10 +17,15 @@ export class TextFilter extends Filter {
   }
 
   static denormalize(input) {
-    if ([undefined, null, ''].includes(input?.trim())) {
+
+    if ('string' === typeof input) {
+      input = input.trim();
+    }
+
+    if ([undefined, null, ''].includes(input)) {
       return new this(null);
     }
 
-    return new this(input.trim());
+    return new this(input);
   }
 }

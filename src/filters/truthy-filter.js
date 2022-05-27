@@ -19,6 +19,6 @@ export class TruthyFilter extends Filter {
 
     input = `${input}`.trim();
 
-    return new this(['true', 'on', 'yes', '1'].includes(input.trim().toLowerCase()));
+    return new this(['true', 'on', 'yes', '1'].includes(input.toLowerCase()));
   }
 }
