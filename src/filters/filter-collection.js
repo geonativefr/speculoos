@@ -34,7 +34,7 @@ function deepPrune(input) {
   }
 
   if (Array.isArray(input)) {
-    return input.filter(deepPrune);
+    return input.map(deepPrune);
   }
 
   const output = {...input};
