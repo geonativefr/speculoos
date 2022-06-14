@@ -1,3 +1,4 @@
+export * from './array-filter.js';
 export * from './date-range-filter.js';
 export * from './datetime-range-filter.js';
 export * from './filter-collection.js';
