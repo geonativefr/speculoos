@@ -223,6 +223,28 @@ class Filter {
     throw Error("This method is meant to be overriden.");
   }
 }
+class ArrayFilter extends Filter {
+  constructor(values = []) {
+    super();
+    __publicField(this, "values");
+    this.values = values;
+  }
+  normalize() {
+    return this.values;
+  }
+  static denormalize(input) {
+    if (typeof input === "string") {
+      input = input.trim();
+    }
+    if ([void 0, null, ""].includes(input)) {
+      return new this([]);
+    }
+    if (!Array.isArray(input)) {
+      input = [input];
+    }
+    return new this(input);
+  }
+}
 var commonjsGlobal = typeof globalThis !== "undefined" ? globalThis : typeof window !== "undefined" ? window : typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : {};
 var dayjs_min = { exports: {} };
 (function(module, exports) {
@@ -1615,4 +1637,4 @@ class Vulcain {
 function vulcain({ fields, preload } = {}) {
   return Object.assign(new Vulcain(), { fields }, { preload }).headers;
 }
-export { ApiClient, ConstraintViolationList, DateRangeFilter, DatetimeRangeFilter, FakeEventSource, FilterCollection, HttpError, HydraCollection, HydraEndpoint, HydraEndpoints, HydraError, HydraPlugin, ItemFilter, Mercure, OrderFilter, TextFilter, TruthyFilter, Violation, areSameIris, checkValidItem, clone, containsIri, createMercure, createStore, getId, getIds, getIri, getIris, getItemByIri, getItemIndexByIri, getItemsByType, hasIri, mercureSync, normalizeIris, on, partialItem, useEndpoint, useFilters, useFormValidation, useItemForm, useMercure, useMercureSync, useStore, vulcain, withoutDuplicates, withoutIri };
+export { ApiClient, ArrayFilter, ConstraintViolationList, DateRangeFilter, DatetimeRangeFilter, FakeEventSource, FilterCollection, HttpError, HydraCollection, HydraEndpoint, HydraEndpoints, HydraError, HydraPlugin, ItemFilter, Mercure, OrderFilter, TextFilter, TruthyFilter, Violation, areSameIris, checkValidItem, clone, containsIri, createMercure, createStore, getId, getIds, getIri, getIris, getItemByIri, getItemIndexByIri, getItemsByType, hasIri, mercureSync, normalizeIris, on, partialItem, useEndpoint, useFilters, useFormValidation, useItemForm, useMercure, useMercureSync, useStore, vulcain, withoutDuplicates, withoutIri };

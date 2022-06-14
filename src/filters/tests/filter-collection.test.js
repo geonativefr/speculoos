@@ -8,6 +8,7 @@ import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc.js';
 import timezone from 'dayjs/plugin/timezone.js';
 import { reactive, unref } from 'vue';
+import { ArrayFilter } from '../array-filter.js';
 
 const mockRoute = reactive({
   name: 'foo',
@@ -104,6 +105,7 @@ it('updates the query string with the applied filters, preserving original query
       name: new TextFilter(),
       city: new TextFilter('London'),
       country: new TextFilter('UK'),
+      tags: new ArrayFilter(['foo', 'bar']),
     });
     const {filters, buildQueryParams, submit} = await useFilters(initialState, {preserveQuery: true});
     unref(filters).country.value = 'GB';
@@ -117,12 +119,14 @@ it('updates the query string with the applied filters, preserving original query
   expect(unref(filters).name.value).toBe('Johnson');
   expect(unref(filters).city.value).toBe('London');
   expect(unref(filters).country.value).toBe('GB');
+  expect(unref(filters).tags.values).toEqual(['foo', 'bar']);
 
   expect(buildQueryParams()).toEqual({
     foo: 'bar',
     name: 'Johnson',
     city: 'London',
     country: 'GB',
+    tags: ['foo', 'bar'],
   });
 
   await submit({page: 1});
@@ -135,6 +139,7 @@ it('updates the query string with the applied filters, preserving original query
       city: 'London',
       country: 'GB',
       page: 1,
+      tags: ['foo', 'bar'],
     },
   });
 });
@@ -147,6 +152,7 @@ it('can use a different route when submitting', async () => {
       name: new TextFilter(),
       city: new TextFilter('London'),
       country: new TextFilter('UK'),
+      tags: new ArrayFilter([]),
     });
     const {filters, buildQueryParams, submit} = await useFilters(initialState, {
       preserveQuery: true,

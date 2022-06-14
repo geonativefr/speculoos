@@ -43,6 +43,18 @@ const {filters} = await useFilters(() => new FilterCollection({
 // console.log(unref(filters).name.value); // 'foo'
 ```
 
+### ArrayFilter
+
+```js
+// ?tags[]=foo&tags[]=bar
+import { FilterCollection, ArrayFilter } from 'speculoos';
+
+const {filters} = await useFilters(() => new FilterCollection({
+    tags: new ArrayFilter(),
+}));
+// console.log(unref(filters).tags.values); // ['foo', 'bar']
+```
+
 ### TruthyFilter
 
 ```js
