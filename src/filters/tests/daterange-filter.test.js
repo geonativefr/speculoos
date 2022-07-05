@@ -17,6 +17,16 @@ it('denormalizes an input object', () => {
   expect(filter.before).toBe('2021-06-17');
 });
 
+it('denormalizes an input object without using user timezone', () => {
+  const filter = new DateRangeFilter({}, false);
+  filter.denormalize({
+    after: '2021-06-15T21:00:00Z',
+    before: '2021-06-17T20:59:59Z',
+  });
+  expect(filter.after).toBe('2021-06-15');
+  expect(filter.before).toBe('2021-06-17');
+});
+
 it('partially denormalizes an input object', () => {
   const filter = new DateRangeFilter();
   filter.denormalize({
@@ -37,6 +47,14 @@ it('normalizes the filter', () => {
   expect(filter.normalize()).toStrictEqual({
     after: '2021-06-15T21:00:00Z',
     before: '2021-06-18T20:59:59Z',
+  });
+});
+
+it('normalizes the filter without using user timezone', () => {
+  const filter = new DateRangeFilter({after: '2021-06-16', before: '2021-06-18'}, false);
+  expect(filter.normalize()).toStrictEqual({
+    after: '2021-06-16T00:00:00Z',
+    before: '2021-06-18T23:59:59Z',
   });
 });
 
