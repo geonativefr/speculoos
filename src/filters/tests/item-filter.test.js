@@ -18,24 +18,26 @@ const store = {
 };
 
 it('should work with a single item', async () => {
-  let filter = await ItemFilter.denormalize('/api/foos/1', {store});
+  let filter = new ItemFilter(undefined, {store});
+  await filter.denormalize('/api/foos/1');
   expect(filter.item).toBe(foo);
   expect(filter.normalize()).toBe('/api/foos/1');
 
-  filter = await ItemFilter.denormalize('/api/foos/2', {store});
+  await filter.denormalize('/api/foos/2');
   expect(filter.item).toBe(null);
   expect(filter.normalize()).toBe(null);
 
-  filter = new ItemFilter('/api/foos/3');
+  filter = new ItemFilter('/api/foos/3', {store});
   expect(filter.normalize()).toBe('/api/foos/3');
 });
 
 it('should work with several items', async () => {
-  let filter = await ItemFilter.denormalize(['/api/foos/1', '/api/bars/1'], {store});
+  const filter = new ItemFilter(undefined, {store});
+  await filter.denormalize(['/api/foos/1', '/api/bars/1']);
   expect(filter.items).toEqual([foo, bar]);
   expect(filter.normalize()).toEqual(['/api/foos/1', '/api/bars/1']);
 
-  filter = await ItemFilter.denormalize(['/api/foos/1', '/api/foos/2'], {store});
+  await filter.denormalize(['/api/foos/1', '/api/foos/2']);
   expect(filter.items).toEqual([foo, null]);
   expect(filter.normalize()).toEqual(['/api/foos/1', null]);
 });

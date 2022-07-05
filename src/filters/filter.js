@@ -3,7 +3,7 @@ class Filter {
     throw Error('This method is meant to be overriden.');
   }
 
-  static denormalize(input) {
+  async denormalize(input) {
     throw Error('This method is meant to be overriden.');
   }
 }

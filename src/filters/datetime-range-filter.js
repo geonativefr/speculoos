@@ -36,22 +36,20 @@ export class DatetimeRangeFilter extends Filter {
     return {after, before};
   }
 
-  static denormalize(input) {
-    this.ensureTimezoneIsSet();
-    let after = null;
-    let before = null;
+  async denormalize(input) {
+    this.constructor.ensureTimezoneIsSet();
+    this.after = null;
+    this.before = null;
     if (!empty(input.after)) {
-      after = dayjs.tz(input.after, 'UTC')
+      this.after = dayjs.tz(input.after, 'UTC')
         .tz(this.userTimezone)
         .format('YYYY-MM-DD[T]HH:mm:ss[Z]');
     }
     if (!empty(input.before)) {
-      before = dayjs.tz(input.before, 'UTC')
+      this.before = dayjs.tz(input.before, 'UTC')
         .tz(this.userTimezone)
         .format('YYYY-MM-DD[T]HH:mm:ss[Z]');
     }
-
-    return new this({after, before});
   }
 
   static ensureTimezoneIsSet() {

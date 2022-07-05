@@ -8,7 +8,8 @@ dayjs.extend(timezone);
 DatetimeRangeFilter.userTimezone = 'Europe/Tallinn';
 
 it('denormalizes an input object', () => {
-  const filter = DatetimeRangeFilter.denormalize({
+  const filter = new DatetimeRangeFilter();
+  filter.denormalize({
     after: '2021-06-15T21:00:00Z',
     before: '2021-06-17T20:59:59Z',
   });
@@ -18,14 +19,15 @@ it('denormalizes an input object', () => {
 });
 
 it('partially denormalizes an input object', () => {
-  let filter = DatetimeRangeFilter.denormalize({
+  const filter = new DatetimeRangeFilter();
+  filter.denormalize({
     before: '2021-06-17T20:59:59Z',
   });
   expect(filter).toBeInstanceOf(DatetimeRangeFilter);
   expect(filter.after).toBeNull();
   expect(filter.before).toBe('2021-06-17T23:59:59Z');
 
-  filter = DatetimeRangeFilter.denormalize({
+  filter.denormalize({
     after: '2021-06-15T21:00:00Z',
   });
   expect(filter).toBeInstanceOf(DatetimeRangeFilter);

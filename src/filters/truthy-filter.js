@@ -12,13 +12,15 @@ export class TruthyFilter extends Filter {
     return this.value ? 'true' : 'false';
   }
 
-  static denormalize(input) {
+  async denormalize(input) {
     if (null == input) {
-      return new this(false);
+      this.value = false;
+
+      return;
     }
 
     input = `${input}`.trim();
 
-    return new this(['true', 'on', 'yes', '1'].includes(input.toLowerCase()));
+    this.value = ['true', 'on', 'yes', '1'].includes(input.toLowerCase());
   }
 }
