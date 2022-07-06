@@ -9,6 +9,13 @@ import utc from 'dayjs/plugin/utc.js';
 import timezone from 'dayjs/plugin/timezone.js';
 import { reactive, unref } from 'vue';
 import { ArrayFilter } from '../array-filter.js';
+import { getItemByIri } from '../../hydra/index.js';
+
+const store = {
+  getItem(iri) {
+    return getItemByIri([], iri);
+  },
+};
 
 const mockRoute = reactive({
   name: 'foo',
@@ -37,7 +44,7 @@ it('should work', async () => {
     defaultName: new TextFilter('bar'),
     active: new TruthyFilter(),
     createdAt: new DateRangeFilter(),
-    account: new ItemFilter(),
+    account: new ItemFilter(undefined,{store}),
   });
 
   await filters.denormalize({

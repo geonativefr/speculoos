@@ -27,11 +27,11 @@ export class OrderFilter extends Filter {
     return this.order;
   }
 
-  static denormalize(input) {
-    if ('object' === typeof input && null != input) {
-      return new this(input);
-    }
+  async denormalize(input) {
+    this.order = {};
 
-    return new this();
+    if ('object' === typeof input && null != input) {
+      this.order = input;
+    }
   }
 }

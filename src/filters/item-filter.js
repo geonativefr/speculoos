@@ -31,9 +31,11 @@ async function denormalizeMultiple(items, store) {
 export class ItemFilter extends Filter {
   items = [];
   multiple;
-  constructor(items, multiple = false) {
+  store;
+  constructor(items, {store, multiple = false}) {
     super();
     this.items = Array.isArray(items) ? items : [items];
+    this.store = store;
     this.multiple = multiple;
   }
 
@@ -50,11 +52,13 @@ export class ItemFilter extends Filter {
     return (this.multiple || this.items.length > 1) ? normalizeMultiple(this.items) : normalizeSingle(this.item);
   }
 
-  static async denormalize(input, {store, multiple}) {
+  async denormalize(input) {
     if (Array.isArray(input)) {
-      return new this(await denormalizeMultiple(input, store), multiple ?? true);
+      this.items = await denormalizeMultiple(input, this.store);
+
+      return;
     }
 
-    return new this([await denormalizeSingle(input, store)], multiple ?? false);
+    this.items = [await denormalizeSingle(input, this.store)];
   }
 }

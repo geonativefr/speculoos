@@ -2,20 +2,20 @@ import { ArrayFilter } from '../array-filter.js';
 import { FilterCollection } from '../filter-collection.js';
 
 it('should work', () => {
-  let filter = ArrayFilter.denormalize(['foo', 'bar']);
-  expect(filter).toBeInstanceOf(ArrayFilter);
+  let filter = new ArrayFilter();
 
+  filter.denormalize(['foo', 'bar']);
   expect(filter.values).toEqual(['foo', 'bar']);
   expect(filter.normalize()).toEqual(['foo', 'bar']);
 
-  filter = ArrayFilter.denormalize(' ');
+  filter.denormalize(' ');
   expect(filter.values).toEqual([]);
   expect(filter.normalize()).toEqual([]);
 
-  filter = ArrayFilter.denormalize(undefined);
+  filter.denormalize(undefined);
   expect(filter.normalize()).toEqual([]);
 
-  filter = ArrayFilter.denormalize(null);
+  filter.denormalize(null);
   expect(filter.normalize()).toEqual([]);
 
   filter = new ArrayFilter([0, 1]);

@@ -1,20 +1,20 @@
 import { TextFilter } from '../text-filter.js';
 
 it('should work', () => {
-  let filter = TextFilter.denormalize('foo');
-  expect(filter).toBeInstanceOf(TextFilter);
+  const filter = new TextFilter();
+  filter.denormalize('foo');
 
   expect(filter.value).toBe('foo');
   expect(filter.normalize()).toBe('foo');
 
-  filter = TextFilter.denormalize(' foo ');
+  filter.denormalize(' foo ');
   expect(filter.value).toBe('foo');
   expect(filter.normalize()).toBe('foo');
 
-  filter = TextFilter.denormalize(' ');
+  filter.denormalize(' ');
   expect(filter.value).toBe(null);
   expect(filter.normalize()).toBe(null);
 
-  filter = TextFilter.denormalize(' ');
+  filter.denormalize(' ');
   expect(filter.normalize()).toBe(null);
 });

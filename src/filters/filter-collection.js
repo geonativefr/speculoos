@@ -76,11 +76,17 @@ export class FilterCollection {
     return deepPrune(output);
   }
 
-  async denormalize(input, options) {
+  async denormalize(input) {
+    const promises = [];
     for (const key of this._filters) {
-      if ('undefined' !== typeof input[key]) {
-        this[key] = await Object.getPrototypeOf(this[key]).constructor.denormalize(input[key], options);
+      const filter = this[key];
+      if (filter instanceof Filter && 'undefined' !== typeof input[key]) {
+        promises.push(filter.denormalize(input[key]));
       }
+    }
+
+    if (promises.length > 0) {
+      await Promise.all(promises);
     }
 
     return this;
@@ -99,7 +105,7 @@ export async function useFilters(initialState = {}, options = {
   const filters = ref(initialState());
 
   async function hydrateFiltersFromRoute(route) {
-    Object.assign(unref(filters), await unref(filters).denormalize(route.query, options));
+    Object.assign(unref(filters), await unref(filters).denormalize(route.query));
   }
 
   function clear() {

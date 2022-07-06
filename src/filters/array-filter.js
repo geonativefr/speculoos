@@ -12,20 +12,22 @@ export class ArrayFilter extends Filter {
     return this.values;
   }
 
-  static denormalize(input) {
+  async denormalize(input) {
 
     if ('string' === typeof input) {
       input = input.trim();
     }
 
     if ([undefined, null, ''].includes(input)) {
-      return new this([]);
+      this.values = [];
+
+      return;
     }
 
     if (!Array.isArray(input)) {
       input = [input];
     }
 
-    return new this(input);
+    this.values = input;
   }
 }

@@ -16,16 +16,18 @@ export class TextFilter extends Filter {
     return this.value.trim();
   }
 
-  static denormalize(input) {
+  async denormalize(input) {
 
     if ('string' === typeof input) {
       input = input.trim();
     }
 
     if ([undefined, null, ''].includes(input)) {
-      return new this(null);
+      this.value = null;
+
+      return;
     }
 
-    return new this(input);
+    this.value = input;
   }
 }
