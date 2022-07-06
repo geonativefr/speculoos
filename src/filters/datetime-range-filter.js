@@ -53,6 +53,6 @@ export class DatetimeRangeFilter extends Filter {
   }
 
   static ensureTimezoneIsSet() {
-    this.userTimezone = this.userTimezone ?? (dayjs.tz.guess() || 'UTC');
+    this.constructor.userTimezone = this.constructor.userTimezone ?? (dayjs.tz.guess() || 'UTC');
   }
 }
