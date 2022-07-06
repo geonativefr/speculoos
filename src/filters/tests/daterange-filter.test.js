@@ -18,7 +18,7 @@ it('denormalizes an input object', () => {
 });
 
 it('denormalizes an input object without using user timezone', () => {
-  const filter = new DateRangeFilter({}, false);
+  const filter = new DateRangeFilter({}, {withTime: true, useUserTimezone: false});
   filter.denormalize({
     after: '2021-06-15T21:00:00Z',
     before: '2021-06-17T20:59:59Z',
@@ -51,10 +51,24 @@ it('normalizes the filter', () => {
 });
 
 it('normalizes the filter without using user timezone', () => {
-  const filter = new DateRangeFilter({after: '2021-06-16', before: '2021-06-18'}, false);
+  const filter = new DateRangeFilter(
+    {after: '2021-06-16', before: '2021-06-18'},
+    {withTime: true, useUserTimezone: false}
+  );
   expect(filter.normalize()).toStrictEqual({
     after: '2021-06-16T00:00:00Z',
     before: '2021-06-18T23:59:59Z',
+  });
+});
+
+it('normalizes the filter without using user timezone and without time', () => {
+  const filter = new DateRangeFilter(
+    {after: '2021-06-16', before: '2021-06-18'},
+    {withTime: false, useUserTimezone: false}
+  );
+  expect(filter.normalize()).toStrictEqual({
+    after: '2021-06-16',
+    before: '2021-06-18',
   });
 });
 

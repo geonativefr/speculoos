@@ -11,12 +11,14 @@ export class DateRangeFilter extends Filter {
   static userTimezone;
   after;
   before;
+  normalizedFormat;
   useUserTimezone;
 
-  constructor({after = null, before = null} = {}, useUserTimezone = true) {
+  constructor({after = null, before = null} = {}, {withTime = true, useUserTimezone = true} = {}) {
     super();
     this.after = after;
     this.before = before;
+    this.normalizedFormat = withTime ? 'YYYY-MM-DD[T]HH:mm:ss[Z]' : 'YYYY-MM-DD';
     this.useUserTimezone = useUserTimezone;
   }
 
@@ -31,7 +33,7 @@ export class DateRangeFilter extends Filter {
         .minute(0)
         .second(0)
         .tz('UTC')
-        .format('YYYY-MM-DD[T]HH:mm:ss[Z]');
+        .format(this.normalizedFormat);
     }
     if (!empty(this.before)) {
       before = dayjs.tz(this.before, timezone)
@@ -41,7 +43,7 @@ export class DateRangeFilter extends Filter {
         .add(1, 'day')
         .subtract(1, 'second')
         .tz('UTC')
-        .format('YYYY-MM-DD[T]HH:mm:ss[Z]');
+        .format(this.normalizedFormat);
     }
 
     return {after, before};
