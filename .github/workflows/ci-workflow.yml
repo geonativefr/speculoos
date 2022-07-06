@@ -56,5 +56,8 @@ jobs:
       - name: Install dependencies
         run: yarn install
 
+      - name: Enforce vue version to avoid warnings about missing <Suspense>
+        run: yarn add -D vue@3.2.31
+
       - name: Run unit tests
         run: yarn test
