@@ -4,7 +4,6 @@ it('should work', () => {
   const filter = new OrderFilter();
   filter.denormalize({foo: 'desc', bar: 'asc'});
 
-  expect(filter).toBeInstanceOf(OrderFilter);
   expect(filter.normalize()).toEqual({foo: 'desc', bar: 'asc'});
 });
 

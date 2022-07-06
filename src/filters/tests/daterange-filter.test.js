@@ -13,7 +13,6 @@ it('denormalizes an input object', () => {
     after: '2021-06-15T21:00:00Z',
     before: '2021-06-17T20:59:59Z',
   });
-  expect(filter).toBeInstanceOf(DateRangeFilter);
   expect(filter.after).toBe('2021-06-16');
   expect(filter.before).toBe('2021-06-17');
 });
@@ -23,14 +22,12 @@ it('partially denormalizes an input object', () => {
   filter.denormalize({
     before: '2021-06-17T20:59:59Z',
   });
-  expect(filter).toBeInstanceOf(DateRangeFilter);
   expect(filter.after).toBeNull();
   expect(filter.before).toBe('2021-06-17');
 
   filter.denormalize({
     after: '2021-06-15T21:00:00Z',
   });
-  expect(filter).toBeInstanceOf(DateRangeFilter);
   expect(filter.after).toBe('2021-06-16');
   expect(filter.before).toBeNull();
 });

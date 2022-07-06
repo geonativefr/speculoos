@@ -5,7 +5,6 @@ it('should work', () => {
   let filter = new ArrayFilter();
 
   filter.denormalize(['foo', 'bar']);
-  expect(filter).toBeInstanceOf(ArrayFilter);
   expect(filter.values).toEqual(['foo', 'bar']);
   expect(filter.normalize()).toEqual(['foo', 'bar']);
 

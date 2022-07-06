@@ -3,7 +3,6 @@ import { TruthyFilter } from '../truthy-filter.js';
 it('should work', () => {
   const filter = new TruthyFilter();
   filter.denormalize('yes');
-  expect(filter).toBeInstanceOf(TruthyFilter);
 
   expect(filter.value).toBe(true);
   expect(filter.normalize()).toBe('true');

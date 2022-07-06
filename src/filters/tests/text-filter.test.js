@@ -3,7 +3,6 @@ import { TextFilter } from '../text-filter.js';
 it('should work', () => {
   const filter = new TextFilter();
   filter.denormalize('foo');
-  expect(filter).toBeInstanceOf(TextFilter);
 
   expect(filter.value).toBe('foo');
   expect(filter.normalize()).toBe('foo');
