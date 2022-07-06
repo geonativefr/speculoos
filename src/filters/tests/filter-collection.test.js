@@ -28,7 +28,7 @@ jest.mock('vue-router', () => ({
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
-DateRangeFilter.userTimezone = 'Europe/Paris';
+DateRangeFilter.userTimezone = 'Europe/Tallinn';
 
 beforeEach(() => mockRoute.query = {});
 it('should work', async () => {
@@ -44,8 +44,8 @@ it('should work', async () => {
     name: 'foo',
     active: 'true',
     createdAt: {
-      after: '2022-06-01T22:00:00Z',
-      before: '2022-06-02T21:59:59Z',
+      after: '2022-06-01T21:00:00Z',
+      before: '2022-06-02T20:59:59Z',
     }
   });
 
@@ -71,8 +71,8 @@ it('should work', async () => {
     defaultName: 'bar',
     active: 'true',
     createdAt: {
-      after: '2022-06-01T22:00:00Z',
-      before: '2022-06-02T21:59:59Z',
+      after: '2022-06-01T21:00:00Z',
+      before: '2022-06-02T20:59:59Z',
     },
     account: '/api/accounts/1',
   });
