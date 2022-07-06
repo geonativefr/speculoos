@@ -1,22 +1,5 @@
 var __defProp = Object.defineProperty;
-var __defProps = Object.defineProperties;
-var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols = Object.getOwnPropertySymbols;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __propIsEnum = Object.prototype.propertyIsEnumerable;
 var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp.call(b, prop))
-      __defNormalProp(a, prop, b[prop]);
-  if (__getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(b)) {
-      if (__propIsEnum.call(b, prop))
-        __defNormalProp(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
 var __publicField = (obj, key, value) => {
   __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
   return value;
@@ -100,16 +83,16 @@ class ApiClient {
     return new URL(uri, this.baseUri).toString();
   }
   mergeOptions(options) {
-    let output = __spreadValues({}, this.options);
+    let output = { ...this.options };
     if (Object.keys(output).includes("headers")) {
       output.headers = normalizeHeaders(output.headers);
     }
     for (let argument of arguments) {
-      let options2 = __spreadValues({}, argument);
+      let options2 = { ...argument };
       if (Object.keys(options2).includes("headers")) {
-        options2.headers = __spreadValues({}, normalizeHeaders(options2.headers));
+        options2.headers = { ...normalizeHeaders(options2.headers) };
       }
-      output = __spreadValues(__spreadValues({}, clone$1(output)), clone$1(options2));
+      output = { ...clone$1(output), ...clone$1(options2) };
     }
     return output;
   }
@@ -117,7 +100,7 @@ class ApiClient {
     url = `${unref(url)}`;
     options = this.mergeOptions({ method }, options);
     if (Object.keys(options).includes("headers")) {
-      options.headers = new Headers(__spreadValues(__spreadValues({}, defaultHeaders), normalizeHeaders(options.headers)));
+      options.headers = new Headers({ ...defaultHeaders, ...normalizeHeaders(options.headers) });
     }
     try {
       if (isRef(options == null ? void 0 : options.isLoading)) {
@@ -161,7 +144,7 @@ class PreventDuplicates {
     this.fetch = fetcher;
     return (url, options) => {
       try {
-        const hash = md5(JSON.stringify(__spreadValues({ url }, options)));
+        const hash = md5(JSON.stringify({ url, ...options }));
         const index = this.pendingRequests.findIndex((pending) => hash === pending.hash);
         if (index >= 0) {
           return this.pendingRequests[index].promise;
@@ -219,7 +202,7 @@ class Filter {
   normalize() {
     throw Error("This method is meant to be overriden.");
   }
-  static denormalize(input) {
+  async denormalize(input) {
     throw Error("This method is meant to be overriden.");
   }
 }
@@ -232,17 +215,18 @@ class ArrayFilter extends Filter {
   normalize() {
     return this.values;
   }
-  static denormalize(input) {
+  async denormalize(input) {
     if (typeof input === "string") {
       input = input.trim();
     }
     if ([void 0, null, ""].includes(input)) {
-      return new this([]);
+      this.values = [];
+      return;
     }
     if (!Array.isArray(input)) {
       input = [input];
     }
-    return new this(input);
+    this.values = input;
   }
 }
 var commonjsGlobal = typeof globalThis !== "undefined" ? globalThis : typeof window !== "undefined" ? window : typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : {};
@@ -268,21 +252,25 @@ var dayjs_min = { exports: {} };
       return { M: f, y: c, w: o, d: a, D: d, h: u, m: s, s: i, ms: r, Q: h }[t2] || String(t2 || "").toLowerCase().replace(/s$/, "");
     }, u: function(t2) {
       return t2 === void 0;
-    } }, D = "en", v = {};
-    v[D] = M;
+    } }, v = "en", D = {};
+    D[v] = M;
     var p = function(t2) {
       return t2 instanceof _;
-    }, S = function(t2, e2, n2) {
-      var r2;
-      if (!t2)
-        return D;
-      if (typeof t2 == "string")
-        v[t2] && (r2 = t2), e2 && (v[t2] = e2, r2 = t2);
-      else {
-        var i2 = t2.name;
-        v[i2] = t2, r2 = i2;
+    }, S = function t2(e2, n2, r2) {
+      var i2;
+      if (!e2)
+        return v;
+      if (typeof e2 == "string") {
+        var s2 = e2.toLowerCase();
+        D[s2] && (i2 = s2), n2 && (D[s2] = n2, i2 = s2);
+        var u2 = e2.split("-");
+        if (!i2 && u2.length > 1)
+          return t2(u2[0]);
+      } else {
+        var a2 = e2.name;
+        D[a2] = e2, i2 = a2;
       }
-      return !n2 && r2 && (D = r2), r2 || !n2 && D;
+      return !r2 && i2 && (v = i2), i2 || !r2 && v;
     }, w = function(t2, e2) {
       if (p(t2))
         return t2.clone();
@@ -348,8 +336,8 @@ var dayjs_min = { exports: {} };
           case f:
             return r2 ? $2(1, M3) : $2(0, M3 + 1);
           case o:
-            var D2 = this.$locale().weekStart || 0, v2 = (y2 < D2 ? y2 + 7 : y2) - D2;
-            return $2(r2 ? m3 - v2 : m3 + (6 - v2), M3);
+            var v2 = this.$locale().weekStart || 0, D2 = (y2 < v2 ? y2 + 7 : y2) - v2;
+            return $2(r2 ? m3 - D2 : m3 + (6 - D2), M3);
           case a:
           case d:
             return l2(g2 + "Hours", 0);
@@ -400,7 +388,7 @@ var dayjs_min = { exports: {} };
         if (!this.isValid())
           return n2.invalidDate || $;
         var r2 = t2 || "YYYY-MM-DDTHH:mm:ssZ", i2 = O.z(this), s2 = this.$H, u2 = this.$m, a2 = this.$M, o2 = n2.weekdays, f2 = n2.months, h2 = function(t3, n3, i3, s3) {
-          return t3 && (t3[n3] || t3(e2, r2)) || i3[n3].substr(0, s3);
+          return t3 && (t3[n3] || t3(e2, r2)) || i3[n3].slice(0, s3);
         }, c2 = function(t3) {
           return O.s(s2 % 12 || 12, t3, "0");
         }, d2 = n2.meridiem || function(t3, e3, n3) {
@@ -413,12 +401,12 @@ var dayjs_min = { exports: {} };
       }, m2.utcOffset = function() {
         return 15 * -Math.round(this.$d.getTimezoneOffset() / 15);
       }, m2.diff = function(r2, d2, $2) {
-        var l2, y2 = O.p(d2), M3 = w(r2), m3 = (M3.utcOffset() - this.utcOffset()) * e, g2 = this - M3, D2 = O.m(this, M3);
-        return D2 = (l2 = {}, l2[c] = D2 / 12, l2[f] = D2, l2[h] = D2 / 3, l2[o] = (g2 - m3) / 6048e5, l2[a] = (g2 - m3) / 864e5, l2[u] = g2 / n, l2[s] = g2 / e, l2[i] = g2 / t, l2)[y2] || g2, $2 ? D2 : O.a(D2);
+        var l2, y2 = O.p(d2), M3 = w(r2), m3 = (M3.utcOffset() - this.utcOffset()) * e, g2 = this - M3, v2 = O.m(this, M3);
+        return v2 = (l2 = {}, l2[c] = v2 / 12, l2[f] = v2, l2[h] = v2 / 3, l2[o] = (g2 - m3) / 6048e5, l2[a] = (g2 - m3) / 864e5, l2[u] = g2 / n, l2[s] = g2 / e, l2[i] = g2 / t, l2)[y2] || g2, $2 ? v2 : O.a(v2);
       }, m2.daysInMonth = function() {
         return this.endOf(f).$D;
       }, m2.$locale = function() {
-        return v[this.$L];
+        return D[this.$L];
       }, m2.locale = function(t2, e2) {
         if (!t2)
           return this.$L;
@@ -435,16 +423,16 @@ var dayjs_min = { exports: {} };
       }, m2.toString = function() {
         return this.$d.toUTCString();
       }, M2;
-    }(), b = _.prototype;
-    return w.prototype = b, [["$ms", r], ["$s", i], ["$m", s], ["$H", u], ["$W", a], ["$M", f], ["$y", c], ["$D", d]].forEach(function(t2) {
-      b[t2[1]] = function(e2) {
+    }(), T = _.prototype;
+    return w.prototype = T, [["$ms", r], ["$s", i], ["$m", s], ["$H", u], ["$W", a], ["$M", f], ["$y", c], ["$D", d]].forEach(function(t2) {
+      T[t2[1]] = function(e2) {
         return this.$g(e2, t2[0], t2[1]);
       };
     }), w.extend = function(t2, e2) {
       return t2.$i || (t2(e2, _, w), t2.$i = true), w;
     }, w.locale = S, w.isDayjs = p, w.unix = function(t2) {
       return w(1e3 * t2);
-    }, w.en = v[D], w.Ls = v, w.p = {}, w;
+    }, w.en = D[v], w.Ls = D, w.p = {}, w;
   });
 })(dayjs_min);
 var dayjs = dayjs_min.exports;
@@ -489,7 +477,7 @@ var utc$1 = { exports: {} };
             return null;
           var f3 = ("" + s3[0]).match(e) || ["-", 0, 0], n3 = f3[0], u3 = 60 * +f3[1] + +f3[2];
           return u3 === 0 ? 0 : n3 === "+" ? u3 : -u3;
-        }(s2)) === null)
+        }(s2), s2 === null))
           return this;
         var u2 = Math.abs(s2) <= 16 ? 60 * s2 : s2, o2 = this;
         if (f2)
@@ -506,7 +494,7 @@ var utc$1 = { exports: {} };
         var i2 = t2 || (this.$u ? "YYYY-MM-DDTHH:mm:ss[Z]" : "");
         return h.call(this, i2);
       }, u.valueOf = function() {
-        var t2 = this.$utils().u(this.$offset) ? 0 : this.$offset + (this.$x.$localOffset || new Date().getTimezoneOffset());
+        var t2 = this.$utils().u(this.$offset) ? 0 : this.$offset + (this.$x.$localOffset || this.$d.getTimezoneOffset());
         return this.$d.valueOf() - 6e4 * t2;
       }, u.isUTC = function() {
         return !!this.$u;
@@ -539,12 +527,12 @@ var timezone$1 = { exports: {} };
     return function(n, i, o) {
       var r, a = function(t2, n2, i2) {
         i2 === void 0 && (i2 = {});
-        var o2 = new Date(t2);
-        return function(t3, n3) {
+        var o2 = new Date(t2), r2 = function(t3, n3) {
           n3 === void 0 && (n3 = {});
-          var i3 = n3.timeZoneName || "short", o3 = t3 + "|" + i3, r2 = e[o3];
-          return r2 || (r2 = new Intl.DateTimeFormat("en-US", { hour12: false, timeZone: t3, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", timeZoneName: i3 }), e[o3] = r2), r2;
-        }(n2, i2).formatToParts(o2);
+          var i3 = n3.timeZoneName || "short", o3 = t3 + "|" + i3, r3 = e[o3];
+          return r3 || (r3 = new Intl.DateTimeFormat("en-US", { hour12: false, timeZone: t3, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", timeZoneName: i3 }), e[o3] = r3), r3;
+        }(n2, i2);
+        return r2.formatToParts(o2);
       }, u = function(e2, n2) {
         for (var i2 = a(e2, n2), r2 = [], u2 = 0; u2 < i2.length; u2 += 1) {
           var f2 = i2[u2], s2 = f2.type, m = f2.value, c = t[s2];
@@ -616,21 +604,20 @@ class DateRangeFilter extends Filter {
     }
     return { after, before };
   }
-  static denormalize(input) {
-    this.ensureTimezoneIsSet();
-    let after = null;
-    let before = null;
+  async denormalize(input) {
+    this.constructor.ensureTimezoneIsSet();
+    this.after = null;
+    this.before = null;
     if (!empty(input.after)) {
-      after = dayjs.tz(input.after, "UTC").tz(this.userTimezone).hour(0).minute(0).second(0).format("YYYY-MM-DD");
+      this.after = dayjs.tz(input.after, "UTC").tz(this.constructor.userTimezone).hour(0).minute(0).second(0).format("YYYY-MM-DD");
     }
     if (!empty(input.before)) {
-      before = dayjs.tz(input.before, "UTC").tz(this.userTimezone).hour(0).minute(0).second(0).add(1, "day").subtract(1, "second").format("YYYY-MM-DD");
+      this.before = dayjs.tz(input.before, "UTC").tz(this.constructor.userTimezone).hour(0).minute(0).second(0).add(1, "day").subtract(1, "second").format("YYYY-MM-DD");
     }
-    return new this({ after, before });
   }
   static ensureTimezoneIsSet() {
     var _a;
-    this.userTimezone = (_a = this.userTimezone) != null ? _a : dayjs.tz.guess() || "UTC";
+    this.constructor.userTimezone = (_a = this.constructor.userTimezone) != null ? _a : dayjs.tz.guess() || "UTC";
   }
 }
 __publicField(DateRangeFilter, "userTimezone");
@@ -656,21 +643,20 @@ class DatetimeRangeFilter extends Filter {
     }
     return { after, before };
   }
-  static denormalize(input) {
-    this.ensureTimezoneIsSet();
-    let after = null;
-    let before = null;
+  async denormalize(input) {
+    this.constructor.ensureTimezoneIsSet();
+    this.after = null;
+    this.before = null;
     if (!empty(input.after)) {
-      after = dayjs.tz(input.after, "UTC").tz(this.userTimezone).format("YYYY-MM-DD[T]HH:mm:ss[Z]");
+      this.after = dayjs.tz(input.after, "UTC").tz(this.constructor.userTimezone).format("YYYY-MM-DD[T]HH:mm:ss[Z]");
     }
     if (!empty(input.before)) {
-      before = dayjs.tz(input.before, "UTC").tz(this.userTimezone).format("YYYY-MM-DD[T]HH:mm:ss[Z]");
+      this.before = dayjs.tz(input.before, "UTC").tz(this.constructor.userTimezone).format("YYYY-MM-DD[T]HH:mm:ss[Z]");
     }
-    return new this({ after, before });
   }
   static ensureTimezoneIsSet() {
     var _a;
-    this.userTimezone = (_a = this.userTimezone) != null ? _a : dayjs.tz.guess() || "UTC";
+    this.constructor.userTimezone = (_a = this.constructor.userTimezone) != null ? _a : dayjs.tz.guess() || "UTC";
   }
 }
 __publicField(DatetimeRangeFilter, "userTimezone");
@@ -699,7 +685,7 @@ function deepPrune(input) {
   if (Array.isArray(input)) {
     return input.map(deepPrune);
   }
-  const output = __spreadValues({}, input);
+  const output = { ...input };
   Object.keys(output).forEach((key) => {
     if (output[key] instanceof Object) {
       output[key] = deepPrune(output[key]);
@@ -732,11 +718,16 @@ class FilterCollection {
     });
     return deepPrune(output);
   }
-  async denormalize(input, options) {
+  async denormalize(input) {
+    const promises = [];
     for (const key of this._filters) {
-      if (typeof input[key] !== "undefined") {
-        this[key] = await Object.getPrototypeOf(this[key]).constructor.denormalize(input[key], options);
+      const filter = this[key];
+      if (filter instanceof Filter && typeof input[key] !== "undefined") {
+        promises.push(filter.denormalize(input[key]));
       }
+    }
+    if (promises.length > 0) {
+      await Promise.all(promises);
     }
     return this;
   }
@@ -752,7 +743,7 @@ async function useFilters(initialState = {}, options = {
   const router = useRouter();
   const filters = ref(initialState());
   async function hydrateFiltersFromRoute(route) {
-    Object.assign(unref(filters), await unref(filters).denormalize(route.query, options));
+    Object.assign(unref(filters), await unref(filters).denormalize(route.query));
   }
   function clear() {
     filters.value = clone(initialState());
@@ -767,7 +758,7 @@ async function useFilters(initialState = {}, options = {
   async function submit(additionalParams = {}) {
     var _a;
     const route = (_a = unref(options.targetRoute)) != null ? _a : currentRoute;
-    await router.push(Object.assign(__spreadValues({}, route), { query: buildQueryParams(additionalParams) }));
+    await router.push(Object.assign({ ...route }, { query: buildQueryParams(additionalParams) }));
   }
   onBeforeRouteUpdate((to) => hydrateFiltersFromRoute(to));
   await hydrateFiltersFromRoute(currentRoute);
@@ -780,22 +771,22 @@ async function useFilters(initialState = {}, options = {
 }
 const createStore = async ({ state = {}, methods = {}, name = "store" } = {}) => {
   state = reactive(state);
-  const store = __spreadProps(__spreadValues({
+  const store = {
     name,
-    state
-  }, Object.keys(methods).reduce(function(resolvedMethods, name2) {
-    const func = methods[name2];
-    resolvedMethods[name2] = function() {
-      return func(state, ...arguments);
-    };
-    return resolvedMethods;
-  }, {})), {
+    state,
+    ...Object.keys(methods).reduce(function(resolvedMethods, name2) {
+      const func = methods[name2];
+      resolvedMethods[name2] = function() {
+        return func(state, ...arguments);
+      };
+      return resolvedMethods;
+    }, {}),
     async use(plugin) {
       await plugin.install(this);
       return this;
     }
-  });
-  store.install = (app) => app.provide(name, __spreadProps(__spreadValues({}, store), { state: readonly(state) }));
+  };
+  store.install = (app) => app.provide(name, { ...store, state: readonly(state) });
   return store;
 };
 const useStore = (name = "store") => inject(name);
@@ -1000,11 +991,12 @@ class ConstraintViolationList extends HydraError {
 }
 class HydraCollection {
   constructor(data = {}) {
-    Object.assign(this, __spreadProps(__spreadValues({}, data), {
+    Object.assign(this, {
+      ...data,
       *[Symbol.iterator]() {
         yield* this["hydra:member"] || [];
       }
-    }));
+    });
   }
   get length() {
     return this.items.length;
@@ -1363,7 +1355,7 @@ class HydraPlugin {
     this.api = api;
     const { endpoints, classmap } = options;
     this.endpoints = new HydraEndpoints(endpoints != null ? endpoints : {});
-    this.classmap = __spreadValues(__spreadValues({}, DEFAULT_CLASSMAP), classmap);
+    this.classmap = { ...DEFAULT_CLASSMAP, ...classmap };
     this.errorHandler = (_a = options.errorHandler) != null ? _a : DEFAULT_ERROR_HANDLER;
   }
   factory(item, statusCode) {
@@ -1522,11 +1514,13 @@ async function denormalizeMultiple(items, store) {
   return Promise.all(items.map((item) => denormalizeSingle(item, store)));
 }
 class ItemFilter extends Filter {
-  constructor(items, multiple = false) {
+  constructor(items, { store, multiple = false }) {
     super();
     __publicField(this, "items", []);
     __publicField(this, "multiple");
+    __publicField(this, "store");
     this.items = Array.isArray(items) ? items : [items];
+    this.store = store;
     this.multiple = multiple;
   }
   get item() {
@@ -1540,11 +1534,12 @@ class ItemFilter extends Filter {
   normalize() {
     return this.multiple || this.items.length > 1 ? normalizeMultiple(this.items) : normalizeSingle(this.item);
   }
-  static async denormalize(input, { store, multiple }) {
+  async denormalize(input) {
     if (Array.isArray(input)) {
-      return new this(await denormalizeMultiple(input, store), multiple != null ? multiple : true);
+      this.items = await denormalizeMultiple(input, this.store);
+      return;
     }
-    return new this([await denormalizeSingle(input, store)], multiple != null ? multiple : false);
+    this.items = [await denormalizeSingle(input, this.store)];
   }
 }
 const reverts = {
@@ -1570,11 +1565,11 @@ class OrderFilter extends Filter {
   normalize() {
     return this.order;
   }
-  static denormalize(input) {
+  async denormalize(input) {
+    this.order = {};
     if (typeof input === "object" && input != null) {
-      return new this(input);
+      this.order = input;
     }
-    return new this();
   }
 }
 class TextFilter extends Filter {
@@ -1590,14 +1585,15 @@ class TextFilter extends Filter {
     }
     return this.value.trim();
   }
-  static denormalize(input) {
+  async denormalize(input) {
     if (typeof input === "string") {
       input = input.trim();
     }
     if ([void 0, null, ""].includes(input)) {
-      return new this(null);
+      this.value = null;
+      return;
     }
-    return new this(input);
+    this.value = input;
   }
 }
 class TruthyFilter extends Filter {
@@ -1609,12 +1605,13 @@ class TruthyFilter extends Filter {
   normalize() {
     return this.value ? "true" : "false";
   }
-  static denormalize(input) {
+  async denormalize(input) {
     if (input == null) {
-      return new this(false);
+      this.value = false;
+      return;
     }
     input = `${input}`.trim();
-    return new this(["true", "on", "yes", "1"].includes(input.toLowerCase()));
+    this.value = ["true", "on", "yes", "1"].includes(input.toLowerCase());
   }
 }
 class Vulcain {
