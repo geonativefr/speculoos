@@ -1604,17 +1604,20 @@ class TextFilter extends Filter {
   }
 }
 class TruthyFilter extends Filter {
-  constructor(value = false) {
+  constructor(value = null) {
     super();
     __publicField(this, "value");
     this.value = value;
   }
   normalize() {
-    return this.value ? "true" : "false";
+    if (this.value == null) {
+      return null;
+    }
+    return this.value ? "true" : null;
   }
   async denormalize(input) {
     if (input == null) {
-      this.value = false;
+      this.value = null;
       return;
     }
     input = `${input}`.trim();
