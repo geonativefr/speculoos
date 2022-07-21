@@ -3,18 +3,22 @@ import Filter from './filter.js';
 export class TruthyFilter extends Filter {
   value;
 
-  constructor(value = false) {
+  constructor(value = null) {
     super();
     this.value = value;
   }
 
   normalize() {
-    return this.value ? 'true' : 'false';
+    if (null == this.value) {
+      return null;
+    }
+
+    return this.value ? 'true' : null;
   }
 
   async denormalize(input) {
     if (null == input) {
-      this.value = false;
+      this.value = null;
 
       return;
     }
