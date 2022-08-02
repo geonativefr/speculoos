@@ -15,11 +15,11 @@ it('should work', () => {
 
   filter.denormalize('0');
   expect(filter.value).toBe(false);
-  expect(filter.normalize()).toBe(null);
+  expect(filter.normalize()).toBe('false');
 
   filter.denormalize('false');
   expect(filter.value).toBe(false);
-  expect(filter.normalize()).toBe(null);
+  expect(filter.normalize()).toBe('false');
 
   filter.denormalize(1);
   expect(filter.value).toBe(true);
@@ -27,11 +27,11 @@ it('should work', () => {
 
   filter.denormalize(0);
   expect(filter.value).toBe(false);
-  expect(filter.normalize()).toBe(null);
+  expect(filter.normalize()).toBe('false');
 
   filter.denormalize(false);
   expect(filter.value).toBe(false);
-  expect(filter.normalize()).toBe(null);
+  expect(filter.normalize()).toBe('false');
 
   filter.denormalize(true);
   expect(filter.value).toBe(true);

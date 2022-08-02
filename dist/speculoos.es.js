@@ -1613,7 +1613,7 @@ class TruthyFilter extends Filter {
     if (this.value == null) {
       return null;
     }
-    return this.value ? "true" : null;
+    return this.value ? "true" : "false";
   }
   async denormalize(input) {
     if (input == null) {

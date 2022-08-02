@@ -13,7 +13,7 @@ export class TruthyFilter extends Filter {
       return null;
     }
 
-    return this.value ? 'true' : null;
+    return this.value ? 'true' : 'false';
   }
 
   async denormalize(input) {
