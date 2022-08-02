@@ -2,8 +2,10 @@ import { TruthyFilter } from '../truthy-filter.js';
 
 it('should work', () => {
   const filter = new TruthyFilter();
-  filter.denormalize('yes');
+  expect(filter.value).toBe(null);
+  expect(filter.normalize()).toBe(null);
 
+  filter.denormalize('yes');
   expect(filter.value).toBe(true);
   expect(filter.normalize()).toBe('true');
 
@@ -34,4 +36,12 @@ it('should work', () => {
   filter.denormalize(true);
   expect(filter.value).toBe(true);
   expect(filter.normalize()).toBe('true');
+
+  filter.denormalize(null);
+  expect(filter.value).toBe(null);
+  expect(filter.normalize()).toBe(null);
+
+  filter.denormalize(undefined);
+  expect(filter.value).toBe(null);
+  expect(filter.normalize()).toBe(null);
 });
