@@ -232,7 +232,7 @@ export class HydraPlugin {
         object['@type'] = typeOrObject;
       }
       return this.factory(object);
-    }
+    };
   }
 }
 
