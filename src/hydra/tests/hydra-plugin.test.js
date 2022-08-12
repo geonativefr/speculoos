@@ -287,3 +287,28 @@ it('filters items by type', async () => {
   expect(filtered.length).toBe(2);
   expect(filtered.map(item => item.name)).toEqual(['foo', 'foobar']);
 });
+
+it('creates a typed object', async () => {
+  let typedItem;
+  class Foo {
+    name;
+  }
+  const storeFactory = await (await createStore()).use(new HydraPlugin(undefined, {classmap: {Foo}}));
+  const store = await getInjectedStore(storeFactory);
+
+  // When
+  typedItem = store.factory({'@type': 'Foo', name: 'foo'});
+
+  // Then
+  expect(typedItem).toBeInstanceOf(Foo);
+  expect(typedItem.name).toBe('foo');
+  expect(typedItem).toEqual({'@type': 'Foo', name: 'foo'});
+
+  // When
+  typedItem = store.factory('Foo', {name: 'foo'});
+
+  // Then
+  expect(typedItem).toBeInstanceOf(Foo);
+  expect(typedItem.name).toBe('foo');
+  expect(typedItem).toEqual({'@type': 'Foo', name: 'foo'});
+});

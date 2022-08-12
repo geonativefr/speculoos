@@ -226,6 +226,13 @@ export class HydraPlugin {
     store.getRelations = (itemsOrIris, options) => this.getRelations(store, itemsOrIris, options);
     store.endpoint = (name) => store.state.endpoints[name];
     store.getItemsByType = (type) => store.state.items.filter(item => type === item['@type']);
+    store.factory = (typeOrObject, object) => {
+      object = object ?? typeOrObject;
+      if ('string' === typeof typeOrObject) {
+        object['@type'] = typeOrObject;
+      }
+      return this.factory(object);
+    };
   }
 }
 
