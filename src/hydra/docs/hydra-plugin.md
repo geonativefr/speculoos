@@ -149,7 +149,24 @@ plugin.endpoints['Book'].paginated(false); // /api/books?pagination=0
 plugin.endpoints['Book'].synchronize(); // /api/books?foo=bar&page=2
 ```
 
-## Synchronize relations
+## Relations
+
+You can use `store.getRelation()` and `store.getRelations()` (when multiple) to retrieve the relations of an item.
+The difference is that a relation which is already an object, will be **returned as-is** and **won't be stored**,
+because 1) a relation can be a partial item and 2) the full item may not be 100% accessible on purpose (403 on GET).
+
+| Method          | Input Type   | IRI known in store? | Result                                  |
+| --------------- | ------------ | ------------------- | --------------------------------------- |
+| `getItem()`     | IRI (string) |                 Yes | Returns the existing item in the store. |
+| `getRelation()` | IRI (string) |                 Yes | Returns the existing item in the store. |
+| `getItem()`     | Object       |                 Yes | Returns the existing item in the store (matching input['@id']), regardless of the input object. |
+| `getRelation()` | Object       |                 Yes | Returns the existing item in the store, regardless of the input object (except if `options.useExisting` is `false`).|
+| `getItem()`     | IRI (string) |                  No | Retrieves the item through `fetchItem()`, stores it, returns it. |
+| `getRelation()` | IRI (string) |                  No | Transfers to `getItem()`. |
+| `getItem()`     | Object       |                  No | Retrieves the item through `fetchItem(input['@id'])`, stores it, returns it, regardless of the input object. |
+| `getRelation()` | Object       |                  No | Returns the input object, without storing it (except if `options.force` is `true`, which will trigger a `getItem()`). |
+
+### Synchronize relations
 
 Instead getting a relation with a property:
 ```js

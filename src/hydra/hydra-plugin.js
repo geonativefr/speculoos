@@ -145,10 +145,6 @@ export class HydraPlugin {
     if (null != existingItem) {
       return existingItem;
     }
-    if ('object' === typeof itemOrIri) {
-      const item = this.factory(itemOrIri);
-      return this.storeItem({state}, item);
-    }
     return await this.fetchItem({state}, iri, options);
   }
 
@@ -185,17 +181,24 @@ export class HydraPlugin {
     }
   }
 
-  async getRelation({state}, itemOrIri, options) {
+  async getRelation({state}, itemOrIri, options = {}) {
     if (null === itemOrIri) {
       return null;
     }
 
-    if ('object' === typeof itemOrIri) {
-      return itemOrIri;
-    }
-
     if ('function' === typeof itemOrIri) {
       return computedAsPromise(() => this.getRelation({state}, itemOrIri(), options));
+    }
+
+    if (true === (options.useExisting ?? true)) {
+      const existingItem = getItemByIri(state.items, itemOrIri);
+      if (null != existingItem) {
+        return existingItem;
+      }
+    }
+
+    if ('object' === typeof itemOrIri && false === (options.force ?? false)) {
+      return itemOrIri;
     }
 
     return await this.getItem({state}, itemOrIri, options);
