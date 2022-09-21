@@ -144,6 +144,63 @@ it('gets a relation', async () => {
   expect(Array.from(store.state.items)[0]).toEqual({'@id': '/api/foos/1', name: 'foo'});
 });
 
+it('forces calling getItem even if the relation is an object, when asked to', async () => {
+  const bar = {
+    '@id': '/api/bars/1',
+    fooAsIri: '/api/foos/1',
+    fooAsObject: {'@id': '/api/foos/1', name: 'temporary name'},
+  };
+  let item;
+  const store = await createStore();
+  await store.use(plugin);
+  response.value = mockResponse({body: JSON.stringify({'@id': '/api/foos/1', name: 'foo'})});
+  item = await store.getRelation(bar.fooAsObject, {force: true});
+  expect(item).toEqual({'@id': '/api/foos/1', name: 'foo'});
+  expect(Array.from(store.state.items)).toHaveLength(1);
+
+  item = await store.getRelation(bar.fooAsIri);
+  expect(item).toEqual({'@id': '/api/foos/1', name: 'foo'});
+  expect(Array.from(store.state.items)[0]).toEqual({'@id': '/api/foos/1', name: 'foo'});
+});
+
+it('reuses an existing relation by default', async () => {
+  const bar = {
+    '@id': '/api/bars/1',
+    fooAsIri: '/api/foos/1',
+    fooAsObject: {'@id': '/api/foos/1', name: 'temporary name'},
+  };
+  let item;
+  const store = await createStore();
+  await store.use(plugin);
+  response.value = mockResponse({body: JSON.stringify({'@id': '/api/foos/1', name: 'foo'})});
+  item = await store.getRelation(bar.fooAsIri);
+  expect(item).toEqual({'@id': '/api/foos/1', name: 'foo'});
+  expect(Array.from(store.state.items)).toHaveLength(1);
+
+  item = await store.getRelation(bar.fooAsObject);
+  expect(item).toEqual({'@id': '/api/foos/1', name: 'foo'});
+  expect(Array.from(store.state.items)[0]).toEqual({'@id': '/api/foos/1', name: 'foo'});
+});
+
+it('doesn\'t reuse an existing relation when asked to', async () => {
+  const bar = {
+    '@id': '/api/bars/1',
+    fooAsIri: '/api/foos/1',
+    fooAsObject: {'@id': '/api/foos/1', name: 'temporary name'},
+  };
+  let item;
+  const store = await createStore();
+  await store.use(plugin);
+  response.value = mockResponse({body: JSON.stringify({'@id': '/api/foos/1', name: 'foo'})});
+  item = await store.getRelation(bar.fooAsIri);
+  expect(item).toEqual({'@id': '/api/foos/1', name: 'foo'});
+  expect(Array.from(store.state.items)).toHaveLength(1);
+
+  item = await store.getRelation(bar.fooAsObject, {useExisting: false});
+  expect(item).toEqual({'@id': '/api/foos/1', name: 'temporary name'});
+  expect(Array.from(store.state.items)[0]).toEqual({'@id': '/api/foos/1', name: 'foo'});
+});
+
 it('fetches a collection', async () => {
   let collection;
   const storeFactory = await (await createStore()).use(plugin);
