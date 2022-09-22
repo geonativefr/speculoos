@@ -4,7 +4,7 @@ import { ref, unref } from 'vue';
 import { ApiClient } from '../../api-client/index.js';
 import { HydraPlugin } from '../hydra-plugin.js';
 import { mockResponse } from '../../api-client/tests/setup.js';
-import { useFormValidation, useItemForm, ConstraintViolationList } from '../hydra-forms.js';
+import { useFormValidation, useItemForm, ConstraintViolationList, normalizeItemRelations } from '../hydra-forms.js';
 
 const response = ref();
 const fetcher = async () => {
@@ -192,4 +192,30 @@ it('binds violations', () => {
   resetValidity(FormHTMLElement);
   // Then
   expect(validate(FormHTMLElement)).toBe(true);
+});
+
+it('normalize the item\'s relations', () => {
+  const item = {
+    name: 'foo',
+    iriRelation: '/api/foo/1',
+    itemRelation: {'@id': '/api/foo/2'},
+    objectRelation: {name: 'Bob'},
+    mixedRelations: [
+      {'@id': '/api/foo/3'},
+      '/api/foo/4',
+      {name: 'Alice'}
+    ],
+  }
+
+  expect(normalizeItemRelations(item)).toEqual({
+    name: 'foo',
+    iriRelation: '/api/foo/1',
+    itemRelation: '/api/foo/2',
+    objectRelation: {name: 'Bob'},
+    mixedRelations: [
+      '/api/foo/3',
+      '/api/foo/4',
+      {name: 'Alice'}
+    ],
+  })
 });

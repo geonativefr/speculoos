@@ -1,5 +1,5 @@
-import { computed, reactive, ref, unref, watch } from 'vue';
-import { hasIri } from './iri-functions.js';
+import { computed, isRef, reactive, ref, unref, watch } from 'vue';
+import { getIri, hasIri } from './iri-functions.js';
 import { useStore } from '../store/index.js';
 import { clone } from '../clone/index.js';
 
@@ -9,6 +9,25 @@ function clearObject(object) {
   }
   Object.keys(object).forEach(key => delete object[key]);
   return object;
+}
+
+function normalizeRelation(relation) {
+  return hasIri(relation) ? getIri(relation) : relation;
+}
+
+export function normalizeItemRelations(item) {
+  const cloned = clone(item);
+  const props = Object.keys(cloned);
+  for (const prop of props) {
+    const value = cloned[prop];
+    if (Array.isArray(value)) {
+      cloned[prop] = value.map(relation => normalizeRelation(relation));
+    } else if ('object' === typeof value && null != value) {
+      cloned[prop] = normalizeRelation(value);
+    }
+  }
+
+  return cloned;
 }
 
 function recreateState(object, withObject) {
@@ -25,12 +44,15 @@ export function useItemForm(itemInitialState) {
   watch(initialState, newInitialState => recreateState(item, newInitialState));
 
   const isUnsavedDraft = computed(() => JSON.stringify(unref(item)) !== JSON.stringify(unref(initialState)));
-  const reset = () => recreateState(item, clone(unref(itemInitialState)));
+  const reset = (resetItem) => recreateState(item, clone(unref(resetItem ?? itemInitialState)));
 
-  const submit = async () => {
+  const submit = async (submittedItem) => {
+    if (isRef(submittedItem)) {
+      submittedItem = unref(submittedItem);
+    }
     try {
       isSubmitting.value = true;
-      const updatedItem = await store.upsertItem(item);
+      const updatedItem = await store.upsertItem(normalizeItemRelations(submittedItem ?? item));
       initialState.value = updatedItem;
       recreateState(item, clone(updatedItem));
       return updatedItem;
