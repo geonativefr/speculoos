@@ -205,7 +205,7 @@ it('normalize the item\'s relations', () => {
       '/api/foo/4',
       {name: 'Alice'}
     ],
-  }
+  };
 
   expect(normalizeItemRelations(item)).toEqual({
     name: 'foo',
@@ -217,5 +217,5 @@ it('normalize the item\'s relations', () => {
       '/api/foo/4',
       {name: 'Alice'}
     ],
-  })
+  });
 });
