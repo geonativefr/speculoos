@@ -1052,6 +1052,22 @@ function clearObject(object) {
   Object.keys(object).forEach((key) => delete object[key]);
   return object;
 }
+function normalizeRelation(relation) {
+  return hasIri(relation) ? getIri(relation) : relation;
+}
+function normalizeItemRelations(item) {
+  const cloned = clone(item);
+  const props = Object.keys(cloned);
+  for (const prop of props) {
+    const value = cloned[prop];
+    if (Array.isArray(value)) {
+      cloned[prop] = value.map((relation) => normalizeRelation(relation));
+    } else if ("object" === typeof value && null != value) {
+      cloned[prop] = normalizeRelation(value);
+    }
+  }
+  return cloned;
+}
 function recreateState(object, withObject) {
   object = clearObject(object);
   return Object.assign(object, withObject);
@@ -1064,11 +1080,14 @@ function useItemForm(itemInitialState) {
   const isSubmitting = ref(false);
   watch(initialState, (newInitialState) => recreateState(item, newInitialState));
   const isUnsavedDraft = computed(() => JSON.stringify(unref(item)) !== JSON.stringify(unref(initialState)));
-  const reset = () => recreateState(item, clone(unref(itemInitialState)));
-  const submit = async () => {
+  const reset = (resetItem) => recreateState(item, clone(unref(resetItem != null ? resetItem : itemInitialState)));
+  const submit = async (submittedItem) => {
+    if (isRef(submittedItem)) {
+      submittedItem = unref(submittedItem);
+    }
     try {
       isSubmitting.value = true;
-      const updatedItem = await store.upsertItem(item);
+      const updatedItem = await store.upsertItem(normalizeItemRelations(submittedItem != null ? submittedItem : item));
       initialState.value = updatedItem;
       recreateState(item, clone(updatedItem));
       return updatedItem;
@@ -1672,4 +1691,4 @@ class Vulcain {
 function vulcain({ fields, preload } = {}) {
   return Object.assign(new Vulcain(), { fields }, { preload }).headers;
 }
-export { ApiClient, ArrayFilter, ConstraintViolationList, DateRangeFilter, DatetimeRangeFilter, FakeEventSource, FilterCollection, HttpError, HydraCollection, HydraEndpoint, HydraEndpoints, HydraError, HydraPlugin, ItemFilter, Mercure, OrderFilter, TextFilter, TruthyFilter, Violation, areSameIris, checkValidItem, clone, containsIri, createMercure, createStore, getId, getIds, getIri, getIris, getItemByIri, getItemIndexByIri, getItemsByType, hasIri, mercureSync, normalizeIris, on, partialItem, useEndpoint, useFilters, useFormValidation, useItemForm, useMercure, useMercureSync, useStore, vulcain, withoutDuplicates, withoutIri };
+export { ApiClient, ArrayFilter, ConstraintViolationList, DateRangeFilter, DatetimeRangeFilter, FakeEventSource, FilterCollection, HttpError, HydraCollection, HydraEndpoint, HydraEndpoints, HydraError, HydraPlugin, ItemFilter, Mercure, OrderFilter, TextFilter, TruthyFilter, Violation, areSameIris, checkValidItem, clone, containsIri, createMercure, createStore, getId, getIds, getIri, getIris, getItemByIri, getItemIndexByIri, getItemsByType, hasIri, mercureSync, normalizeIris, normalizeItemRelations, on, partialItem, useEndpoint, useFilters, useFormValidation, useItemForm, useMercure, useMercureSync, useStore, vulcain, withoutDuplicates, withoutIri };
