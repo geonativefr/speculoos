@@ -48,7 +48,7 @@ export class HydraEndpoint {
     return new HydraEndpoint(uri.withQuery(qs.toString()).toString());
   }
 
-  paginated(itemsPerPageOrFalse) {
+  paginated(itemsPerPageOrFalse, partial = false) {
     itemsPerPageOrFalse = unref(itemsPerPageOrFalse);
     if (false === itemsPerPageOrFalse) {
       return this.withQuery({
@@ -59,6 +59,9 @@ export class HydraEndpoint {
     const pager = {pagination: 1};
     if (itemsPerPageOrFalse) {
       pager.itemsPerPage = itemsPerPageOrFalse;
+    }
+    if (partial) {
+      pager.partial = 1;
     }
     return this.withQuery(pager);
   }
