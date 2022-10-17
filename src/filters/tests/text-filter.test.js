@@ -17,4 +17,7 @@ it('should work', () => {
 
   filter.denormalize(' ');
   expect(filter.normalize()).toBe(null);
+
+  filter.denormalize(123);
+  expect(filter.normalize()).toBe('123');
 });
