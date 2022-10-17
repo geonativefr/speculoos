@@ -56,7 +56,7 @@ export class HydraEndpoint {
       pagination: false === itemsPerPageOrFalse ? 0 : 1,
       partial: false === partial ? undefined : 1,
       itemsPerPage: undefined,
-    }
+    };
 
     if (itemsPerPageOrFalse) {
       pager.itemsPerPage = itemsPerPageOrFalse;
