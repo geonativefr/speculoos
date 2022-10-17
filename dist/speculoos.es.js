@@ -845,17 +845,14 @@ class HydraEndpoint {
   }
   paginated(itemsPerPageOrFalse, partial = false) {
     itemsPerPageOrFalse = unref(itemsPerPageOrFalse);
-    if (false === itemsPerPageOrFalse) {
-      return this.withQuery({
-        pagination: 0
-      });
-    }
-    const pager = { pagination: 1 };
+    partial = unref(partial);
+    const pager = {
+      pagination: false === itemsPerPageOrFalse ? 0 : 1,
+      partial: false === partial ? void 0 : 1,
+      itemsPerPage: void 0
+    };
     if (itemsPerPageOrFalse) {
       pager.itemsPerPage = itemsPerPageOrFalse;
-    }
-    if (true === unref(partial)) {
-      pager.partial = 1;
     }
     return this.withQuery(pager);
   }

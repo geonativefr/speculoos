@@ -50,18 +50,16 @@ export class HydraEndpoint {
 
   paginated(itemsPerPageOrFalse, partial = false) {
     itemsPerPageOrFalse = unref(itemsPerPageOrFalse);
-    if (false === itemsPerPageOrFalse) {
-      return this.withQuery({
-        pagination: 0,
-      });
+    partial = unref(partial);
+
+    const pager = {
+      pagination: false === itemsPerPageOrFalse ? 0 : 1,
+      partial: false === partial ? undefined : 1,
+      itemsPerPage: undefined,
     }
 
-    const pager = {pagination: 1};
     if (itemsPerPageOrFalse) {
       pager.itemsPerPage = itemsPerPageOrFalse;
-    }
-    if (true === unref(partial)) {
-      pager.partial = 1;
     }
     return this.withQuery(pager);
   }
