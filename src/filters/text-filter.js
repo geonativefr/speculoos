@@ -1,11 +1,19 @@
 import Filter from './filter.js';
 
 export class TextFilter extends Filter {
-  value;
+  _value;
 
   constructor(value = null) {
     super();
     this.value = value;
+  }
+
+  get value() {
+    return this._value;
+  }
+
+  set value(value) {
+    this._value = !value ? value : value.toString();
   }
 
   normalize() {
