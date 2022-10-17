@@ -14,7 +14,7 @@ import { URI, QueryString } from "psr7-js";
 import { v4 } from "uuid";
 import mitt from "mitt";
 import uriTemplate from "uri-templates";
-import { asyncComputed } from "@vueuse/core";
+import { asyncComputed, until } from "@vueuse/core";
 class HttpError extends Error {
   constructor(response) {
     super(response.statusText);
@@ -118,20 +118,26 @@ class ApiClient {
     return await this.request("GET", this.resolve(uri), this.mergeOptions(options));
   }
   async post(uri, data, options = {}) {
-    return await this.request("POST", this.resolve(uri), this.mergeOptions({
-      body: JSON.stringify(unref(data)),
-      headers: {
-        "Content-Type": "application/json"
-      }
-    }, options));
+    return await this.request("POST", this.resolve(uri), this.mergeOptions(
+      {
+        body: JSON.stringify(unref(data)),
+        headers: {
+          "Content-Type": "application/json"
+        }
+      },
+      options
+    ));
   }
   async put(uri, data, options = {}) {
-    return await this.request("PUT", this.resolve(uri), this.mergeOptions({
-      body: JSON.stringify(unref(data)),
-      headers: {
-        "Content-Type": "application/json"
-      }
-    }, options));
+    return await this.request("PUT", this.resolve(uri), this.mergeOptions(
+      {
+        body: JSON.stringify(unref(data)),
+        headers: {
+          "Content-Type": "application/json"
+        }
+      },
+      options
+    ));
   }
   async delete(uri, options = {}) {
     return await this.request("DELETE", this.resolve(uri), this.mergeOptions(options));
@@ -151,13 +157,16 @@ class PreventDuplicates {
         }
         const promise = this.fetch(url, options).then(tapResponse);
         this.pendingRequests.push({ hash, promise });
-        return promise.then((result) => {
-          this.removePendingRequest(hash);
-          return result;
-        }, (error) => {
-          this.removePendingRequest(hash);
-          throw error;
-        });
+        return promise.then(
+          (result) => {
+            this.removePendingRequest(hash);
+            return result;
+          },
+          (error) => {
+            this.removePendingRequest(hash);
+            throw error;
+          }
+        );
       } catch (e) {
         return this.fetch(url, options);
       }
@@ -174,11 +183,11 @@ function withoutDuplicates(fetcher = void 0) {
   return new PreventDuplicates(fetcher);
 }
 const clone = (orig, deep = true, duplicates = []) => {
-  if (typeof orig !== "object" || orig == null) {
+  if ("object" !== typeof orig || null == orig) {
     return orig;
   }
   const duplicate = duplicates.find((item) => item.orig === orig);
-  if (duplicate != null) {
+  if (null != duplicate) {
     return duplicate.cloned;
   }
   let cloned = Object.assign(Object.create(Object.getPrototypeOf(orig)), orig);
@@ -188,12 +197,12 @@ const clone = (orig, deep = true, duplicates = []) => {
   duplicates.push({ orig, cloned });
   if (deep) {
     for (const prop in cloned) {
-      if (typeof cloned[prop] === "object" && cloned[prop] != null) {
+      if ("object" === typeof cloned[prop] && null != cloned[prop]) {
         cloned[prop] = clone(cloned[prop], deep, duplicates);
       }
     }
   }
-  if ("__clone" in cloned && typeof cloned.__clone === "function") {
+  if ("__clone" in cloned && "function" === typeof cloned.__clone) {
     cloned.__clone();
   }
   return cloned;
@@ -216,7 +225,7 @@ class ArrayFilter extends Filter {
     return this.values;
   }
   async denormalize(input) {
-    if (typeof input === "string") {
+    if ("string" === typeof input) {
       input = input.trim();
     }
     if ([void 0, null, ""].includes(input)) {
@@ -251,7 +260,7 @@ var dayjs_min = { exports: {} };
     }, p: function(t2) {
       return { M: f, y: c, w: o, d: a, D: d, h: u, m: s, s: i, ms: r, Q: h }[t2] || String(t2 || "").toLowerCase().replace(/s$/, "");
     }, u: function(t2) {
-      return t2 === void 0;
+      return void 0 === t2;
     } }, v = "en", D = {};
     D[v] = M;
     var p = function(t2) {
@@ -260,7 +269,7 @@ var dayjs_min = { exports: {} };
       var i2;
       if (!e2)
         return v;
-      if (typeof e2 == "string") {
+      if ("string" == typeof e2) {
         var s2 = e2.toLowerCase();
         D[s2] && (i2 = s2), n2 && (D[s2] = n2, i2 = s2);
         var u2 = e2.split("-");
@@ -274,7 +283,7 @@ var dayjs_min = { exports: {} };
     }, w = function(t2, e2) {
       if (p(t2))
         return t2.clone();
-      var n2 = typeof e2 == "object" ? e2 : {};
+      var n2 = "object" == typeof e2 ? e2 : {};
       return n2.date = t2, n2.args = arguments, new _(n2);
     }, O = g;
     O.l = S, O.i = p, O.w = function(t2, e2) {
@@ -288,13 +297,13 @@ var dayjs_min = { exports: {} };
       return m2.parse = function(t2) {
         this.$d = function(t3) {
           var e2 = t3.date, n2 = t3.utc;
-          if (e2 === null)
+          if (null === e2)
             return new Date(NaN);
           if (O.u(e2))
             return new Date();
           if (e2 instanceof Date)
             return new Date(e2);
-          if (typeof e2 == "string" && !/Z$/i.test(e2)) {
+          if ("string" == typeof e2 && !/Z$/i.test(e2)) {
             var r2 = e2.match(l);
             if (r2) {
               var i2 = r2[2] - 1 || 0, s2 = (r2[7] || "0").substring(0, 3);
@@ -470,19 +479,19 @@ var utc$1 = { exports: {} };
         var n2 = this.$utils().u;
         if (n2(s2))
           return this.$u ? 0 : n2(this.$offset) ? a.call(this) : this.$offset;
-        if (typeof s2 == "string" && (s2 = function(t2) {
-          t2 === void 0 && (t2 = "");
+        if ("string" == typeof s2 && (s2 = function(t2) {
+          void 0 === t2 && (t2 = "");
           var s3 = t2.match(i);
           if (!s3)
             return null;
           var f3 = ("" + s3[0]).match(e) || ["-", 0, 0], n3 = f3[0], u3 = 60 * +f3[1] + +f3[2];
-          return u3 === 0 ? 0 : n3 === "+" ? u3 : -u3;
-        }(s2), s2 === null))
+          return 0 === u3 ? 0 : "+" === n3 ? u3 : -u3;
+        }(s2), null === s2))
           return this;
         var u2 = Math.abs(s2) <= 16 ? 60 * s2 : s2, o2 = this;
         if (f2)
-          return o2.$offset = u2, o2.$u = s2 === 0, o2;
-        if (s2 !== 0) {
+          return o2.$offset = u2, o2.$u = 0 === s2, o2;
+        if (0 !== s2) {
           var r2 = this.$u ? this.toDate().getTimezoneOffset() : -1 * this.utcOffset();
           (o2 = this.local().add(u2 + r2, t)).$offset = u2, o2.$x.$localOffset = r2;
         } else
@@ -505,7 +514,7 @@ var utc$1 = { exports: {} };
       };
       var l = u.toDate;
       u.toDate = function(t2) {
-        return t2 === "s" && this.$offset ? n(this.format("YYYY-MM-DD HH:mm:ss:SSS")).toDate() : l.call(this);
+        return "s" === t2 && this.$offset ? n(this.format("YYYY-MM-DD HH:mm:ss:SSS")).toDate() : l.call(this);
       };
       var c = u.diff;
       u.diff = function(t2, i2, e2) {
@@ -526,9 +535,9 @@ var timezone$1 = { exports: {} };
     var t = { year: 0, month: 1, day: 2, hour: 3, minute: 4, second: 5 }, e = {};
     return function(n, i, o) {
       var r, a = function(t2, n2, i2) {
-        i2 === void 0 && (i2 = {});
+        void 0 === i2 && (i2 = {});
         var o2 = new Date(t2), r2 = function(t3, n3) {
-          n3 === void 0 && (n3 = {});
+          void 0 === n3 && (n3 = {});
           var i3 = n3.timeZoneName || "short", o3 = t3 + "|" + i3, r3 = e[o3];
           return r3 || (r3 = new Intl.DateTimeFormat("en-US", { hour12: false, timeZone: t3, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", timeZoneName: i3 }), e[o3] = r3), r3;
         }(n2, i2);
@@ -538,11 +547,11 @@ var timezone$1 = { exports: {} };
           var f2 = i2[u2], s2 = f2.type, m = f2.value, c = t[s2];
           c >= 0 && (r2[c] = parseInt(m, 10));
         }
-        var d = r2[3], l = d === 24 ? 0 : d, v = r2[0] + "-" + r2[1] + "-" + r2[2] + " " + l + ":" + r2[4] + ":" + r2[5] + ":000", h = +e2;
+        var d = r2[3], l = 24 === d ? 0 : d, v = r2[0] + "-" + r2[1] + "-" + r2[2] + " " + l + ":" + r2[4] + ":" + r2[5] + ":000", h = +e2;
         return (o.utc(v).valueOf() - (h -= h % 1e3)) / 6e4;
       }, f = i.prototype;
       f.tz = function(t2, e2) {
-        t2 === void 0 && (t2 = r);
+        void 0 === t2 && (t2 = r);
         var n2 = this.utcOffset(), i2 = this.toDate(), a2 = i2.toLocaleString("en-US", { timeZone: t2 }), u2 = Math.round((i2 - new Date(a2)) / 1e3 / 60), f2 = o(a2).$set("millisecond", this.$ms).utcOffset(15 * -Math.round(i2.getTimezoneOffset() / 15) - u2, true);
         if (e2) {
           var s2 = f2.utcOffset();
@@ -551,7 +560,7 @@ var timezone$1 = { exports: {} };
         return f2.$x.$timezone = t2, f2;
       }, f.offsetName = function(t2) {
         var e2 = this.$x.$timezone || o.tz.guess(), n2 = a(this.valueOf(), e2, { timeZoneName: t2 }).find(function(t3) {
-          return t3.type.toLowerCase() === "timezonename";
+          return "timezonename" === t3.type.toLowerCase();
         });
         return n2 && n2.value;
       };
@@ -563,7 +572,7 @@ var timezone$1 = { exports: {} };
         return s.call(n2, t2, e2).tz(this.$x.$timezone, true);
       }, o.tz = function(t2, e2, n2) {
         var i2 = n2 && e2, a2 = n2 || e2 || r, f2 = u(+o(), a2);
-        if (typeof t2 != "string")
+        if ("string" != typeof t2)
           return o(t2).tz(a2);
         var s2 = function(t3, e3, n3) {
           var i3 = t3 - 60 * e3 * 1e3, o2 = u(i3, n3);
@@ -668,13 +677,13 @@ class DatetimeRangeFilter extends Filter {
 }
 __publicField(DatetimeRangeFilter, "userTimezone");
 function isBlank(val) {
-  if (val == null) {
+  if (null == val) {
     return true;
   }
-  if (typeof val == "string") {
+  if ("string" == typeof val) {
     return val.trim().length === 0;
   }
-  if (typeof val == "function") {
+  if ("function" == typeof val) {
     return val.length === 0;
   }
   if (Array.isArray(val)) {
@@ -729,7 +738,7 @@ class FilterCollection {
     const promises = [];
     for (const key of this._filters) {
       const filter = this[key];
-      if (filter instanceof Filter && typeof input[key] !== "undefined") {
+      if (filter instanceof Filter && "undefined" !== typeof input[key]) {
         promises.push(filter.denormalize(input[key]));
       }
     }
@@ -743,7 +752,7 @@ async function useFilters(initialState = {}, options = {
   preserveQuery: false,
   targetRoute: void 0
 }) {
-  if (typeof initialState !== "function") {
+  if ("function" !== typeof initialState) {
     throw Error("initialState should be provided as a function.");
   }
   const currentRoute = useRoute();
@@ -757,7 +766,7 @@ async function useFilters(initialState = {}, options = {
   }
   function buildQueryParams(additionalParams = {}) {
     const output = {};
-    if (options.preserveQuery === true) {
+    if (true === options.preserveQuery) {
       Object.assign(output, currentRoute.query);
     }
     return Object.assign(output, unref(filters).normalize(), additionalParams);
@@ -804,7 +813,7 @@ class HydraEndpoints {
     });
   }
   for(type) {
-    if (typeof type === "string" && Object.keys(this).includes(type)) {
+    if ("string" === typeof type && Object.keys(this).includes(type)) {
       return this[type];
     }
     if (!Object.keys(this).includes(type["@type"])) {
@@ -836,7 +845,7 @@ class HydraEndpoint {
   }
   paginated(itemsPerPageOrFalse, partial = false) {
     itemsPerPageOrFalse = unref(itemsPerPageOrFalse);
-    if (itemsPerPageOrFalse === false) {
+    if (false === itemsPerPageOrFalse) {
       return this.withQuery({
         pagination: 0
       });
@@ -845,7 +854,7 @@ class HydraEndpoint {
     if (itemsPerPageOrFalse) {
       pager.itemsPerPage = itemsPerPageOrFalse;
     }
-    if (unref(partial) === true) {
+    if (true === unref(partial)) {
       pager.partial = 1;
     }
     return this.withQuery(pager);
@@ -860,17 +869,17 @@ const useEndpoint = (endpoint, storeName) => {
 };
 function hasIri(item) {
   item = unref(item);
-  if (item == null) {
+  if (null == item) {
     return false;
   }
-  return Object.keys(item).includes("@id") && item["@id"] != null;
+  return Object.keys(item).includes("@id") && null != item["@id"];
 }
 function getIri(itemOrIRI) {
   itemOrIRI = unref(itemOrIRI);
-  if (itemOrIRI === null) {
+  if (null === itemOrIRI) {
     return null;
   }
-  if (typeof itemOrIRI === "string") {
+  if ("string" === typeof itemOrIRI) {
     return itemOrIRI;
   }
   checkValidItem(itemOrIRI);
@@ -887,14 +896,14 @@ function getIds(itemsOrIRIs) {
   return itemsOrIRIs.map(getId);
 }
 function checkValidItem(item, type = null) {
-  if (typeof item !== "object" || !("@id" in item)) {
+  if ("object" !== typeof item || !("@id" in item)) {
     throw Error("Invalid item.");
   }
-  if (type !== null) {
-    if (typeof type === "string" && type !== item["@type"]) {
+  if (null !== type) {
+    if ("string" === typeof type && type !== item["@type"]) {
       throw Error(`Expected item of type "${type}", got "${item["@type"]}".`);
     }
-    if (Array.isArray(type) && type.includes(item["@type"]) === false) {
+    if (Array.isArray(type) && false === type.includes(item["@type"])) {
       throw Error(`Expected item of any "${type.join("|")}", got "${item["@type"]}".`);
     }
   }
@@ -931,7 +940,7 @@ function withoutIri(itemsOrIris, itemOrIri) {
 }
 function getItemByIri(items, iri) {
   const item = items.find((item2) => areSameIris(item2, iri));
-  return typeof item === "undefined" ? null : item;
+  return "undefined" === typeof item ? null : item;
 }
 function getItemIndexByIri(items, iri) {
   return items.findIndex((item) => areSameIris(item, iri));
@@ -972,11 +981,14 @@ class ConstraintViolationList extends HydraError {
   constructor(data) {
     super();
     __publicField(this, "_violations", []);
-    Object.assign(this, {
-      *[Symbol.iterator]() {
-        yield* this.violations;
+    Object.assign(
+      this,
+      {
+        *[Symbol.iterator]() {
+          yield* this.violations;
+        }
       }
-    });
+    );
     Object.assign(this, data);
   }
   get violations() {
@@ -990,7 +1002,7 @@ class ConstraintViolationList extends HydraError {
   }
   getViolations(propertyPath) {
     const propertyPaths = Array.from(arguments);
-    if (propertyPaths.length === 0) {
+    if (0 === propertyPaths.length) {
       return this.violations;
     }
     if (empty(propertyPaths[0])) {
@@ -1001,12 +1013,15 @@ class ConstraintViolationList extends HydraError {
 }
 class HydraCollection {
   constructor(data = {}) {
-    Object.assign(this, {
-      ...data,
-      *[Symbol.iterator]() {
-        yield* this["hydra:member"] || [];
+    Object.assign(
+      this,
+      {
+        ...data,
+        *[Symbol.iterator]() {
+          yield* this["hydra:member"] || [];
+        }
       }
-    });
+    );
   }
   get length() {
     return this.items.length;
@@ -1034,7 +1049,7 @@ class HydraCollection {
   }
 }
 function clearObject(object) {
-  if (typeof object !== "object" || object == null) {
+  if ("object" !== typeof object || null == object) {
     throw Error("Invalid object.");
   }
   Object.keys(object).forEach((key) => delete object[key]);
@@ -1050,7 +1065,7 @@ function normalizeItemRelations(item) {
     const value = cloned[prop];
     if (Array.isArray(value)) {
       cloned[prop] = value.map((relation) => normalizeRelation(relation));
-    } else if (typeof value === "object" && value != null) {
+    } else if ("object" === typeof value && null != value) {
       cloned[prop] = normalizeRelation(value);
     }
   }
@@ -1143,10 +1158,10 @@ class FakeEventSource {
 }
 const isTestEnv = () => {
   var _a, _b;
-  if (typeof process !== "undefined" && ((_a = process == null ? void 0 : process.env) == null ? void 0 : _a.NODE_ENV) === "test") {
+  if ("undefined" !== typeof process && "test" === ((_a = process == null ? void 0 : process.env) == null ? void 0 : _a.NODE_ENV)) {
     return true;
   }
-  if (((_b = import_meta == null ? void 0 : import_meta.env) == null ? void 0 : _b.NODE_ENV) === "test") {
+  if ("test" === ((_b = import_meta == null ? void 0 : import_meta.env) == null ? void 0 : _b.NODE_ENV)) {
     return true;
   }
   return false;
@@ -1226,7 +1241,7 @@ class Mercure {
   }
   listen() {
     const subscribedTopics = unref(this.subscribedTopics);
-    if (subscribedTopics.length === 0) {
+    if (0 === subscribedTopics.length) {
       this.stop();
       return;
     }
@@ -1244,7 +1259,7 @@ class Mercure {
     };
     this.connection.onerror = (error) => {
       this.emitter.emit("error", error);
-      if (typeof this.options.reconnectInterval === "number") {
+      if ("number" === typeof this.options.reconnectInterval) {
         this.stop();
         setTimeout(() => this.connect(), this.options.reconnectInterval);
       }
@@ -1272,7 +1287,7 @@ function mercureSync(mercure, items, topics = ["*"], onUpdate = defaultUpdater, 
       if (!hasIri(data)) {
         return;
       }
-      if (Object.keys(data).length === 1) {
+      if (1 === Object.keys(data).length) {
         onDelete(getIri(data));
         return;
       }
@@ -1297,7 +1312,7 @@ const on = (mercure, topics, callback) => {
     try {
       const item = JSON.parse(event.data);
       for (const topic of topics) {
-        if (typeof uriTemplate(topic).fromUri(getIri(item)) !== "undefined") {
+        if ("undefined" !== typeof uriTemplate(topic).fromUri(getIri(item))) {
           callback(item);
           break;
         }
@@ -1334,24 +1349,16 @@ const DEFAULT_CLASSMAP = {
   "hydra:Error": HydraError,
   "ConstraintViolationList": ConstraintViolationList
 };
-const computedAsPromise = async (callback, defaultValue) => {
-  const evaluating = ref(false);
-  const value = asyncComputed(callback, defaultValue, { evaluating });
-  return new Promise((resolve) => {
-    watch(evaluating, (isEvaluating) => {
-      if (isEvaluating === false) {
-        resolve(value);
-      }
-    });
-  });
-};
 class Items {
   constructor() {
-    Object.assign(this, {
-      *[Symbol.iterator]() {
-        yield* Object.values(this);
+    Object.assign(
+      this,
+      {
+        *[Symbol.iterator]() {
+          yield* Object.values(this);
+        }
       }
-    });
+    );
   }
   get length() {
     return Array.from(this).length;
@@ -1426,7 +1433,7 @@ class HydraPlugin {
       const { data } = await call();
       return this.factory(data);
     } catch (error) {
-      if (typeof ((_a = error.response) == null ? void 0 : _a.data) === "object" && ((_b = error.response) == null ? void 0 : _b.data) != null) {
+      if ("object" === typeof ((_a = error.response) == null ? void 0 : _a.data) && null != ((_b = error.response) == null ? void 0 : _b.data)) {
         error = this.factory(error.response.data, (_c = error.response) == null ? void 0 : _c.status);
       }
       error.statusCode = (_e = error.statusCode) != null ? _e : (_d = error.response) == null ? void 0 : _d.status;
@@ -1439,12 +1446,12 @@ class HydraPlugin {
     return this.storeItem({ state }, this.factory(item));
   }
   async getItem({ state }, itemOrIri, options) {
-    if (itemOrIri === null) {
+    if (null === itemOrIri) {
       return null;
     }
     const iri = getIri(itemOrIri);
     const existingItem = getItemByIri(state.items, iri);
-    if (existingItem != null) {
+    if (null != existingItem) {
       return existingItem;
     }
     return await this.fetchItem({ state }, iri, options);
@@ -1473,32 +1480,36 @@ class HydraPlugin {
     const iri = getIri(item);
     await this.handle(() => this.api.delete(iri, options), options);
     item = getItemByIri(state.items, iri);
-    if (item !== null) {
+    if (null !== item) {
       this.removeItem({ state }, item);
     }
   }
   async getRelation({ state }, itemOrIri, options = {}) {
     var _a, _b;
-    if (itemOrIri === null) {
+    if (null === itemOrIri) {
       return null;
     }
-    if (typeof itemOrIri === "function") {
-      return computedAsPromise(() => this.getRelation({ state }, itemOrIri(), options));
+    if ("function" === typeof itemOrIri) {
+      const synchronizedRelation = asyncComputed(() => this.getRelation({ state }, itemOrIri(), options));
+      await until(synchronizedRelation).not.toBe(void 0);
+      return synchronizedRelation;
     }
-    if (((_a = options.useExisting) != null ? _a : true) === true) {
+    if (true === ((_a = options.useExisting) != null ? _a : true)) {
       const existingItem = getItemByIri(state.items, itemOrIri);
-      if (existingItem != null) {
+      if (null != existingItem) {
         return existingItem;
       }
     }
-    if (typeof itemOrIri === "object" && ((_b = options.force) != null ? _b : false) === false) {
+    if ("object" === typeof itemOrIri && false === ((_b = options.force) != null ? _b : false)) {
       return itemOrIri;
     }
     return await this.getItem({ state }, itemOrIri, options);
   }
   async getRelations({ state }, itemsOrIris, options) {
-    if (typeof itemsOrIris === "function") {
-      return computedAsPromise(() => this.getRelations({ state }, itemsOrIris(), options), []);
+    if ("function" === typeof itemsOrIris) {
+      const synchronizedRelations = asyncComputed(() => this.getRelations({ state }, itemsOrIris(), options));
+      await until(synchronizedRelations).not.toBe(void 0);
+      return synchronizedRelations;
     }
     return Promise.all(itemsOrIris.map((itemOrIri) => this.getRelation({ state }, itemOrIri, options)));
   }
@@ -1522,7 +1533,7 @@ class HydraPlugin {
     store.getItemsByType = (type) => store.state.items.filter((item) => type === item["@type"]);
     store.factory = (typeOrObject, object) => {
       object = object != null ? object : typeOrObject;
-      if (typeof typeOrObject === "string") {
+      if ("string" === typeof typeOrObject) {
         object["@type"] = typeOrObject;
       }
       return this.factory(object);
@@ -1530,7 +1541,7 @@ class HydraPlugin {
   }
 }
 function normalizeSingle(item) {
-  if (typeof item === "string") {
+  if ("string" === typeof item) {
     return item;
   }
   try {
@@ -1606,7 +1617,7 @@ class OrderFilter extends Filter {
   }
   async denormalize(input) {
     this.order = {};
-    if (typeof input === "object" && input != null) {
+    if ("object" === typeof input && null != input) {
       this.order = input;
     }
   }
@@ -1631,7 +1642,7 @@ class TextFilter extends Filter {
     return this.value.trim();
   }
   async denormalize(input) {
-    if (typeof input === "string") {
+    if ("string" === typeof input) {
       input = input.trim();
     }
     if ([void 0, null, ""].includes(input)) {
@@ -1648,13 +1659,13 @@ class TruthyFilter extends Filter {
     this.value = value;
   }
   normalize() {
-    if (this.value == null) {
+    if (null == this.value) {
       return null;
     }
     return this.value ? "true" : "false";
   }
   async denormalize(input) {
-    if (input == null) {
+    if (null == input) {
       this.value = null;
       return;
     }
@@ -1670,10 +1681,10 @@ class Vulcain {
   get headers() {
     var _a, _b, _c, _d, _e;
     const output = {};
-    if (((_b = (_a = this.preload) == null ? void 0 : _a.length) != null ? _b : 0) !== 0) {
+    if (0 !== ((_b = (_a = this.preload) == null ? void 0 : _a.length) != null ? _b : 0)) {
       output.preload = [...new Set(this.preload)].map((field) => `"${field}"`).join(", ");
     }
-    if (((_d = (_c = this.fields) == null ? void 0 : _c.length) != null ? _d : 0) !== 0) {
+    if (0 !== ((_d = (_c = this.fields) == null ? void 0 : _c.length) != null ? _d : 0)) {
       output.fields = [.../* @__PURE__ */ new Set([...this.fields, ...(_e = this.preload) != null ? _e : []])].map((field) => `"${field}"`).join(", ");
     }
     return output;
