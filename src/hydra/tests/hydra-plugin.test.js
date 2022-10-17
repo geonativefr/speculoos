@@ -1,11 +1,12 @@
-import { HydraPlugin } from '../hydra-plugin.js';
-import { ApiClient } from '../../api-client/index.js';
-import { createStore, useStore } from '../../store/index.js';
+import flushPromises from 'flush-promises';
+import { computed, isRef, reactive, ref, unref } from 'vue';
 import { createTestApp, getInjectedStore, ShouldNotHappen, useSetup } from '../../../vue-tests-setup.js';
-import { computed, ref, unref } from 'vue';
+import { ApiClient } from '../../api-client/index.js';
 import { mockResponse } from '../../api-client/tests/setup.js';
-import { HydraCollection } from '../factories/hydra-collection.js';
+import { createStore, useStore } from '../../store/index.js';
 import { ConstraintViolationList, Violation } from '../factories/constraint-violation-list.js';
+import { HydraCollection } from '../factories/hydra-collection.js';
+import { HydraPlugin } from '../hydra-plugin.js';
 
 const response = ref();
 const fetcher = async () => {
@@ -199,6 +200,46 @@ it('doesn\'t reuse an existing relation when asked to', async () => {
   item = await store.getRelation(bar.fooAsObject, {useExisting: false});
   expect(item).toEqual({'@id': '/api/foos/1', name: 'temporary name'});
   expect(Array.from(store.state.items)[0]).toEqual({'@id': '/api/foos/1', name: 'foo'});
+});
+
+it('synchronizes ManyToOne relations', async () => {
+  const bar = reactive({
+    '@id': '/api/bars/1',
+    associatedFoo: '/api/foos/1',
+  });
+  let item;
+  const store = await createStore();
+  await store.use(plugin);
+  response.value = mockResponse({body: JSON.stringify({'@id': '/api/foos/1', name: 'foo1'})});
+  item = await store.getRelation(() => bar.associatedFoo);
+  expect(isRef(item)).toBeTruthy();
+  expect(unref(item)).toEqual({'@id': '/api/foos/1', name: 'foo1'});
+  expect(Array.from(store.state.items)[0]).toEqual({'@id': '/api/foos/1', name: 'foo1'});
+
+  response.value = mockResponse({body: JSON.stringify({'@id': '/api/foos/2', name: 'foo2'})});
+  bar.associatedFoo = '/api/foos/2';
+  await flushPromises();
+  expect(unref(item)).toEqual({'@id': '/api/foos/2', name: 'foo2'});
+});
+
+it('synchronizes OneToMany relations', async () => {
+  const bar = reactive({
+    '@id': '/api/bars/1',
+    associatedFoos: ['/api/foos/1'],
+  });
+  let items;
+  const store = await createStore();
+  await store.use(plugin);
+  response.value = mockResponse({body: JSON.stringify({'@id': '/api/foos/1', name: 'foo1'})});
+  items = await store.getRelations(() => bar.associatedFoos);
+  expect(isRef(items)).toBeTruthy();
+  expect(unref(items)).toEqual([{'@id': '/api/foos/1', name: 'foo1'}]);
+  expect(Array.from(store.state.items)[0]).toEqual({'@id': '/api/foos/1', name: 'foo1'});
+
+  response.value = mockResponse({body: JSON.stringify({'@id': '/api/foos/2', name: 'foo2'})});
+  bar.associatedFoos = ['/api/foos/2'];
+  await flushPromises();
+  expect(unref(items)).toEqual([{'@id': '/api/foos/2', name: 'foo2'}]);
 });
 
 it('fetches a collection', async () => {

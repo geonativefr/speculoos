@@ -3,25 +3,13 @@ import { reactive, readonly, ref, watch } from 'vue';
 import { HydraCollection } from './factories/hydra-collection.js';
 import { HydraError } from './factories/hydra-error.js';
 import { ConstraintViolationList } from './factories/constraint-violation-list.js';
-import { asyncComputed } from '@vueuse/core';
+import { asyncComputed, until } from '@vueuse/core';
 import { HydraEndpoints } from './hydra-endpoints.js';
 
 const DEFAULT_CLASSMAP = {
   'hydra:Collection': HydraCollection,
   'hydra:Error': HydraError,
   'ConstraintViolationList': ConstraintViolationList,
-};
-
-const computedAsPromise = async (callback, defaultValue) => {
-  const evaluating = ref(false);
-  const value = asyncComputed(callback, defaultValue, {evaluating});
-  return new Promise(resolve => {
-    watch(evaluating, (isEvaluating) => {
-      if (false === isEvaluating) {
-        resolve(value);
-      }
-    });
-  });
 };
 
 class Items {
@@ -187,7 +175,9 @@ export class HydraPlugin {
     }
 
     if ('function' === typeof itemOrIri) {
-      return computedAsPromise(() => this.getRelation({state}, itemOrIri(), options));
+      const synchronizedRelation = asyncComputed(() => this.getRelation({state}, itemOrIri(), options));
+      await until(synchronizedRelation).not.toBe(undefined);
+      return synchronizedRelation;
     }
 
     if (true === (options.useExisting ?? true)) {
@@ -206,7 +196,9 @@ export class HydraPlugin {
 
   async getRelations({state}, itemsOrIris, options) {
     if ('function' === typeof itemsOrIris) {
-      return computedAsPromise(() => this.getRelations({state}, itemsOrIris(), options), []);
+      const synchronizedRelations = asyncComputed(() => this.getRelations({state}, itemsOrIris(), options));
+      await until(synchronizedRelations).not.toBe(undefined);
+      return synchronizedRelations;
     }
     return Promise.all(itemsOrIris.map(itemOrIri => this.getRelation({state}, itemOrIri, options)));
   }
