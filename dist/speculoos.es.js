@@ -1670,6 +1670,100 @@ class TruthyFilter extends Filter {
     this.value = ["true", "on", "yes", "1"].includes(input.toLowerCase());
   }
 }
+function createPager({ itemsPerPage, currentPage, totalItems }) {
+  if (null == totalItems) {
+    return new PartialPager({ itemsPerPage, currentPage });
+  }
+  return new StandardPager({ itemsPerPage, currentPage, totalItems });
+}
+function generatePages(lastPage) {
+  return Array.from({ length: lastPage }, (_, i) => i + 1);
+}
+class Pager {
+  constructor({ itemsPerPage, currentPage }) {
+    __publicField(this, "itemsPerPage");
+    __publicField(this, "totalItems");
+    __publicField(this, "currentPage");
+    __publicField(this, "previousPage");
+    __publicField(this, "nextPage");
+    __publicField(this, "lastPage");
+    __publicField(this, "offset");
+    __publicField(this, "_pages");
+    this.itemsPerPage = parseInt(itemsPerPage);
+    this.currentPage = parseInt(currentPage);
+    this.offset = Math.max(0, currentPage * itemsPerPage - itemsPerPage);
+    this.previousPage = Math.max(1, this.currentPage - 1);
+  }
+  get pages() {
+    if (void 0 === this._pages) {
+      this._pages = generatePages(this.lastPage);
+    }
+    return this._pages;
+  }
+  isPartial() {
+    return null == this.totalItems;
+  }
+  isFirstPage(page = void 0) {
+    return parseInt(page != null ? page : this.currentPage) === 1;
+  }
+  isPreviousPage(page) {
+    return parseInt(page) === this.previousPage;
+  }
+  isCurrentPage(page) {
+    return parseInt(page) === this.currentPage;
+  }
+  isNextPage(page) {
+    return parseInt(page) === this.nextPage;
+  }
+  isLastPage(page = void 0) {
+    return parseInt(page != null ? page : this.currentPage) === this.lastPage;
+  }
+  *[Symbol.iterator]() {
+    yield* this.pages;
+  }
+  truncate(delta, includeEdges = false) {
+    return new TruncatedPager(this, delta, includeEdges);
+  }
+}
+class StandardPager extends Pager {
+  constructor({ itemsPerPage, currentPage, totalItems }) {
+    super({ itemsPerPage, currentPage });
+    this.totalItems = parseInt(totalItems);
+    this.lastPage = Math.max(1, Math.ceil(this.totalItems / Math.max(1, this.itemsPerPage)));
+    this.nextPage = Math.min(this.lastPage, this.currentPage + 1);
+  }
+}
+class PartialPager extends Pager {
+  constructor({ itemsPerPage, currentPage, totalItems }) {
+    super({ itemsPerPage, currentPage, totalItems });
+    this.nextPage = this.lastPage = this.currentPage + 1;
+  }
+}
+class TruncatedPager extends Pager {
+  constructor(pager, delta, includeEdges = false) {
+    super(pager);
+    Object.assign(this, pager);
+    const pages = [];
+    if (includeEdges) {
+      pages.push(1);
+    }
+    for (let page = 1; page <= this.lastPage; page++) {
+      if (page === this.currentPage) {
+        pages.push(page);
+      }
+      if (page < this.currentPage && page >= this.currentPage - delta) {
+        pages.push(page);
+      }
+      if (page > this.currentPage && page <= this.currentPage + delta) {
+        pages.push(page);
+      }
+    }
+    if (includeEdges) {
+      pages.push(this.lastPage);
+    }
+    this._pages = [...new Set(pages)];
+  }
+}
 class Vulcain {
   constructor() {
     __publicField(this, "fields");
@@ -1690,4 +1784,4 @@ class Vulcain {
 function vulcain({ fields, preload } = {}) {
   return Object.assign(new Vulcain(), { fields }, { preload }).headers;
 }
-export { ApiClient, ArrayFilter, ConstraintViolationList, DateRangeFilter, DatetimeRangeFilter, FakeEventSource, FilterCollection, HttpError, HydraCollection, HydraEndpoint, HydraEndpoints, HydraError, HydraPlugin, ItemFilter, Mercure, OrderFilter, TextFilter, TruthyFilter, Violation, areSameIris, checkValidItem, clone, containsIri, createMercure, createStore, getId, getIds, getIri, getIris, getItemByIri, getItemIndexByIri, getItemsByType, hasIri, mercureSync, normalizeIris, normalizeItemRelations, on, partialItem, useEndpoint, useFilters, useFormValidation, useItemForm, useMercure, useMercureSync, useStore, vulcain, withoutDuplicates, withoutIri };
+export { ApiClient, ArrayFilter, ConstraintViolationList, DateRangeFilter, DatetimeRangeFilter, FakeEventSource, FilterCollection, HttpError, HydraCollection, HydraEndpoint, HydraEndpoints, HydraError, HydraPlugin, ItemFilter, Mercure, OrderFilter, TextFilter, TruthyFilter, Violation, areSameIris, checkValidItem, clone, containsIri, createMercure, createPager, createStore, getId, getIds, getIri, getIris, getItemByIri, getItemIndexByIri, getItemsByType, hasIri, mercureSync, normalizeIris, normalizeItemRelations, on, partialItem, useEndpoint, useFilters, useFormValidation, useItemForm, useMercure, useMercureSync, useStore, vulcain, withoutDuplicates, withoutIri };
