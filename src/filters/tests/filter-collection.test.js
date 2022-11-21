@@ -1,4 +1,5 @@
 import { FilterCollection, useFilters } from '../filter-collection.js';
+import { RangeFilter } from '../range-filter.js';
 import { TextFilter } from '../text-filter.js';
 import { TruthyFilter } from '../truthy-filter.js';
 import { DateRangeFilter } from '../date-range-filter.js';
@@ -160,6 +161,7 @@ it('can use a different route when submitting', async () => {
       city: new TextFilter('London'),
       country: new TextFilter('UK'),
       tags: new ArrayFilter([]),
+      price: new RangeFilter(9.99, 19.99),
     });
     const {filters, buildQueryParams, submit} = await useFilters(initialState, {
       preserveQuery: true,
@@ -176,12 +178,18 @@ it('can use a different route when submitting', async () => {
   expect(unref(filters).name.value).toBe('Johnson');
   expect(unref(filters).city.value).toBe('London');
   expect(unref(filters).country.value).toBe('GB');
+  expect(unref(filters).price.left).toBe(9.99);
+  expect(unref(filters).price.right).toBe(19.99);
 
   expect(buildQueryParams()).toEqual({
     foo: 'bar',
     name: 'Johnson',
     city: 'London',
     country: 'GB',
+    price: {
+      gte: '9.99',
+      lte: '19.99',
+    },
   });
 
   await submit({page: 1});
@@ -193,6 +201,10 @@ it('can use a different route when submitting', async () => {
       name: 'Johnson',
       city: 'London',
       country: 'GB',
+      price: {
+        gte: '9.99',
+        lte: '19.99',
+      },
       page: 1,
     },
   });
