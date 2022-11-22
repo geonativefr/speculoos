@@ -1,3 +1,4 @@
+import { promiseTimeout } from '@vueuse/core';
 import { createStore, useStore } from '../index.js';
 import { createTestApp, useSetup, getInjectedStore } from '../../../vue-tests-setup.js';
 import { computed, isReadonly, reactive } from 'vue';
@@ -85,4 +86,32 @@ it('can expose computed state', async () => {
   // Then
   expect(store.state.counter).toBe(10);
   expect(store.state.doubled).toBe(20);
+});
+
+it('reconcilates state', async () => {
+  const argumentChoices = [true, false, undefined];
+  for (const argument of argumentChoices) {
+    const store = await createStore();
+    await store.use({
+      async install(store) {
+        store.state.foo = undefined;
+      },
+    });
+    await store.use({
+      install: () => {},
+      async reconciliate(store) {
+        await promiseTimeout(30);
+        store.state.foo = 'bar';
+      },
+    });
+    await store.use({
+      install: () => {},
+      async reconciliate(store) {
+        store.state.foo = 'baz';
+      },
+    });
+    await store.reconciliate(argument);
+    const expected = true === argument ? 'baz' : 'bar';
+    expect(store.state.foo).toBe(expected);
+  }
 });

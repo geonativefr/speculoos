@@ -53,6 +53,18 @@ const store = (await createStore()).use(userPlugin);
 app.use(store);
 ```
 
+### Reconciliation
+
+Plugins implementing a `reconciliate(store)` method will be called when you explicitely call `await store.reconciliate()`.
+This can be useful, once all plugins are instantiated, to retrieve or build the initial state of the application.
+
+```javascript
+const store = await createStore();
+await store.use(new UserPlugin());
+await store.use(new ApplicationPlugin());
+await store.reconciliate(true); // If you explicitely pass `true`, reconcilation methods will be called sequentially, by the order the plugins were installed.
+```
+
 ## Using different stores
 
 You can name your stores to manage several, independent states.

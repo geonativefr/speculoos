@@ -787,6 +787,7 @@ async function useFilters(initialState = {}, options = {
 }
 const createStore = async ({ state = {}, methods = {}, name = "store" } = {}) => {
   state = reactive(state);
+  const plugins = [];
   const store = {
     name,
     state,
@@ -798,8 +799,18 @@ const createStore = async ({ state = {}, methods = {}, name = "store" } = {}) =>
       return resolvedMethods;
     }, {}),
     async use(plugin) {
+      plugins.push(plugin);
       await plugin.install(this);
       return this;
+    },
+    async reconciliate(sequentially = false) {
+      const reconcilablePlugins = plugins.filter(({ reconciliate }) => "function" === typeof reconciliate);
+      if (false === sequentially) {
+        return Promise.all(reconcilablePlugins.map((plugin) => plugin.reconciliate(this)));
+      }
+      for (const plugin of reconcilablePlugins) {
+        await plugin.reconciliate(this);
+      }
     }
   };
   store.install = (app) => app.provide(name, { ...store, state: readonly(state) });
