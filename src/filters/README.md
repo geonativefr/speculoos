@@ -93,6 +93,18 @@ const {filters} = await useFilters(() => new FilterCollection({
 // console.log(unref(filters).sort.order); // {createdAt: 'desc'}
 ```
 
+### RangeFilter
+
+```js
+// ?price[gt]=10&price[lte]=20
+import { FilterCollection, RangeFilter } from 'speculoos';
+
+const {filters} = await useFilters(() => new FilterCollection({
+    price: new RangeFilter(),
+}));
+// console.log(unref(filters).price); // {left: 10, right: 20, includeLeft: false, includeRight: true}
+```
+
 ### ItemFilter
 
 #### Single item
