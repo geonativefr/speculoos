@@ -1,6 +1,6 @@
 # Api Client
 
-A lightweight API Client built on top of the [fetch](https://developer.mozilla.org/docs/Web/API/Fetch_API) API.
+A lightweight API Client for Vue 3 built on top of the [fetch](https://developer.mozilla.org/docs/Web/API/Fetch_API) API.
 
 ## Usage
 
@@ -52,6 +52,28 @@ just before the request is sent, and to `false` once it completes, using the `is
 import { ref } from 'vue';
 const isLoading = ref(false);
 await client.get('/api/foos', {isLoading});
+```
+
+### Cancel request
+
+You can pass an `aborted` boolean option within a Vue `ref`.
+Whenever this ref resolves to `true`, the request, if not complete, will be aborted.
+
+```javascript
+import { ApiClient, AbortError } from 'speculoos';
+import { ref } from 'vue';
+import { promiseTimeout } from '@vueuse/core';
+
+const client = new ApiClient({baseUri: 'https://httpbin.com'});
+const aborted = ref(false);
+try {
+  await Promise.all([
+    client.get('/delay/5', {aborted}), // Let's try a request that takes 5s to complete
+    promiseTimeout(1000).then(() => aborted.value = true), // But cancel it after 1 second
+  ]);
+} catch (e) {
+  console.log(e instanceof AbortError); // true - This is the error you will get :-)
+}
 ```
 
 #### Additional headers

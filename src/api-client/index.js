@@ -1,4 +1,6 @@
+import { whenever } from '@vueuse/core';
 import { HttpError } from './errors/HttpError.js';
+import { AbortError } from './errors/AbortError.js';
 import { isRef, unref } from 'vue';
 import clone from 'clone-deep';
 import md5 from 'md5';
@@ -40,9 +42,10 @@ export class ApiClient {
   baseUri;
   options;
   fetch;
-  constructor({baseUri = '', options = {}, fetcher = window.fetch.bind(window)} = {}) {
+  constructor({baseUri = '', options = {}, fetcher} = {}) {
     this.baseUri = baseUri;
     this.options = options;
+    fetcher = fetcher ?? window.fetch.bind(window);
     this.fetch = async (url, options) => fetcher(url, options).then(tapResponse);
   }
 
@@ -76,9 +79,21 @@ export class ApiClient {
       if (isRef(options?.isLoading)) {
         options.isLoading.value = true;
       }
-      const response = await this.fetch(url, options);
-
-      return HttpError.guard(response);
+      if (isRef(options?.aborted)) {
+        const controller = new AbortController();
+        const { signal } = controller;
+        options.signal = signal;
+        whenever(options.aborted, () => controller.abort(), {immediate: true});
+      }
+      try {
+        const response = await this.fetch(url, options);
+        return HttpError.guard(response);
+      } catch (e) {
+        if ('AbortError' === e.name) {
+          throw new AbortError(e.reason);
+        }
+        throw e;
+      }
     } finally {
       if (isRef(options?.isLoading)) {
         options.isLoading.value = false;
@@ -163,3 +178,4 @@ export function withoutDuplicates(fetcher = undefined) {
 }
 
 export { HttpError } from './errors/HttpError.js';
+export { AbortError } from './errors/AbortError.js';
