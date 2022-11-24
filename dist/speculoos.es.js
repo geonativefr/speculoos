@@ -5,6 +5,7 @@ var __publicField = (obj, key, value) => {
   return value;
 };
 const import_meta = {};
+import { whenever, asyncComputed, until } from "@vueuse/core";
 import { unref, isRef, ref, reactive, readonly, inject, computed, watch, onUnmounted } from "vue";
 import clone$1 from "clone-deep";
 import md5 from "md5";
@@ -14,7 +15,6 @@ import { URI, QueryString } from "psr7-js";
 import { v4 } from "uuid";
 import mitt from "mitt";
 import uriTemplate from "uri-templates";
-import { asyncComputed, until } from "@vueuse/core";
 class HttpError extends Error {
   constructor(response) {
     super(response.statusText);
@@ -41,6 +41,13 @@ class HttpError extends Error {
       throw new this(response);
     }
     return response;
+  }
+}
+class AbortError extends Error {
+  constructor(reason) {
+    super();
+    this.name = "AbortError";
+    this.reason = reason;
   }
 }
 const normalizeHeaders = (headers) => {
@@ -71,12 +78,13 @@ const tapResponse = async (response) => {
   return response;
 };
 class ApiClient {
-  constructor({ baseUri = "", options = {}, fetcher = window.fetch.bind(window) } = {}) {
+  constructor({ baseUri = "", options = {}, fetcher } = {}) {
     __publicField(this, "baseUri");
     __publicField(this, "options");
     __publicField(this, "fetch");
     this.baseUri = baseUri;
     this.options = options;
+    fetcher = fetcher != null ? fetcher : window.fetch.bind(window);
     this.fetch = async (url, options2) => fetcher(url, options2).then(tapResponse);
   }
   resolve(uri) {
@@ -106,8 +114,21 @@ class ApiClient {
       if (isRef(options == null ? void 0 : options.isLoading)) {
         options.isLoading.value = true;
       }
-      const response = await this.fetch(url, options);
-      return HttpError.guard(response);
+      if (isRef(options == null ? void 0 : options.aborted)) {
+        const controller = new AbortController();
+        const { signal } = controller;
+        options.signal = signal;
+        whenever(options.aborted, () => controller.abort(), { immediate: true });
+      }
+      try {
+        const response = await this.fetch(url, options);
+        return HttpError.guard(response);
+      } catch (e) {
+        if ("AbortError" === e.name) {
+          throw new AbortError(e.reason);
+        }
+        throw e;
+      }
     } finally {
       if (isRef(options == null ? void 0 : options.isLoading)) {
         options.isLoading.value = false;
@@ -1835,4 +1856,4 @@ class Vulcain {
 function vulcain({ fields, preload } = {}) {
   return Object.assign(new Vulcain(), { fields }, { preload }).headers;
 }
-export { ApiClient, ArrayFilter, ConstraintViolationList, DateRangeFilter, DatetimeRangeFilter, FakeEventSource, FilterCollection, HttpError, HydraCollection, HydraEndpoint, HydraEndpoints, HydraError, HydraPlugin, ItemFilter, Mercure, OrderFilter, RangeFilter, TextFilter, TruthyFilter, Violation, areSameIris, checkValidItem, clone, containsIri, createMercure, createPager, createStore, getId, getIds, getIri, getIris, getItemByIri, getItemIndexByIri, getItemsByType, hasIri, mercureSync, normalizeIris, normalizeItemRelations, on, partialItem, useEndpoint, useFilters, useFormValidation, useItemForm, useMercure, useMercureSync, useStore, vulcain, withoutDuplicates, withoutIri };
+export { AbortError, ApiClient, ArrayFilter, ConstraintViolationList, DateRangeFilter, DatetimeRangeFilter, FakeEventSource, FilterCollection, HttpError, HydraCollection, HydraEndpoint, HydraEndpoints, HydraError, HydraPlugin, ItemFilter, Mercure, OrderFilter, RangeFilter, TextFilter, TruthyFilter, Violation, areSameIris, checkValidItem, clone, containsIri, createMercure, createPager, createStore, getId, getIds, getIri, getIris, getItemByIri, getItemIndexByIri, getItemsByType, hasIri, mercureSync, normalizeIris, normalizeItemRelations, on, partialItem, useEndpoint, useFilters, useFormValidation, useItemForm, useMercure, useMercureSync, useStore, vulcain, withoutDuplicates, withoutIri };

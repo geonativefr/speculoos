@@ -1,4 +1,4 @@
-import { ApiClient } from '../index.js';
+import { AbortError, ApiClient } from '../index.js';
 import { HttpError } from '../errors/HttpError.js';
 import { fetch } from './setup.js';
 import { ref, watch } from 'vue';
@@ -67,4 +67,22 @@ it('notifies that it is loading', async () => {
   await client.get('/api/foo', {response: {}, isLoading});
   expect(isLoading.value).toBe(false);
   expect(loadingNotifications).toEqual([true, false]);
+});
+
+it('cancels a request', async () => {
+  let error;
+  const aborted = ref(false);
+  const options = {
+    response: () => {
+      aborted.value = true;
+      return {};
+    },
+    aborted,
+  };
+  try {
+    const response = await client.get('/api/foo', options);
+  } catch (e) {
+    error = e;
+  }
+  expect(error).toBeInstanceOf(AbortError);
 });

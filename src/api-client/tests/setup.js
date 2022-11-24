@@ -37,9 +37,17 @@ function nextMock(request) {
 async function fetch(url, options) {
   options = {...options};
   const request = {url, options};
-  const response = options.response ?? nextMock(request);
+  let response = options.response ?? nextMock(request);
   if (!response) {
     throw Error('Could not find response to mock.');
+  }
+  if ('function' === typeof response) {
+    response = await response();
+  }
+  if (true === request.options.signal?.aborted) {
+    const error = new Error;
+    error.name = 'AbortError';
+    throw error;
   }
   delete options.response;
   response.request = request;
