@@ -58,7 +58,7 @@ export class HydraEndpoint {
       itemsPerPage: undefined,
     };
 
-    if (itemsPerPageOrFalse) {
+    if (false !== itemsPerPageOrFalse) {
       pager.itemsPerPage = itemsPerPageOrFalse;
     }
     return this.withQuery(pager);

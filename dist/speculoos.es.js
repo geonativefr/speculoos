@@ -883,7 +883,7 @@ class HydraEndpoint {
       partial: false === partial ? void 0 : 1,
       itemsPerPage: void 0
     };
-    if (itemsPerPageOrFalse) {
+    if (false !== itemsPerPageOrFalse) {
       pager.itemsPerPage = itemsPerPageOrFalse;
     }
     return this.withQuery(pager);

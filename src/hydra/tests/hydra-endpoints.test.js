@@ -44,6 +44,12 @@ it('returns a new paginated instance with an itemsPerPage param', () => {
     .toBe('/api/books?foo=bar&pagination=1&itemsPerPage=12');
 });
 
+it('returns a new paginated instance with an itemsPerPage param set to 0', () => {
+  const filtered = endpoints.for('Book').withQuery({foo: 'bar'});
+  expect(`${filtered.paginated(0)}`)
+    .toBe('/api/books?foo=bar&pagination=1&itemsPerPage=0');
+});
+
 it('returns a new partially-paginated instance', () => {
   const filtered = endpoints.for('Book').withQuery({foo: 'bar'});
   expect(`${filtered.paginated(12, true)}`)
