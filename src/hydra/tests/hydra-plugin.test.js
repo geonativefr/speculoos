@@ -8,11 +8,13 @@ import { ConstraintViolationList, Violation } from '../factories/constraint-viol
 import { HydraCollection } from '../factories/hydra-collection.js';
 import { HydraPlugin } from '../hydra-plugin.js';
 
-const response = ref();
-const fetcher = async () => {
-  const _response = unref(response);
-  response.value = undefined;
-  return _response;
+const currentResponse = ref();
+const lastResponse = ref();
+
+const fetcher = async (request) => {
+  const _response = unref(currentResponse);
+  currentResponse.value = undefined;
+  return lastResponse.value = Object.assign(_response, {request});
 };
 const api = new ApiClient({fetcher, baseUri: 'https://example.org'});
 const plugin = new HydraPlugin(api);
@@ -73,7 +75,7 @@ it('fetches an item', async () => {
   const store = await getInjectedStore(storeFactory);
   item = await useSetup(createTestApp(storeFactory), async () => {
     const store = useStore();
-    response.value = mockResponse({body: JSON.stringify({'@id': '/api/foos/1', name: 'foo'})});
+    currentResponse.value = mockResponse({body: JSON.stringify({'@id': '/api/foos/1', name: 'foo'})});
     return await store.fetchItem('/api/foos/1');
   });
   expect(item).toEqual({'@id': '/api/foos/1', name: 'foo'});
@@ -82,7 +84,7 @@ it('fetches an item', async () => {
   // Performing the same request twice should return the new result
   item = await useSetup(createTestApp(storeFactory), async () => {
     const store = useStore();
-    response.value = mockResponse({body: JSON.stringify({'@id': '/api/foos/1', name: 'bar'})});
+    currentResponse.value = mockResponse({body: JSON.stringify({'@id': '/api/foos/1', name: 'bar'})});
     return await store.fetchItem('/api/foos/1');
   });
   expect(item).toEqual({'@id': '/api/foos/1', name: 'bar'});
@@ -94,7 +96,7 @@ it('gets an item', async () => {
   const storeFactory = await (await createStore()).use(plugin);
   const store = await getInjectedStore(storeFactory);
   item = await useSetup(createTestApp(storeFactory), async () => {
-    response.value = mockResponse({body: JSON.stringify({'@id': '/api/foos/1', name: 'foo'})});
+    currentResponse.value = mockResponse({body: JSON.stringify({'@id': '/api/foos/1', name: 'foo'})});
     return await store.getItem('/api/foos/1');
   });
   expect(item).toEqual({'@id': '/api/foos/1', name: 'foo'});
@@ -103,7 +105,7 @@ it('gets an item', async () => {
   // Performing the same request twice should NOT return the new result (pick from store.state.items)
   item = await useSetup(createTestApp(storeFactory), async () => {
     const store = useStore();
-    response.value = mockResponse({body: JSON.stringify({'@id': '/api/foos/1', name: 'bar'})});
+    currentResponse.value = mockResponse({body: JSON.stringify({'@id': '/api/foos/1', name: 'bar'})});
     return await store.getItem('/api/foos/1');
   });
   expect(item).toEqual({'@id': '/api/foos/1', name: 'foo'});
@@ -114,13 +116,13 @@ it('gets an item only by its IRI, even on an already constructed object', async 
   let item;
   const store = await createStore();
   await store.use(plugin);
-  response.value = mockResponse({body: JSON.stringify({'@id': '/api/foos/1', name: 'foo'})});
+  currentResponse.value = mockResponse({body: JSON.stringify({'@id': '/api/foos/1', name: 'foo'})});
   item = await store.getItem({'@id': '/api/foos/1'});
   expect(item).toEqual({'@id': '/api/foos/1', name: 'foo'});
   expect(Array.from(store.state.items)[0]).toEqual({'@id': '/api/foos/1', name: 'foo'});
 
   // Performing the same request twice should NOT return the new result (pick from store.state.items)
-  response.value = mockResponse({body: JSON.stringify({'@id': '/api/foos/1', name: 'bar'})});
+  currentResponse.value = mockResponse({body: JSON.stringify({'@id': '/api/foos/1', name: 'bar'})});
   item = await store.getItem({'@id': '/api/foos/1'});
   expect(item).toEqual({'@id': '/api/foos/1', name: 'foo'});
   expect(Array.from(store.state.items)[0]).toEqual({'@id': '/api/foos/1', name: 'foo'});
@@ -135,7 +137,7 @@ it('gets a relation', async () => {
   let item;
   const store = await createStore();
   await store.use(plugin);
-  response.value = mockResponse({body: JSON.stringify({'@id': '/api/foos/1', name: 'foo'})});
+  currentResponse.value = mockResponse({body: JSON.stringify({'@id': '/api/foos/1', name: 'foo'})});
   item = await store.getRelation(bar.fooAsObject);
   expect(item).toEqual({'@id': '/api/foos/1', name: 'temporary name'});
   expect(Array.from(store.state.items)).toHaveLength(0);
@@ -154,7 +156,7 @@ it('forces calling getItem even if the relation is an object, when asked to', as
   let item;
   const store = await createStore();
   await store.use(plugin);
-  response.value = mockResponse({body: JSON.stringify({'@id': '/api/foos/1', name: 'foo'})});
+  currentResponse.value = mockResponse({body: JSON.stringify({'@id': '/api/foos/1', name: 'foo'})});
   item = await store.getRelation(bar.fooAsObject, {force: true});
   expect(item).toEqual({'@id': '/api/foos/1', name: 'foo'});
   expect(Array.from(store.state.items)).toHaveLength(1);
@@ -173,7 +175,7 @@ it('reuses an existing relation by default', async () => {
   let item;
   const store = await createStore();
   await store.use(plugin);
-  response.value = mockResponse({body: JSON.stringify({'@id': '/api/foos/1', name: 'foo'})});
+  currentResponse.value = mockResponse({body: JSON.stringify({'@id': '/api/foos/1', name: 'foo'})});
   item = await store.getRelation(bar.fooAsIri);
   expect(item).toEqual({'@id': '/api/foos/1', name: 'foo'});
   expect(Array.from(store.state.items)).toHaveLength(1);
@@ -192,7 +194,7 @@ it('doesn\'t reuse an existing relation when asked to', async () => {
   let item;
   const store = await createStore();
   await store.use(plugin);
-  response.value = mockResponse({body: JSON.stringify({'@id': '/api/foos/1', name: 'foo'})});
+  currentResponse.value = mockResponse({body: JSON.stringify({'@id': '/api/foos/1', name: 'foo'})});
   item = await store.getRelation(bar.fooAsIri);
   expect(item).toEqual({'@id': '/api/foos/1', name: 'foo'});
   expect(Array.from(store.state.items)).toHaveLength(1);
@@ -210,13 +212,13 @@ it('synchronizes ManyToOne relations', async () => {
   let item;
   const store = await createStore();
   await store.use(plugin);
-  response.value = mockResponse({body: JSON.stringify({'@id': '/api/foos/1', name: 'foo1'})});
+  currentResponse.value = mockResponse({body: JSON.stringify({'@id': '/api/foos/1', name: 'foo1'})});
   item = await store.getRelation(() => bar.associatedFoo);
   expect(isRef(item)).toBeTruthy();
   expect(unref(item)).toEqual({'@id': '/api/foos/1', name: 'foo1'});
   expect(Array.from(store.state.items)[0]).toEqual({'@id': '/api/foos/1', name: 'foo1'});
 
-  response.value = mockResponse({body: JSON.stringify({'@id': '/api/foos/2', name: 'foo2'})});
+  currentResponse.value = mockResponse({body: JSON.stringify({'@id': '/api/foos/2', name: 'foo2'})});
   bar.associatedFoo = '/api/foos/2';
   await flushPromises();
   expect(unref(item)).toEqual({'@id': '/api/foos/2', name: 'foo2'});
@@ -230,13 +232,13 @@ it('synchronizes OneToMany relations', async () => {
   let items;
   const store = await createStore();
   await store.use(plugin);
-  response.value = mockResponse({body: JSON.stringify({'@id': '/api/foos/1', name: 'foo1'})});
+  currentResponse.value = mockResponse({body: JSON.stringify({'@id': '/api/foos/1', name: 'foo1'})});
   items = await store.getRelations(() => bar.associatedFoos);
   expect(isRef(items)).toBeTruthy();
   expect(unref(items)).toEqual([{'@id': '/api/foos/1', name: 'foo1'}]);
   expect(Array.from(store.state.items)[0]).toEqual({'@id': '/api/foos/1', name: 'foo1'});
 
-  response.value = mockResponse({body: JSON.stringify({'@id': '/api/foos/2', name: 'foo2'})});
+  currentResponse.value = mockResponse({body: JSON.stringify({'@id': '/api/foos/2', name: 'foo2'})});
   bar.associatedFoos = ['/api/foos/2'];
   await flushPromises();
   expect(unref(items)).toEqual([{'@id': '/api/foos/2', name: 'foo2'}]);
@@ -254,12 +256,38 @@ it('fetches a collection', async () => {
   };
   collection = await useSetup(createTestApp(storeFactory), async () => {
     const store = useStore();
-    response.value = mockResponse({body: JSON.stringify(body)});
+    currentResponse.value = mockResponse({body: JSON.stringify(body)});
     return await store.fetchCollection('/api/foos');
   });
   expect(collection).toBeInstanceOf(HydraCollection);
   expect(collection.items[0]).toEqual({'@id': '/api/foos/1', name: 'foo'});
   expect(collection.totalItems).toEqual(1000);
+});
+
+it('appends a `groups` parameter to the query', async () => {
+  const storeFactory = await (await createStore()).use(plugin);
+  const body = {
+    '@type': 'hydra:Collection',
+    'hydra:member': [
+      {'@id': '/api/foos/1', name: 'foo'},
+    ],
+    'hydra:totalItems': 1000,
+  };
+  const collection = await useSetup(createTestApp(storeFactory), async () => {
+    const store = useStore();
+    currentResponse.value = mockResponse({body: JSON.stringify(body)});
+    return await store.fetchCollection('/api/foos?foo=bar', {groups: ['foo', 'bar']});
+  });
+
+  expect(lastResponse.value.request).toBe('https://example.org/api/foos?foo=bar&groups%5B%5D=foo&groups%5B%5D=bar');
+
+  const item = await useSetup(createTestApp(storeFactory), async () => {
+    const store = useStore();
+    currentResponse.value = mockResponse({body: JSON.stringify({'@id': '/api/foos/1', name: 'foo'})});
+    return await store.fetchItem('/api/foos/1?foo=bar', {groups: ['foo', 'bar']});
+  });
+
+  expect(lastResponse.value.request).toBe('https://example.org/api/foos/1?foo=bar&groups%5B%5D=foo&groups%5B%5D=bar');
 });
 
 it('creates an item', async () => {
@@ -270,7 +298,7 @@ it('creates an item', async () => {
   const responseBody = {'@type': 'Foo', '@id': '/api/foos/1', name: 'foo'};
   const item = await useSetup(createTestApp(storeFactory), async () => {
     const store = useStore();
-    response.value = mockResponse({body: JSON.stringify(responseBody)});
+    currentResponse.value = mockResponse({body: JSON.stringify(responseBody)});
     return await store.createItem(payload);
   });
   expect(item).toEqual(responseBody);
@@ -285,7 +313,7 @@ it('updates an item', async () => {
   const payload = {'@type': 'Foo', '@id': '/api/foos/1', name: 'bar'};
   item = await useSetup(createTestApp(storeFactory), async () => {
     const store = useStore();
-    response.value = mockResponse({body: JSON.stringify(payload)});
+    currentResponse.value = mockResponse({body: JSON.stringify(payload)});
     return await store.updateItem(payload);
   });
   expect(item).toEqual(payload);
@@ -298,7 +326,7 @@ it('deletes an item', async () => {
   store.storeItem({'@type': 'Foo', '@id': '/api/foos/1', name: 'foo'});
   await useSetup(createTestApp(storeFactory), async () => {
     const store = useStore();
-    response.value = mockResponse({status: 204, body: ''});
+    currentResponse.value = mockResponse({status: 204, body: ''});
     return await store.deleteItem('/api/foos/1');
   });
   expect(store.state.items.length).toEqual(0);
@@ -319,7 +347,7 @@ it('returns a typed object', async () => {
   const store = await getInjectedStore(storeFactory);
   await useSetup(createTestApp(storeFactory), async () => {
     const store = useStore();
-    response.value = mockResponse({body: JSON.stringify({'@id': '/api/foos/1', '@type': 'Foo', name: 'foo'})});
+    currentResponse.value = mockResponse({body: JSON.stringify({'@id': '/api/foos/1', '@type': 'Foo', name: 'foo'})});
     return await store.fetchItem('/api/foos/1');
   });
   expect(Array.from(store.state.items)[0]).toEqual({'@id': '/api/foos/1', '@type': 'Foo', name: 'foo'});
@@ -343,7 +371,7 @@ it('returns a collection of typed objects', async () => {
   const storeFactory = await (await createStore()).use(plugin);
   const collection = await useSetup(createTestApp(storeFactory), async () => {
     const store = useStore();
-    response.value = mockResponse({body: JSON.stringify({
+    currentResponse.value = mockResponse({body: JSON.stringify({
         '@type': 'hydra:Collection',
         'hydra:member': [
           {
@@ -390,7 +418,7 @@ it('returns a typed error', async () => {
   try {
     await useSetup(createTestApp(storeFactory), async () => {
       const store = useStore();
-      response.value = mockResponse({body: JSON.stringify(responseBody), status: 422});
+      currentResponse.value = mockResponse({body: JSON.stringify(responseBody), status: 422});
       return await store.updateItem(requestBody);
     });
   } catch (e) {

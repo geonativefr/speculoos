@@ -45,7 +45,7 @@ export class ApiClient {
   constructor({baseUri = '', options = {}, fetcher} = {}) {
     this.baseUri = baseUri;
     this.options = options;
-    fetcher = fetcher ?? window.fetch.bind(window);
+    fetcher = fetcher ?? window.fetch?.bind(window);
     this.fetch = async (url, options) => fetcher(url, options).then(tapResponse);
   }
 
@@ -145,7 +145,7 @@ class PreventDuplicates {
     }
   }
 
-  constructor(fetcher = window.fetch.bind(window)) {
+  constructor(fetcher = window.fetch?.bind(window)) {
     this.fetch = fetcher;
     return (url, options) => {
       try {
