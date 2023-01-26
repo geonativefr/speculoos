@@ -147,6 +147,38 @@ it('gets a relation', async () => {
   expect(Array.from(store.state.items)[0]).toEqual({'@id': '/api/foos/1', name: 'foo'});
 });
 
+it('types objects', async () => {
+  class Foo {
+    '@type' = 'Foo';
+  }
+  class Bar {
+    '@type' = 'Bar';
+  }
+
+  const bar = {
+    '@id': '/api/bars/1',
+    '@type': 'Bar',
+    fooAsIri: '/api/foos/1',
+    fooAsObject: {'@type': 'Foo', '@id': '/api/foos/1', name: 'temporary name'},
+    someUntypedRelation: {'@id': '/api/dummy/1', foo: 'bar'},
+  };
+  const store = await createStore();
+  await store.use(new HydraPlugin(api, {classmap: {Foo, Bar}}));
+
+  // When
+  currentResponse.value = mockResponse({body: JSON.stringify(bar)});
+  const item = await store.getItem('/api/bars/1');
+
+  // Then
+  expect(item).toBeInstanceOf(Bar);
+  currentResponse.value = mockResponse({body: JSON.stringify({'@type': 'Foo', '@id': '/api/foos/1', name: 'foo'})});
+
+  // And
+  expect(await store.getRelation(item.fooAsIri)).toBeInstanceOf(Foo);
+  expect(await store.getRelation(item.fooAsObject)).toBeInstanceOf(Foo);
+  expect(await store.getRelation(item.someUntypedRelation)).toStrictEqual(bar.someUntypedRelation);
+});
+
 it('forces calling getItem even if the relation is an object, when asked to', async () => {
   const bar = {
     '@id': '/api/bars/1',

@@ -196,7 +196,7 @@ export class HydraPlugin {
     }
 
     if ('object' === typeof itemOrIri && false === (options.force ?? false)) {
-      return itemOrIri;
+      return this.factory(itemOrIri);
     }
 
     return await this.getItem({state}, itemOrIri, options);

@@ -1208,7 +1208,7 @@ class ur {
       if (s != null)
         return s;
     }
-    return typeof e == "object" && (r.force ?? !1) === !1 ? e : await this.getItem({ state: t }, e, r);
+    return typeof e == "object" && (r.force ?? !1) === !1 ? this.factory(e) : await this.getItem({ state: t }, e, r);
   }
   async getRelations({ state: t }, e, r) {
     if (typeof e == "function") {

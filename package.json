@@ -20,7 +20,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "@vueuse/core": "^7.5.5",
+    "@vueuse/core": "^9.7.0",
     "clone-deep": "^4.0.1",
     "dayjs": "^1.10.7",
     "is-empty": "^1.2.0",
