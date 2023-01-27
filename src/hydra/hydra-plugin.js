@@ -5,6 +5,7 @@ import { HydraError } from './factories/hydra-error.js';
 import { ConstraintViolationList } from './factories/constraint-violation-list.js';
 import { asyncComputed, until } from '@vueuse/core';
 import { HydraEndpoints } from './hydra-endpoints.js';
+import { URI, QueryString } from 'psr7-js';
 
 const DEFAULT_CLASSMAP = {
   'hydra:Collection': HydraCollection,
@@ -119,8 +120,11 @@ export class HydraPlugin {
   }
 
   async fetchItem({state}, itemOrIri, options) {
-    const iri = getIri(itemOrIri);
-    const item = await this.handle(() => this.api.get(iri, options), options);
+    let uri = new URI(getIri(itemOrIri));
+    if (options?.groups) {
+      uri = uri.withQuery(`${new QueryString(uri.getQuery()).withParam('groups', options.groups)}`);
+    }
+    const item = await this.handle(() => this.api.get(`${uri}`, options), options);
     return this.storeItem({state}, this.factory(item));
   }
 
@@ -137,7 +141,11 @@ export class HydraPlugin {
   }
 
   async fetchCollection({state}, iri, options) {
-    const data = await this.handle(() => this.api.get(iri, options), options);
+    let uri = new URI(`${iri}`);
+    if (options?.groups) {
+      uri = uri.withQuery(`${new QueryString(uri.getQuery()).withParam('groups', options.groups)}`);
+    }
+    const data = await this.handle(() => this.api.get(`${uri}`, options), options);
     data['hydra:member'] = data['hydra:member'].map(item => this.factory(item));
     const collection = this.factory(data);
     collection['hydra:member'] = collection['hydra:member'].map(item => this.factory(item));
@@ -188,7 +196,7 @@ export class HydraPlugin {
     }
 
     if ('object' === typeof itemOrIri && false === (options.force ?? false)) {
-      return itemOrIri;
+      return this.factory(itemOrIri);
     }
 
     return await this.getItem({state}, itemOrIri, options);
