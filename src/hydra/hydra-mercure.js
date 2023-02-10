@@ -43,8 +43,20 @@ export const on = (mercure, topics, callback) => {
     topics = [topics];
   }
   const wrapper = (event) => {
+    let item;
     try {
-      const item = JSON.parse(event.data);
+      item = JSON.parse(event.data);
+    } catch (e) {
+      console.debug(e);
+      return;
+    }
+
+    if ('object' !== typeof item) {
+      console.debug('Received an event which is not an object.');
+      return;
+    }
+
+    try {
       for (const topic of topics) {
         if ('undefined' !== typeof uriTemplate(topic).fromUri(getIri(item))) {
           callback(item);
@@ -52,7 +64,7 @@ export const on = (mercure, topics, callback) => {
         }
       }
     } catch (e) {
-      // Silently ignore
+      console.error(e);
     }
   };
   mercure.addListener(wrapper);
