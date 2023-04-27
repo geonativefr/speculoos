@@ -10,7 +10,7 @@ export function hasIri(item) {
 
 export function getIri(itemOrIRI) {
   itemOrIRI = unref(itemOrIRI);
-  if (null === itemOrIRI) {
+  if (null == itemOrIRI) {
     return null;
   }
   if ('string' === typeof itemOrIRI) {
