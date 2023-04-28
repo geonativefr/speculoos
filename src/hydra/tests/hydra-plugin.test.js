@@ -94,9 +94,10 @@ it('fetches an item', async () => {
 it('gets an item', async () => {
   let item;
   const storeFactory = await (await createStore()).use(plugin);
-  const store = await getInjectedStore(storeFactory);
+  let store = await getInjectedStore(storeFactory);
+  const body = {body: JSON.stringify({'@id': '/api/foos/1', name: 'foo'})};
   item = await useSetup(createTestApp(storeFactory), async () => {
-    currentResponse.value = mockResponse({body: JSON.stringify({'@id': '/api/foos/1', name: 'foo'})});
+    currentResponse.value = mockResponse(body);
     return await store.getItem('/api/foos/1');
   });
   expect(item).toEqual({'@id': '/api/foos/1', name: 'foo'});
@@ -110,6 +111,12 @@ it('gets an item', async () => {
   });
   expect(item).toEqual({'@id': '/api/foos/1', name: 'foo'});
   expect(Array.from(store.state.items)[0]).toEqual({'@id': '/api/foos/1', name: 'foo'});
+
+  // Optionally skip storing item
+  store.removeItem('/api/foos/1');
+  currentResponse.value = mockResponse({body: JSON.stringify(body)});
+  await store.getItem('/api/foos/1', {store: false});
+  expect(Array.from(store.state.items)).toHaveLength(0);
 });
 
 it('gets an item only by its IRI, even on an already constructed object', async () => {
@@ -278,7 +285,8 @@ it('synchronizes OneToMany relations', async () => {
 
 it('fetches a collection', async () => {
   let collection;
-  const storeFactory = await (await createStore()).use(plugin);
+  const store = await createStore();
+  const storeFactory = await store.use(plugin);
   const body = {
     '@type': 'hydra:Collection',
     'hydra:member': [
@@ -294,6 +302,12 @@ it('fetches a collection', async () => {
   expect(collection).toBeInstanceOf(HydraCollection);
   expect(collection.items[0]).toEqual({'@id': '/api/foos/1', name: 'foo'});
   expect(collection.totalItems).toEqual(1000);
+  expect(Array.from(store.state.items)).toHaveLength(0);
+
+  // Optionally store items returned by collection
+  currentResponse.value = mockResponse({body: JSON.stringify(body)});
+  await store.fetchCollection('/api/foos', {store: true});
+  expect(Array.from(store.state.items)).toHaveLength(1);
 });
 
 it('appends a `groups` parameter to the query', async () => {
