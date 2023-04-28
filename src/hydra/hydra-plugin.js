@@ -124,8 +124,10 @@ export class HydraPlugin {
     if (options?.groups) {
       uri = uri.withQuery(`${new QueryString(uri.getQuery()).withParam('groups', options.groups)}`);
     }
-    const item = await this.handle(() => this.api.get(`${uri}`, options), options);
-    return this.storeItem({state}, this.factory(item));
+    let item = await this.handle(() => this.api.get(`${uri}`, options), options);
+    item = this.factory(item);
+    const shouldStore = options?.store ?? true;
+    return shouldStore ? this.storeItem({state}, item) : item;
   }
 
   async getItem({state}, itemOrIri, options) {
@@ -149,19 +151,27 @@ export class HydraPlugin {
     data['hydra:member'] = data['hydra:member'].map(item => this.factory(item));
     const collection = this.factory(data);
     collection['hydra:member'] = collection['hydra:member'].map(item => this.factory(item));
+    const shouldStore = options?.store ?? false;
+    if (shouldStore) {
+      for (const item of collection['hydra:member']) {
+        this.storeItem({state}, item);
+      }
+    }
     return collection;
   }
 
   async createItem({state}, item, options) {
     const endpoint = this.endpoints.for(item);
     item = await this.handle(() => this.api.post(endpoint, item, options), options);
-    return this.storeItem({state}, item);
+    const shouldStore = options?.store ?? true;
+    return shouldStore ? this.storeItem({state}, item) : item;
   }
 
   async updateItem({state}, item, options) {
     checkValidItem(item);
     item = await this.handle(() => this.api.put(getIri(item), item, options), options);
-    return this.storeItem({state}, item);
+    const shouldStore = options?.store ?? true;
+    return shouldStore ? this.storeItem({state}, item) : item;
   }
 
   async upsertItem({state}, item, options) {
@@ -196,7 +206,9 @@ export class HydraPlugin {
     }
 
     if ('object' === typeof itemOrIri && false === (options.force ?? false)) {
-      return this.factory(itemOrIri);
+      const item = this.factory(itemOrIri);
+      const shouldStore = options?.store ?? false;
+      return shouldStore ? this.storeItem({state}, item) : item;
     }
 
     return await this.getItem({state}, itemOrIri, options);
