@@ -46,8 +46,8 @@
     "eslint-plugin-vue": "^8.2.0",
     "flush-promises": "^1.0.2",
     "jest": "^27.4.5",
-    "prettier": "^2.5.1",
-    "typescript": "^4.5.5",
+    "prettier": "^2.8.8",
+    "typescript": "^5.0.4",
     "vite": "^4.0.4",
     "vue-tsc": "^0.31.2"
   }
