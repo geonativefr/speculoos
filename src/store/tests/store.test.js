@@ -1,5 +1,5 @@
 import { promiseTimeout } from '@vueuse/core';
-import { createStore, useStore } from '../index.js';
+import { createStore, useStore } from '../index.ts';
 import { createTestApp, useSetup, getInjectedStore } from '../../../vue-tests-setup.js';
 import { computed, isReadonly, reactive } from 'vue';
 
