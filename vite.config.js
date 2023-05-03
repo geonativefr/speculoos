@@ -5,7 +5,7 @@ import path from 'path';
 export default defineConfig({
   build: {
     lib: {
-      entry: path.resolve(__dirname, 'src/index.js'),
+      entry: path.resolve(__dirname, 'src/index.ts'),
       name: 'Speculoos',
       fileName: (format) => `speculoos.${format}.js`,
     },
