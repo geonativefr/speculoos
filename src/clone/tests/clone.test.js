@@ -1,4 +1,4 @@
-import { clone } from '../index.js';
+import { clone } from '../index.ts';
 
 class Book {
   id;
