@@ -1,4 +1,4 @@
-import { AbortError, ApiClient } from '../index.js';
+import { AbortError, ApiClient } from '../index.ts';
 import { HttpError } from '../errors/HttpError.js';
 import { fetch } from './setup.js';
 import { ref, watch } from 'vue';
