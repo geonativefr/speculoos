@@ -1,5 +1,5 @@
-import { Mercure } from '../index.js';
-import { FakeEventSource } from '../event-source.js';
+import { Mercure } from '../index.ts';
+import { FakeEventSource } from '../event-source.ts';
 import mitt from 'mitt';
 import { unref } from 'vue';
 
@@ -94,6 +94,7 @@ it('closes the connection when requested', () => {
   client.subscribe('/api/foos/foo');
   const connection = client.connection;
   expect(client.connection).toBeInstanceOf(FakeEventSource);
+  client.connection.open();
   expect(client.connection.readyState).toBe(1);
   client.stop();
   expect(connection.readyState).toBe(2);
