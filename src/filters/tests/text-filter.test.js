@@ -1,4 +1,4 @@
-import { TextFilter } from '../text-filter.js';
+import { TextFilter } from '../text-filter';
 
 it('should work', () => {
   const filter = new TextFilter();

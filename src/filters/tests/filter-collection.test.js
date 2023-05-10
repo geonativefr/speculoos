@@ -1,15 +1,15 @@
-import { FilterCollection, useFilters } from '../filter-collection.js';
-import { RangeFilter } from '../range-filter.js';
-import { TextFilter } from '../text-filter.js';
-import { TruthyFilter } from '../truthy-filter.js';
-import { DateRangeFilter } from '../date-range-filter.js';
-import { ItemFilter } from '../item-filter.js';
+import { FilterCollection, useFilters } from '../filter-collection';
+import { RangeFilter } from '../range-filter';
+import { TextFilter } from '../text-filter';
+import { TruthyFilter } from '../truthy-filter';
+import { DateRangeFilter } from '../date-range-filter';
+import { ItemFilter } from '../item-filter';
+import { ArrayFilter } from '../array-filter';
 import { createTestApp, useSetup } from '../../../vue-tests-setup.js';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc.js';
 import timezone from 'dayjs/plugin/timezone.js';
 import { reactive, unref } from 'vue';
-import { ArrayFilter } from '../array-filter.js';
 import { getItemByIri } from '../../hydra/index.js';
 
 const store = {

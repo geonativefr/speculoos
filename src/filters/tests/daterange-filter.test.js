@@ -1,4 +1,4 @@
-import { DateRangeFilter } from '../date-range-filter.js';
+import { DateRangeFilter } from '../date-range-filter';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
@@ -32,14 +32,14 @@ it('partially denormalizes an input object', () => {
   filter.denormalize({
     before: '2021-06-17T20:59:59Z',
   });
-  expect(filter.after).toBeNull();
+  expect(filter.after).toBe(undefined);
   expect(filter.before).toBe('2021-06-17');
 
   filter.denormalize({
     after: '2021-06-15T21:00:00Z',
   });
   expect(filter.after).toBe('2021-06-16');
-  expect(filter.before).toBeNull();
+  expect(filter.before).toBe(undefined);
 });
 
 it('normalizes the filter', () => {
@@ -75,11 +75,11 @@ it('normalizes the filter without using user timezone and without time', () => {
 it('partially normalizes the filter', () => {
   let filter = new DateRangeFilter({before: '2021-06-18'});
   expect(filter.normalize()).toStrictEqual({
-    after: null,
+    after: undefined,
     before: '2021-06-18T20:59:59Z',
   }); filter = new DateRangeFilter({after: '2021-06-16'});
   expect(filter.normalize()).toStrictEqual({
     after: '2021-06-15T21:00:00Z',
-    before: null,
+    before: undefined,
   });
 });

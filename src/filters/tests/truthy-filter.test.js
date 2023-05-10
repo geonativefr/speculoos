@@ -1,4 +1,4 @@
-import { TruthyFilter } from '../truthy-filter.js';
+import { TruthyFilter } from '../truthy-filter';
 
 it('should work', () => {
   const filter = new TruthyFilter();

@@ -1,6 +1,6 @@
 import { reactive, readonly, inject, App, Plugin } from 'vue';
 
-type Store = Plugin & {
+export type Store = Plugin & {
     name: string;
     state: Object;
     use: (plugin: StorePlugin) => Promise<Store>;

@@ -1,4 +1,4 @@
-import { OrderFilter } from '../order-filter.js';
+import { OrderFilter } from '../order-filter';
 
 it('should work', () => {
   const filter = new OrderFilter();

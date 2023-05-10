@@ -1,5 +1,5 @@
-import { ArrayFilter } from '../array-filter.js';
-import { FilterCollection } from '../filter-collection.js';
+import { ArrayFilter } from '../array-filter';
+import { FilterCollection } from '../filter-collection';
 
 it('should work', () => {
   let filter = new ArrayFilter();

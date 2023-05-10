@@ -1,4 +1,4 @@
-import { ItemFilter } from '../item-filter.js';
+import { ItemFilter } from '../item-filter';
 import { getItemByIri } from '../../hydra/index.js';
 
 const foo = {

@@ -1,4 +1,4 @@
-import { RangeFilter } from '../range-filter.js';
+import { RangeFilter } from '../range-filter';
 
 it('denormalizes an input object', async () => {
   const combinations = [
