@@ -7,17 +7,17 @@ import md5 from 'md5';
 
 type ApiClientUrl = string | URL;
 
-interface ApiClientResponse<T> extends Response {
+export interface ApiClientResponse<T> extends Response {
     data?: T | string;
 }
 
-interface ApiClientInterface {
+export interface ApiClientInterface {
     baseUri?: ApiClientUrl;
     options?: RequestInit;
     fetcher?: Fetcher;
 }
 
-interface ApiClientOptions extends RequestInit {
+export interface ApiClientOptions extends RequestInit {
     isLoading?: boolean;
     aborted?: boolean;
 }
