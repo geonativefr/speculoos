@@ -48,33 +48,41 @@ it('creates the item', async () => {
 
 it('updates the item', async () => {
   const storeFactory = await (await createStore()).use(plugin);
-  const initialState = {'@id': '/api/foos/1', '@type': 'Foo', name: 'bar'};
-  const expectedState = {'@id': '/api/foos/1', '@type': 'Foo', name: 'baz'};
+  const initialState = {'@id': '/api/foos/1', '@type': 'Foo', names: {firstName: 'bar'}};
+  const expectedState = {'@id': '/api/foos/1', '@type': 'Foo', names: {firstName: 'baz'}};
   const form = await useSetup(createTestApp(storeFactory), async () => {
     const {item, submit, isCreationMode, isUnsavedDraft} = useItemForm(initialState);
     const wasUnsavedDraft = unref(isUnsavedDraft);
     const isCreationModeBefore = unref(isCreationMode);
-    item.name = 'baz';
+    item.names.firstName = 'baz';
     const isUnsavedDraftBefore = unref(isUnsavedDraft);
     response.value = mockResponse({body: JSON.stringify(expectedState)});
-    await submit();
-    const isCreationModeAfter = unref(isCreationMode);
-    const isUnsavedDraftAfter = unref(isUnsavedDraft);
+    const updatedItem = await submit();
+    const isCreationModeAfterSubmit = unref(isCreationMode);
+    const isUnsavedDraftAfterSubmit = unref(isUnsavedDraft);
+    item.names.firstName = 'baz2';
+    const isCreationModeAfterChange = unref(isCreationMode);
+    const isUnsavedDraftAfterChange = unref(isUnsavedDraft);
     return {
       item,
+      updatedItem,
       isCreationModeBefore,
-      isCreationModeAfter,
+      isCreationModeAfterSubmit,
+      isCreationModeAfterChange,
       wasUnsavedDraft,
       isUnsavedDraftBefore,
-      isUnsavedDraftAfter,
+      isUnsavedDraftAfterSubmit,
+      isUnsavedDraftAfterChange,
     };
   });
-  expect(form.item).toEqual(expectedState);
+  expect(form.updatedItem).toEqual(expectedState);
   expect(form.isCreationModeBefore).toBe(false);
-  expect(form.isCreationModeAfter).toBe(false);
+  expect(form.isCreationModeAfterSubmit).toBe(false);
+  expect(form.isCreationModeAfterChange).toBe(false);
   expect(form.wasUnsavedDraft).toBe(false);
   expect(form.isUnsavedDraftBefore).toBe(true);
-  expect(form.isUnsavedDraftAfter).toBe(false);
+  expect(form.isUnsavedDraftAfterSubmit).toBe(false);
+  expect(form.isUnsavedDraftAfterChange).toBe(true);
 });
 
 it('resets the item', async () => {

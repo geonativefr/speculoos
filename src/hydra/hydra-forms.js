@@ -41,7 +41,6 @@ export function useItemForm(itemInitialState) {
   const item = reactive(clone(unref(itemInitialState)));
   const isCreationMode = computed(() => !hasIri(unref(item)));
   const isSubmitting = ref(false);
-  watch(initialState, newInitialState => recreateState(item, newInitialState));
 
   const isUnsavedDraft = computed(() => JSON.stringify(unref(item)) !== JSON.stringify(unref(initialState)));
   const reset = (resetItem) => recreateState(item, clone(unref(resetItem ?? itemInitialState)));

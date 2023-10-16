@@ -1,26 +1,34 @@
-var Ut = Object.defineProperty;
-var Rt = (n, t, e) => t in n ? Ut(n, t, { enumerable: !0, configurable: !0, writable: !0, value: e }) : n[t] = e;
-var f = (n, t, e) => (Rt(n, typeof t != "symbol" ? t + "" : t, e), e);
-import { whenever as Ht, asyncComputed as St, until as zt } from "@vueuse/core";
-import { unref as b, isRef as st, ref as K, reactive as B, readonly as lt, inject as xt, computed as ft, watch as Lt, onUnmounted as Nt } from "vue";
-import Tt from "clone-deep";
-import kt from "md5";
-import F from "is-empty";
-import { useRoute as Ft, useRouter as Vt, onBeforeRouteUpdate as qt } from "vue-router";
-import { URI as et, QueryString as it } from "psr7-js";
-import { v4 as Zt } from "uuid";
-import Jt from "mitt";
-import Qt from "uri-templates";
-class Wt extends Error {
-  constructor(t) {
-    super(t.statusText), this.response = t, this.statusCode = parseInt(this.response.status);
+var __defProp = Object.defineProperty;
+var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+var __publicField = (obj, key, value) => {
+  __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
+  return value;
+};
+const import_meta = {};
+import { whenever, asyncComputed, until } from "@vueuse/core";
+import { unref, isRef, ref, reactive, readonly, inject, computed, onUnmounted } from "vue";
+import clone$1 from "clone-deep";
+import md5 from "md5";
+import empty from "is-empty";
+import { useRoute, useRouter, onBeforeRouteUpdate } from "vue-router";
+import { URI, QueryString } from "psr7-js";
+import { v4 } from "uuid";
+import mitt from "mitt";
+import uriTemplate from "uri-templates";
+class HttpError extends Error {
+  constructor(response) {
+    super(response.statusText);
+    this.response = response;
+    this.statusCode = parseInt(this.response.status);
   }
-  isStatusCode(t) {
-    const e = (r) => parseInt(r) === this.statusCode;
-    for (let r of arguments)
-      if (e(r))
-        return !0;
-    return !1;
+  isStatusCode(statusCode) {
+    const valid = (statusCode2) => parseInt(statusCode2) === this.statusCode;
+    for (let value of arguments) {
+      if (valid(value)) {
+        return true;
+      }
+    }
+    return false;
   }
   isClientError() {
     return this.statusCode >= 400 && this.statusCode < 500;
@@ -28,699 +36,829 @@ class Wt extends Error {
   isServerError() {
     return this.statusCode > 500;
   }
-  static guard(t) {
-    if (t.status >= 400)
-      throw new this(t);
-    return t;
-  }
-}
-class Bt extends Error {
-  constructor(t) {
-    super(), this.name = "AbortError", this.reason = t;
-  }
-}
-const ut = (n) => {
-  if (!(n instanceof Headers))
-    return n;
-  const t = {};
-  for (let e of n.keys())
-    t[e] = n.get(e);
-  return t;
-}, Gt = {
-  Accept: "application/ld+json, application/json"
-}, Mt = async (n) => {
-  try {
-    const t = await n.text();
-    try {
-      n.data = JSON.parse(t), n.json = () => new Promise((e) => e(n.data));
-    } catch {
-      n.data = t, n.json = () => new Promise((r) => r(n.data));
+  static guard(response) {
+    if (response.status >= 400) {
+      throw new this(response);
     }
-  } catch {
+    return response;
   }
-  return n;
+}
+class AbortError extends Error {
+  constructor(reason) {
+    super();
+    this.name = "AbortError";
+    this.reason = reason;
+  }
+}
+const normalizeHeaders = (headers) => {
+  if (!(headers instanceof Headers)) {
+    return headers;
+  }
+  const output = {};
+  for (let key of headers.keys()) {
+    output[key] = headers.get(key);
+  }
+  return output;
 };
-class Ve {
-  constructor({ baseUri: t = "", options: e = {}, fetcher: r } = {}) {
-    f(this, "baseUri");
-    f(this, "options");
-    f(this, "fetch");
-    var s;
-    this.baseUri = t, this.options = e, r = r ?? ((s = window.fetch) == null ? void 0 : s.bind(window)), this.fetch = async (i, u) => r(i, u).then(Mt);
-  }
-  resolve(t) {
-    return new URL(t, this.baseUri).toString();
-  }
-  mergeOptions(t) {
-    let e = { ...this.options };
-    Object.keys(e).includes("headers") && (e.headers = ut(e.headers));
-    for (let r of arguments) {
-      let s = { ...r };
-      Object.keys(s).includes("headers") && (s.headers = { ...ut(s.headers) }), e = { ...Tt(e), ...Tt(s) };
-    }
-    return e;
-  }
-  async request(t, e, r) {
-    e = `${b(e)}`, r = this.mergeOptions({ method: t }, r), Object.keys(r).includes("headers") && (r.headers = new Headers({ ...Gt, ...ut(r.headers) }));
+const defaultHeaders = {
+  Accept: "application/ld+json, application/json"
+};
+const tapResponse = async (response) => {
+  try {
+    const body = await response.text();
     try {
-      if (st(r == null ? void 0 : r.isLoading) && (r.isLoading.value = !0), st(r == null ? void 0 : r.aborted)) {
-        const s = new AbortController(), { signal: i } = s;
-        r.signal = i, Ht(r.aborted, () => s.abort(), { immediate: !0 });
+      response.data = JSON.parse(body);
+      response.json = () => new Promise((resolve) => resolve(response.data));
+    } catch (e) {
+      response.data = body;
+      response.json = () => new Promise((resolve) => resolve(response.data));
+    }
+  } catch (e) {
+  }
+  return response;
+};
+class ApiClient {
+  constructor({ baseUri = "", options = {}, fetcher } = {}) {
+    __publicField(this, "baseUri");
+    __publicField(this, "options");
+    __publicField(this, "fetch");
+    var _a;
+    this.baseUri = baseUri;
+    this.options = options;
+    fetcher = fetcher != null ? fetcher : (_a = window.fetch) == null ? void 0 : _a.bind(window);
+    this.fetch = async (url, options2) => fetcher(url, options2).then(tapResponse);
+  }
+  resolve(uri) {
+    return new URL(uri, this.baseUri).toString();
+  }
+  mergeOptions(options) {
+    let output = { ...this.options };
+    if (Object.keys(output).includes("headers")) {
+      output.headers = normalizeHeaders(output.headers);
+    }
+    for (let argument of arguments) {
+      let options2 = { ...argument };
+      if (Object.keys(options2).includes("headers")) {
+        options2.headers = { ...normalizeHeaders(options2.headers) };
+      }
+      output = { ...clone$1(output), ...clone$1(options2) };
+    }
+    return output;
+  }
+  async request(method, url, options) {
+    url = `${unref(url)}`;
+    options = this.mergeOptions({ method }, options);
+    if (Object.keys(options).includes("headers")) {
+      options.headers = new Headers({ ...defaultHeaders, ...normalizeHeaders(options.headers) });
+    }
+    try {
+      if (isRef(options == null ? void 0 : options.isLoading)) {
+        options.isLoading.value = true;
+      }
+      if (isRef(options == null ? void 0 : options.aborted)) {
+        const controller = new AbortController();
+        const { signal } = controller;
+        options.signal = signal;
+        whenever(options.aborted, () => controller.abort(), { immediate: true });
       }
       try {
-        const s = await this.fetch(e, r);
-        return Wt.guard(s);
-      } catch (s) {
-        throw s.name === "AbortError" ? new Bt(s.reason) : s;
+        const response = await this.fetch(url, options);
+        return HttpError.guard(response);
+      } catch (e) {
+        if ("AbortError" === e.name) {
+          throw new AbortError(e.reason);
+        }
+        throw e;
       }
     } finally {
-      st(r == null ? void 0 : r.isLoading) && (r.isLoading.value = !1);
+      if (isRef(options == null ? void 0 : options.isLoading)) {
+        options.isLoading.value = false;
+      }
     }
   }
-  async get(t, e = {}) {
-    return await this.request("GET", this.resolve(t), this.mergeOptions(e));
+  async get(uri, options = {}) {
+    return await this.request("GET", this.resolve(uri), this.mergeOptions(options));
   }
-  async post(t, e, r = {}) {
-    return await this.request("POST", this.resolve(t), this.mergeOptions(
+  async post(uri, data, options = {}) {
+    return await this.request("POST", this.resolve(uri), this.mergeOptions(
       {
-        body: JSON.stringify(b(e)),
+        body: JSON.stringify(unref(data)),
         headers: {
           "Content-Type": "application/json"
         }
       },
-      r
+      options
     ));
   }
-  async put(t, e, r = {}) {
-    return await this.request("PUT", this.resolve(t), this.mergeOptions(
+  async put(uri, data, options = {}) {
+    return await this.request("PUT", this.resolve(uri), this.mergeOptions(
       {
-        body: JSON.stringify(b(e)),
+        body: JSON.stringify(unref(data)),
         headers: {
           "Content-Type": "application/json"
         }
       },
-      r
+      options
     ));
   }
-  async delete(t, e = {}) {
-    return await this.request("DELETE", this.resolve(t), this.mergeOptions(e));
+  async delete(uri, options = {}) {
+    return await this.request("DELETE", this.resolve(uri), this.mergeOptions(options));
   }
 }
-class Kt {
-  constructor(t = ((e) => (e = window.fetch) == null ? void 0 : e.bind(window))()) {
-    f(this, "fetch");
-    f(this, "pendingRequests", []);
-    return this.fetch = t, (r, s) => {
+class PreventDuplicates {
+  constructor(fetcher = ((_a) => (_a = window.fetch) == null ? void 0 : _a.bind(window))()) {
+    __publicField(this, "fetch");
+    __publicField(this, "pendingRequests", []);
+    this.fetch = fetcher;
+    return (url, options) => {
       try {
-        const i = kt(JSON.stringify({ url: r, ...s })), u = this.pendingRequests.findIndex((d) => i === d.hash);
-        if (u >= 0)
-          return this.pendingRequests[u].promise;
-        const l = this.fetch(r, s).then(Mt);
-        return this.pendingRequests.push({ hash: i, promise: l }), l.then(
-          (d) => (this.removePendingRequest(i), d),
-          (d) => {
-            throw this.removePendingRequest(i), d;
+        const hash = md5(JSON.stringify({ url, ...options }));
+        const index = this.pendingRequests.findIndex((pending) => hash === pending.hash);
+        if (index >= 0) {
+          return this.pendingRequests[index].promise;
+        }
+        const promise = this.fetch(url, options).then(tapResponse);
+        this.pendingRequests.push({ hash, promise });
+        return promise.then(
+          (result) => {
+            this.removePendingRequest(hash);
+            return result;
+          },
+          (error) => {
+            this.removePendingRequest(hash);
+            throw error;
           }
         );
-      } catch {
-        return this.fetch(r, s);
+      } catch (e) {
+        return this.fetch(url, options);
       }
     };
   }
-  removePendingRequest(t) {
-    const e = this.pendingRequests.findIndex((r) => t === r.hash);
-    e >= 0 && this.pendingRequests.splice(e, 1);
+  removePendingRequest(hash) {
+    const index = this.pendingRequests.findIndex((pending) => hash === pending.hash);
+    if (index >= 0) {
+      this.pendingRequests.splice(index, 1);
+    }
   }
 }
-function qe(n = void 0) {
-  return new Kt(n);
+function withoutDuplicates(fetcher = void 0) {
+  return new PreventDuplicates(fetcher);
 }
-const G = (n, t = !0, e = []) => {
-  if (typeof n != "object" || n == null)
-    return n;
-  const r = e.find((i) => i.orig === n);
-  if (r != null)
-    return r.cloned;
-  let s = Object.assign(Object.create(Object.getPrototypeOf(n)), n);
-  if (Array.isArray(n) && (s = Object.values(s)), e.push({ orig: n, cloned: s }), t)
-    for (const i in s)
-      typeof s[i] == "object" && s[i] != null && (s[i] = G(s[i], t, e));
-  return "__clone" in s && typeof s.__clone == "function" && s.__clone(), s;
+const clone = (orig, deep = true, duplicates = []) => {
+  if ("object" !== typeof orig || null == orig) {
+    return orig;
+  }
+  const duplicate = duplicates.find((item) => item.orig === orig);
+  if (null != duplicate) {
+    return duplicate.cloned;
+  }
+  let cloned = Object.assign(Object.create(Object.getPrototypeOf(orig)), orig);
+  if (Array.isArray(orig)) {
+    cloned = Object.values(cloned);
+  }
+  duplicates.push({ orig, cloned });
+  if (deep) {
+    for (const prop in cloned) {
+      if ("object" === typeof cloned[prop] && null != cloned[prop]) {
+        cloned[prop] = clone(cloned[prop], deep, duplicates);
+      }
+    }
+  }
+  if ("__clone" in cloned && "function" === typeof cloned.__clone) {
+    cloned.__clone();
+  }
+  return cloned;
 };
-class V {
+class Filter {
   normalize() {
     throw Error("This method is meant to be overriden.");
   }
-  async denormalize(t) {
+  async denormalize(input) {
     throw Error("This method is meant to be overriden.");
   }
 }
-class Ze extends V {
-  constructor(e = []) {
+class ArrayFilter extends Filter {
+  constructor(values = []) {
     super();
-    f(this, "values");
-    this.values = e;
+    __publicField(this, "values");
+    this.values = values;
   }
   normalize() {
     return this.values;
   }
-  async denormalize(e) {
-    if (typeof e == "string" && (e = e.trim()), [void 0, null, ""].includes(e)) {
+  async denormalize(input) {
+    if ("string" === typeof input) {
+      input = input.trim();
+    }
+    if ([void 0, null, ""].includes(input)) {
       this.values = [];
       return;
     }
-    Array.isArray(e) || (e = [e]), this.values = e;
+    if (!Array.isArray(input)) {
+      input = [input];
+    }
+    this.values = input;
   }
 }
-var pt = typeof globalThis < "u" ? globalThis : typeof window < "u" ? window : typeof global < "u" ? global : typeof self < "u" ? self : {}, C = {}, Xt = {
-  get exports() {
-    return C;
-  },
-  set exports(n) {
-    C = n;
-  }
-};
-(function(n, t) {
-  (function(e, r) {
-    n.exports = r();
-  })(pt, function() {
-    var e = 1e3, r = 6e4, s = 36e5, i = "millisecond", u = "second", l = "minute", d = "hour", $ = "day", P = "week", Y = "month", D = "quarter", O = "year", T = "date", c = "Invalid Date", S = /^(\d{4})[-/]?(\d{1,2})?[-/]?(\d{0,2})[Tt\s]*(\d{1,2})?:?(\d{1,2})?:?(\d{1,2})?[.:]?(\d+)?$/, A = /\[([^\]]+)]|Y{1,4}|M{1,4}|D{1,2}|d{1,4}|H{1,2}|h{1,2}|a|A|m{1,2}|s{1,2}|Z{1,2}|SSS/g, x = { name: "en", weekdays: "Sunday_Monday_Tuesday_Wednesday_Thursday_Friday_Saturday".split("_"), months: "January_February_March_April_May_June_July_August_September_October_November_December".split("_") }, M = function(p, h, a) {
-      var m = String(p);
-      return !m || m.length >= h ? p : "" + Array(h + 1 - m.length).join(a) + p;
-    }, N = { s: M, z: function(p) {
-      var h = -p.utcOffset(), a = Math.abs(h), m = Math.floor(a / 60), o = a % 60;
-      return (h <= 0 ? "+" : "-") + M(m, 2, "0") + ":" + M(o, 2, "0");
-    }, m: function p(h, a) {
-      if (h.date() < a.date())
-        return -p(a, h);
-      var m = 12 * (a.year() - h.year()) + (a.month() - h.month()), o = h.clone().add(m, Y), y = a - o < 0, g = h.clone().add(m + (y ? -1 : 1), Y);
-      return +(-(m + (a - o) / (y ? o - g : g - o)) || 0);
-    }, a: function(p) {
-      return p < 0 ? Math.ceil(p) || 0 : Math.floor(p);
-    }, p: function(p) {
-      return { M: Y, y: O, w: P, d: $, D: T, h: d, m: l, s: u, ms: i, Q: D }[p] || String(p || "").toLowerCase().replace(/s$/, "");
-    }, u: function(p) {
-      return p === void 0;
-    } }, E = "en", R = {};
-    R[E] = x;
-    var H = function(p) {
-      return p instanceof Z;
-    }, k = function p(h, a, m) {
-      var o;
-      if (!h)
-        return E;
-      if (typeof h == "string") {
-        var y = h.toLowerCase();
-        R[y] && (o = y), a && (R[y] = a, o = y);
-        var g = h.split("-");
-        if (!o && g.length > 1)
-          return p(g[0]);
+var commonjsGlobal = typeof globalThis !== "undefined" ? globalThis : typeof window !== "undefined" ? window : typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : {};
+var dayjs_min = { exports: {} };
+(function(module, exports) {
+  !function(t, e) {
+    module.exports = e();
+  }(commonjsGlobal, function() {
+    var t = 1e3, e = 6e4, n = 36e5, r = "millisecond", i = "second", s = "minute", u = "hour", a = "day", o = "week", f = "month", h = "quarter", c = "year", d = "date", $ = "Invalid Date", l = /^(\d{4})[-/]?(\d{1,2})?[-/]?(\d{0,2})[Tt\s]*(\d{1,2})?:?(\d{1,2})?:?(\d{1,2})?[.:]?(\d+)?$/, y = /\[([^\]]+)]|Y{1,4}|M{1,4}|D{1,2}|d{1,4}|H{1,2}|h{1,2}|a|A|m{1,2}|s{1,2}|Z{1,2}|SSS/g, M = { name: "en", weekdays: "Sunday_Monday_Tuesday_Wednesday_Thursday_Friday_Saturday".split("_"), months: "January_February_March_April_May_June_July_August_September_October_November_December".split("_") }, m = function(t2, e2, n2) {
+      var r2 = String(t2);
+      return !r2 || r2.length >= e2 ? t2 : "" + Array(e2 + 1 - r2.length).join(n2) + t2;
+    }, g = { s: m, z: function(t2) {
+      var e2 = -t2.utcOffset(), n2 = Math.abs(e2), r2 = Math.floor(n2 / 60), i2 = n2 % 60;
+      return (e2 <= 0 ? "+" : "-") + m(r2, 2, "0") + ":" + m(i2, 2, "0");
+    }, m: function t2(e2, n2) {
+      if (e2.date() < n2.date())
+        return -t2(n2, e2);
+      var r2 = 12 * (n2.year() - e2.year()) + (n2.month() - e2.month()), i2 = e2.clone().add(r2, f), s2 = n2 - i2 < 0, u2 = e2.clone().add(r2 + (s2 ? -1 : 1), f);
+      return +(-(r2 + (n2 - i2) / (s2 ? i2 - u2 : u2 - i2)) || 0);
+    }, a: function(t2) {
+      return t2 < 0 ? Math.ceil(t2) || 0 : Math.floor(t2);
+    }, p: function(t2) {
+      return { M: f, y: c, w: o, d: a, D: d, h: u, m: s, s: i, ms: r, Q: h }[t2] || String(t2 || "").toLowerCase().replace(/s$/, "");
+    }, u: function(t2) {
+      return void 0 === t2;
+    } }, v = "en", D = {};
+    D[v] = M;
+    var p = function(t2) {
+      return t2 instanceof _;
+    }, S = function t2(e2, n2, r2) {
+      var i2;
+      if (!e2)
+        return v;
+      if ("string" == typeof e2) {
+        var s2 = e2.toLowerCase();
+        D[s2] && (i2 = s2), n2 && (D[s2] = n2, i2 = s2);
+        var u2 = e2.split("-");
+        if (!i2 && u2.length > 1)
+          return t2(u2[0]);
       } else {
-        var w = h.name;
-        R[w] = h, o = w;
+        var a2 = e2.name;
+        D[a2] = e2, i2 = a2;
       }
-      return !m && o && (E = o), o || !m && E;
-    }, z = function(p, h) {
-      if (H(p))
-        return p.clone();
-      var a = typeof h == "object" ? h : {};
-      return a.date = p, a.args = arguments, new Z(a);
-    }, v = N;
-    v.l = k, v.i = H, v.w = function(p, h) {
-      return z(p, { locale: h.$L, utc: h.$u, x: h.$x, $offset: h.$offset });
+      return !r2 && i2 && (v = i2), i2 || !r2 && v;
+    }, w = function(t2, e2) {
+      if (p(t2))
+        return t2.clone();
+      var n2 = "object" == typeof e2 ? e2 : {};
+      return n2.date = t2, n2.args = arguments, new _(n2);
+    }, O = g;
+    O.l = S, O.i = p, O.w = function(t2, e2) {
+      return w(t2, { locale: e2.$L, utc: e2.$u, x: e2.$x, $offset: e2.$offset });
     };
-    var Z = function() {
-      function p(a) {
-        this.$L = k(a.locale, null, !0), this.parse(a);
+    var _ = function() {
+      function M2(t2) {
+        this.$L = S(t2.locale, null, true), this.parse(t2);
       }
-      var h = p.prototype;
-      return h.parse = function(a) {
-        this.$d = function(m) {
-          var o = m.date, y = m.utc;
-          if (o === null)
+      var m2 = M2.prototype;
+      return m2.parse = function(t2) {
+        this.$d = function(t3) {
+          var e2 = t3.date, n2 = t3.utc;
+          if (null === e2)
             return new Date(NaN);
-          if (v.u(o))
+          if (O.u(e2))
             return new Date();
-          if (o instanceof Date)
-            return new Date(o);
-          if (typeof o == "string" && !/Z$/i.test(o)) {
-            var g = o.match(S);
-            if (g) {
-              var w = g[2] - 1 || 0, j = (g[7] || "0").substring(0, 3);
-              return y ? new Date(Date.UTC(g[1], w, g[3] || 1, g[4] || 0, g[5] || 0, g[6] || 0, j)) : new Date(g[1], w, g[3] || 1, g[4] || 0, g[5] || 0, g[6] || 0, j);
+          if (e2 instanceof Date)
+            return new Date(e2);
+          if ("string" == typeof e2 && !/Z$/i.test(e2)) {
+            var r2 = e2.match(l);
+            if (r2) {
+              var i2 = r2[2] - 1 || 0, s2 = (r2[7] || "0").substring(0, 3);
+              return n2 ? new Date(Date.UTC(r2[1], i2, r2[3] || 1, r2[4] || 0, r2[5] || 0, r2[6] || 0, s2)) : new Date(r2[1], i2, r2[3] || 1, r2[4] || 0, r2[5] || 0, r2[6] || 0, s2);
             }
           }
-          return new Date(o);
-        }(a), this.$x = a.x || {}, this.init();
-      }, h.init = function() {
-        var a = this.$d;
-        this.$y = a.getFullYear(), this.$M = a.getMonth(), this.$D = a.getDate(), this.$W = a.getDay(), this.$H = a.getHours(), this.$m = a.getMinutes(), this.$s = a.getSeconds(), this.$ms = a.getMilliseconds();
-      }, h.$utils = function() {
-        return v;
-      }, h.isValid = function() {
-        return this.$d.toString() !== c;
-      }, h.isSame = function(a, m) {
-        var o = z(a);
-        return this.startOf(m) <= o && o <= this.endOf(m);
-      }, h.isAfter = function(a, m) {
-        return z(a) < this.startOf(m);
-      }, h.isBefore = function(a, m) {
-        return this.endOf(m) < z(a);
-      }, h.$g = function(a, m, o) {
-        return v.u(a) ? this[m] : this.set(o, a);
-      }, h.unix = function() {
+          return new Date(e2);
+        }(t2), this.$x = t2.x || {}, this.init();
+      }, m2.init = function() {
+        var t2 = this.$d;
+        this.$y = t2.getFullYear(), this.$M = t2.getMonth(), this.$D = t2.getDate(), this.$W = t2.getDay(), this.$H = t2.getHours(), this.$m = t2.getMinutes(), this.$s = t2.getSeconds(), this.$ms = t2.getMilliseconds();
+      }, m2.$utils = function() {
+        return O;
+      }, m2.isValid = function() {
+        return !(this.$d.toString() === $);
+      }, m2.isSame = function(t2, e2) {
+        var n2 = w(t2);
+        return this.startOf(e2) <= n2 && n2 <= this.endOf(e2);
+      }, m2.isAfter = function(t2, e2) {
+        return w(t2) < this.startOf(e2);
+      }, m2.isBefore = function(t2, e2) {
+        return this.endOf(e2) < w(t2);
+      }, m2.$g = function(t2, e2, n2) {
+        return O.u(t2) ? this[e2] : this.set(n2, t2);
+      }, m2.unix = function() {
         return Math.floor(this.valueOf() / 1e3);
-      }, h.valueOf = function() {
+      }, m2.valueOf = function() {
         return this.$d.getTime();
-      }, h.startOf = function(a, m) {
-        var o = this, y = !!v.u(m) || m, g = v.p(a), w = function(W, L) {
-          var Q = v.w(o.$u ? Date.UTC(o.$y, L, W) : new Date(o.$y, L, W), o);
-          return y ? Q : Q.endOf($);
-        }, j = function(W, L) {
-          return v.w(o.toDate()[W].apply(o.toDate("s"), (y ? [0, 0, 0, 0] : [23, 59, 59, 999]).slice(L)), o);
-        }, I = this.$W, _ = this.$M, J = this.$D, q = "set" + (this.$u ? "UTC" : "");
-        switch (g) {
-          case O:
-            return y ? w(1, 0) : w(31, 11);
-          case Y:
-            return y ? w(1, _) : w(0, _ + 1);
-          case P:
-            var X = this.$locale().weekStart || 0, tt = (I < X ? I + 7 : I) - X;
-            return w(y ? J - tt : J + (6 - tt), _);
-          case $:
-          case T:
-            return j(q + "Hours", 0);
+      }, m2.startOf = function(t2, e2) {
+        var n2 = this, r2 = !!O.u(e2) || e2, h2 = O.p(t2), $2 = function(t3, e3) {
+          var i2 = O.w(n2.$u ? Date.UTC(n2.$y, e3, t3) : new Date(n2.$y, e3, t3), n2);
+          return r2 ? i2 : i2.endOf(a);
+        }, l2 = function(t3, e3) {
+          return O.w(n2.toDate()[t3].apply(n2.toDate("s"), (r2 ? [0, 0, 0, 0] : [23, 59, 59, 999]).slice(e3)), n2);
+        }, y2 = this.$W, M3 = this.$M, m3 = this.$D, g2 = "set" + (this.$u ? "UTC" : "");
+        switch (h2) {
+          case c:
+            return r2 ? $2(1, 0) : $2(31, 11);
+          case f:
+            return r2 ? $2(1, M3) : $2(0, M3 + 1);
+          case o:
+            var v2 = this.$locale().weekStart || 0, D2 = (y2 < v2 ? y2 + 7 : y2) - v2;
+            return $2(r2 ? m3 - D2 : m3 + (6 - D2), M3);
+          case a:
           case d:
-            return j(q + "Minutes", 1);
-          case l:
-            return j(q + "Seconds", 2);
+            return l2(g2 + "Hours", 0);
           case u:
-            return j(q + "Milliseconds", 3);
+            return l2(g2 + "Minutes", 1);
+          case s:
+            return l2(g2 + "Seconds", 2);
+          case i:
+            return l2(g2 + "Milliseconds", 3);
           default:
             return this.clone();
         }
-      }, h.endOf = function(a) {
-        return this.startOf(a, !1);
-      }, h.$set = function(a, m) {
-        var o, y = v.p(a), g = "set" + (this.$u ? "UTC" : ""), w = (o = {}, o[$] = g + "Date", o[T] = g + "Date", o[Y] = g + "Month", o[O] = g + "FullYear", o[d] = g + "Hours", o[l] = g + "Minutes", o[u] = g + "Seconds", o[i] = g + "Milliseconds", o)[y], j = y === $ ? this.$D + (m - this.$W) : m;
-        if (y === Y || y === O) {
-          var I = this.clone().set(T, 1);
-          I.$d[w](j), I.init(), this.$d = I.set(T, Math.min(this.$D, I.daysInMonth())).$d;
+      }, m2.endOf = function(t2) {
+        return this.startOf(t2, false);
+      }, m2.$set = function(t2, e2) {
+        var n2, o2 = O.p(t2), h2 = "set" + (this.$u ? "UTC" : ""), $2 = (n2 = {}, n2[a] = h2 + "Date", n2[d] = h2 + "Date", n2[f] = h2 + "Month", n2[c] = h2 + "FullYear", n2[u] = h2 + "Hours", n2[s] = h2 + "Minutes", n2[i] = h2 + "Seconds", n2[r] = h2 + "Milliseconds", n2)[o2], l2 = o2 === a ? this.$D + (e2 - this.$W) : e2;
+        if (o2 === f || o2 === c) {
+          var y2 = this.clone().set(d, 1);
+          y2.$d[$2](l2), y2.init(), this.$d = y2.set(d, Math.min(this.$D, y2.daysInMonth())).$d;
         } else
-          w && this.$d[w](j);
+          $2 && this.$d[$2](l2);
         return this.init(), this;
-      }, h.set = function(a, m) {
-        return this.clone().$set(a, m);
-      }, h.get = function(a) {
-        return this[v.p(a)]();
-      }, h.add = function(a, m) {
-        var o, y = this;
-        a = Number(a);
-        var g = v.p(m), w = function(_) {
-          var J = z(y);
-          return v.w(J.date(J.date() + Math.round(_ * a)), y);
+      }, m2.set = function(t2, e2) {
+        return this.clone().$set(t2, e2);
+      }, m2.get = function(t2) {
+        return this[O.p(t2)]();
+      }, m2.add = function(r2, h2) {
+        var d2, $2 = this;
+        r2 = Number(r2);
+        var l2 = O.p(h2), y2 = function(t2) {
+          var e2 = w($2);
+          return O.w(e2.date(e2.date() + Math.round(t2 * r2)), $2);
         };
-        if (g === Y)
-          return this.set(Y, this.$M + a);
-        if (g === O)
-          return this.set(O, this.$y + a);
-        if (g === $)
-          return w(1);
-        if (g === P)
-          return w(7);
-        var j = (o = {}, o[l] = r, o[d] = s, o[u] = e, o)[g] || 1, I = this.$d.getTime() + a * j;
-        return v.w(I, this);
-      }, h.subtract = function(a, m) {
-        return this.add(-1 * a, m);
-      }, h.format = function(a) {
-        var m = this, o = this.$locale();
+        if (l2 === f)
+          return this.set(f, this.$M + r2);
+        if (l2 === c)
+          return this.set(c, this.$y + r2);
+        if (l2 === a)
+          return y2(1);
+        if (l2 === o)
+          return y2(7);
+        var M3 = (d2 = {}, d2[s] = e, d2[u] = n, d2[i] = t, d2)[l2] || 1, m3 = this.$d.getTime() + r2 * M3;
+        return O.w(m3, this);
+      }, m2.subtract = function(t2, e2) {
+        return this.add(-1 * t2, e2);
+      }, m2.format = function(t2) {
+        var e2 = this, n2 = this.$locale();
         if (!this.isValid())
-          return o.invalidDate || c;
-        var y = a || "YYYY-MM-DDTHH:mm:ssZ", g = v.z(this), w = this.$H, j = this.$m, I = this.$M, _ = o.weekdays, J = o.months, q = function(L, Q, ot, nt) {
-          return L && (L[Q] || L(m, y)) || ot[Q].slice(0, nt);
-        }, X = function(L) {
-          return v.s(w % 12 || 12, L, "0");
-        }, tt = o.meridiem || function(L, Q, ot) {
-          var nt = L < 12 ? "AM" : "PM";
-          return ot ? nt.toLowerCase() : nt;
-        }, W = { YY: String(this.$y).slice(-2), YYYY: this.$y, M: I + 1, MM: v.s(I + 1, 2, "0"), MMM: q(o.monthsShort, I, J, 3), MMMM: q(J, I), D: this.$D, DD: v.s(this.$D, 2, "0"), d: String(this.$W), dd: q(o.weekdaysMin, this.$W, _, 2), ddd: q(o.weekdaysShort, this.$W, _, 3), dddd: _[this.$W], H: String(w), HH: v.s(w, 2, "0"), h: X(1), hh: X(2), a: tt(w, j, !0), A: tt(w, j, !1), m: String(j), mm: v.s(j, 2, "0"), s: String(this.$s), ss: v.s(this.$s, 2, "0"), SSS: v.s(this.$ms, 3, "0"), Z: g };
-        return y.replace(A, function(L, Q) {
-          return Q || W[L] || g.replace(":", "");
+          return n2.invalidDate || $;
+        var r2 = t2 || "YYYY-MM-DDTHH:mm:ssZ", i2 = O.z(this), s2 = this.$H, u2 = this.$m, a2 = this.$M, o2 = n2.weekdays, f2 = n2.months, h2 = function(t3, n3, i3, s3) {
+          return t3 && (t3[n3] || t3(e2, r2)) || i3[n3].slice(0, s3);
+        }, c2 = function(t3) {
+          return O.s(s2 % 12 || 12, t3, "0");
+        }, d2 = n2.meridiem || function(t3, e3, n3) {
+          var r3 = t3 < 12 ? "AM" : "PM";
+          return n3 ? r3.toLowerCase() : r3;
+        }, l2 = { YY: String(this.$y).slice(-2), YYYY: this.$y, M: a2 + 1, MM: O.s(a2 + 1, 2, "0"), MMM: h2(n2.monthsShort, a2, f2, 3), MMMM: h2(f2, a2), D: this.$D, DD: O.s(this.$D, 2, "0"), d: String(this.$W), dd: h2(n2.weekdaysMin, this.$W, o2, 2), ddd: h2(n2.weekdaysShort, this.$W, o2, 3), dddd: o2[this.$W], H: String(s2), HH: O.s(s2, 2, "0"), h: c2(1), hh: c2(2), a: d2(s2, u2, true), A: d2(s2, u2, false), m: String(u2), mm: O.s(u2, 2, "0"), s: String(this.$s), ss: O.s(this.$s, 2, "0"), SSS: O.s(this.$ms, 3, "0"), Z: i2 };
+        return r2.replace(y, function(t3, e3) {
+          return e3 || l2[t3] || i2.replace(":", "");
         });
-      }, h.utcOffset = function() {
+      }, m2.utcOffset = function() {
         return 15 * -Math.round(this.$d.getTimezoneOffset() / 15);
-      }, h.diff = function(a, m, o) {
-        var y, g = v.p(m), w = z(a), j = (w.utcOffset() - this.utcOffset()) * r, I = this - w, _ = v.m(this, w);
-        return _ = (y = {}, y[O] = _ / 12, y[Y] = _, y[D] = _ / 3, y[P] = (I - j) / 6048e5, y[$] = (I - j) / 864e5, y[d] = I / s, y[l] = I / r, y[u] = I / e, y)[g] || I, o ? _ : v.a(_);
-      }, h.daysInMonth = function() {
-        return this.endOf(Y).$D;
-      }, h.$locale = function() {
-        return R[this.$L];
-      }, h.locale = function(a, m) {
-        if (!a)
+      }, m2.diff = function(r2, d2, $2) {
+        var l2, y2 = O.p(d2), M3 = w(r2), m3 = (M3.utcOffset() - this.utcOffset()) * e, g2 = this - M3, v2 = O.m(this, M3);
+        return v2 = (l2 = {}, l2[c] = v2 / 12, l2[f] = v2, l2[h] = v2 / 3, l2[o] = (g2 - m3) / 6048e5, l2[a] = (g2 - m3) / 864e5, l2[u] = g2 / n, l2[s] = g2 / e, l2[i] = g2 / t, l2)[y2] || g2, $2 ? v2 : O.a(v2);
+      }, m2.daysInMonth = function() {
+        return this.endOf(f).$D;
+      }, m2.$locale = function() {
+        return D[this.$L];
+      }, m2.locale = function(t2, e2) {
+        if (!t2)
           return this.$L;
-        var o = this.clone(), y = k(a, m, !0);
-        return y && (o.$L = y), o;
-      }, h.clone = function() {
-        return v.w(this.$d, this);
-      }, h.toDate = function() {
+        var n2 = this.clone(), r2 = S(t2, e2, true);
+        return r2 && (n2.$L = r2), n2;
+      }, m2.clone = function() {
+        return O.w(this.$d, this);
+      }, m2.toDate = function() {
         return new Date(this.valueOf());
-      }, h.toJSON = function() {
+      }, m2.toJSON = function() {
         return this.isValid() ? this.toISOString() : null;
-      }, h.toISOString = function() {
+      }, m2.toISOString = function() {
         return this.$d.toISOString();
-      }, h.toString = function() {
+      }, m2.toString = function() {
         return this.$d.toUTCString();
-      }, p;
-    }(), wt = Z.prototype;
-    return z.prototype = wt, [["$ms", i], ["$s", u], ["$m", l], ["$H", d], ["$W", $], ["$M", Y], ["$y", O], ["$D", T]].forEach(function(p) {
-      wt[p[1]] = function(h) {
-        return this.$g(h, p[0], p[1]);
+      }, M2;
+    }(), T = _.prototype;
+    return w.prototype = T, [["$ms", r], ["$s", i], ["$m", s], ["$H", u], ["$W", a], ["$M", f], ["$y", c], ["$D", d]].forEach(function(t2) {
+      T[t2[1]] = function(e2) {
+        return this.$g(e2, t2[0], t2[1]);
       };
-    }), z.extend = function(p, h) {
-      return p.$i || (p(h, Z, z), p.$i = !0), z;
-    }, z.locale = k, z.isDayjs = H, z.unix = function(p) {
-      return z(1e3 * p);
-    }, z.en = R[E], z.Ls = R, z.p = {}, z;
+    }), w.extend = function(t2, e2) {
+      return t2.$i || (t2(e2, _, w), t2.$i = true), w;
+    }, w.locale = S, w.isDayjs = p, w.unix = function(t2) {
+      return w(1e3 * t2);
+    }, w.en = D[v], w.Ls = D, w.p = {}, w;
   });
-})(Xt);
-var dt = {}, te = {
-  get exports() {
-    return dt;
-  },
-  set exports(n) {
-    dt = n;
-  }
-};
-(function(n, t) {
-  (function(e, r) {
-    n.exports = r();
-  })(pt, function() {
-    var e = "minute", r = /[+-]\d\d(?::?\d\d)?/g, s = /([+-]|\d\d)/g;
-    return function(i, u, l) {
-      var d = u.prototype;
-      l.utc = function(c) {
-        var S = { date: c, utc: !0, args: arguments };
-        return new u(S);
-      }, d.utc = function(c) {
-        var S = l(this.toDate(), { locale: this.$L, utc: !0 });
-        return c ? S.add(this.utcOffset(), e) : S;
-      }, d.local = function() {
-        return l(this.toDate(), { locale: this.$L, utc: !1 });
+})(dayjs_min);
+var dayjs = dayjs_min.exports;
+var utc$1 = { exports: {} };
+(function(module, exports) {
+  !function(t, i) {
+    module.exports = i();
+  }(commonjsGlobal, function() {
+    var t = "minute", i = /[+-]\d\d(?::?\d\d)?/g, e = /([+-]|\d\d)/g;
+    return function(s, f, n) {
+      var u = f.prototype;
+      n.utc = function(t2) {
+        var i2 = { date: t2, utc: true, args: arguments };
+        return new f(i2);
+      }, u.utc = function(i2) {
+        var e2 = n(this.toDate(), { locale: this.$L, utc: true });
+        return i2 ? e2.add(this.utcOffset(), t) : e2;
+      }, u.local = function() {
+        return n(this.toDate(), { locale: this.$L, utc: false });
       };
-      var $ = d.parse;
-      d.parse = function(c) {
-        c.utc && (this.$u = !0), this.$utils().u(c.$offset) || (this.$offset = c.$offset), $.call(this, c);
+      var o = u.parse;
+      u.parse = function(t2) {
+        t2.utc && (this.$u = true), this.$utils().u(t2.$offset) || (this.$offset = t2.$offset), o.call(this, t2);
       };
-      var P = d.init;
-      d.init = function() {
+      var r = u.init;
+      u.init = function() {
         if (this.$u) {
-          var c = this.$d;
-          this.$y = c.getUTCFullYear(), this.$M = c.getUTCMonth(), this.$D = c.getUTCDate(), this.$W = c.getUTCDay(), this.$H = c.getUTCHours(), this.$m = c.getUTCMinutes(), this.$s = c.getUTCSeconds(), this.$ms = c.getUTCMilliseconds();
+          var t2 = this.$d;
+          this.$y = t2.getUTCFullYear(), this.$M = t2.getUTCMonth(), this.$D = t2.getUTCDate(), this.$W = t2.getUTCDay(), this.$H = t2.getUTCHours(), this.$m = t2.getUTCMinutes(), this.$s = t2.getUTCSeconds(), this.$ms = t2.getUTCMilliseconds();
         } else
-          P.call(this);
+          r.call(this);
       };
-      var Y = d.utcOffset;
-      d.utcOffset = function(c, S) {
-        var A = this.$utils().u;
-        if (A(c))
-          return this.$u ? 0 : A(this.$offset) ? Y.call(this) : this.$offset;
-        if (typeof c == "string" && (c = function(E) {
-          E === void 0 && (E = "");
-          var R = E.match(r);
-          if (!R)
+      var a = u.utcOffset;
+      u.utcOffset = function(s2, f2) {
+        var n2 = this.$utils().u;
+        if (n2(s2))
+          return this.$u ? 0 : n2(this.$offset) ? a.call(this) : this.$offset;
+        if ("string" == typeof s2 && (s2 = function(t2) {
+          void 0 === t2 && (t2 = "");
+          var s3 = t2.match(i);
+          if (!s3)
             return null;
-          var H = ("" + R[0]).match(s) || ["-", 0, 0], k = H[0], z = 60 * +H[1] + +H[2];
-          return z === 0 ? 0 : k === "+" ? z : -z;
-        }(c), c === null))
+          var f3 = ("" + s3[0]).match(e) || ["-", 0, 0], n3 = f3[0], u3 = 60 * +f3[1] + +f3[2];
+          return 0 === u3 ? 0 : "+" === n3 ? u3 : -u3;
+        }(s2), null === s2))
           return this;
-        var x = Math.abs(c) <= 16 ? 60 * c : c, M = this;
-        if (S)
-          return M.$offset = x, M.$u = c === 0, M;
-        if (c !== 0) {
-          var N = this.$u ? this.toDate().getTimezoneOffset() : -1 * this.utcOffset();
-          (M = this.local().add(x + N, e)).$offset = x, M.$x.$localOffset = N;
+        var u2 = Math.abs(s2) <= 16 ? 60 * s2 : s2, o2 = this;
+        if (f2)
+          return o2.$offset = u2, o2.$u = 0 === s2, o2;
+        if (0 !== s2) {
+          var r2 = this.$u ? this.toDate().getTimezoneOffset() : -1 * this.utcOffset();
+          (o2 = this.local().add(u2 + r2, t)).$offset = u2, o2.$x.$localOffset = r2;
         } else
-          M = this.utc();
-        return M;
+          o2 = this.utc();
+        return o2;
       };
-      var D = d.format;
-      d.format = function(c) {
-        var S = c || (this.$u ? "YYYY-MM-DDTHH:mm:ss[Z]" : "");
-        return D.call(this, S);
-      }, d.valueOf = function() {
-        var c = this.$utils().u(this.$offset) ? 0 : this.$offset + (this.$x.$localOffset || this.$d.getTimezoneOffset());
-        return this.$d.valueOf() - 6e4 * c;
-      }, d.isUTC = function() {
+      var h = u.format;
+      u.format = function(t2) {
+        var i2 = t2 || (this.$u ? "YYYY-MM-DDTHH:mm:ss[Z]" : "");
+        return h.call(this, i2);
+      }, u.valueOf = function() {
+        var t2 = this.$utils().u(this.$offset) ? 0 : this.$offset + (this.$x.$localOffset || this.$d.getTimezoneOffset());
+        return this.$d.valueOf() - 6e4 * t2;
+      }, u.isUTC = function() {
         return !!this.$u;
-      }, d.toISOString = function() {
+      }, u.toISOString = function() {
         return this.toDate().toISOString();
-      }, d.toString = function() {
+      }, u.toString = function() {
         return this.toDate().toUTCString();
       };
-      var O = d.toDate;
-      d.toDate = function(c) {
-        return c === "s" && this.$offset ? l(this.format("YYYY-MM-DD HH:mm:ss:SSS")).toDate() : O.call(this);
+      var l = u.toDate;
+      u.toDate = function(t2) {
+        return "s" === t2 && this.$offset ? n(this.format("YYYY-MM-DD HH:mm:ss:SSS")).toDate() : l.call(this);
       };
-      var T = d.diff;
-      d.diff = function(c, S, A) {
-        if (c && this.$u === c.$u)
-          return T.call(this, c, S, A);
-        var x = this.local(), M = l(c).local();
-        return T.call(x, M, S, A);
+      var c = u.diff;
+      u.diff = function(t2, i2, e2) {
+        if (t2 && this.$u === t2.$u)
+          return c.call(this, t2, i2, e2);
+        var s2 = this.local(), f2 = n(t2).local();
+        return c.call(s2, f2, i2, e2);
       };
     };
   });
-})(te);
-const It = dt;
-var mt = {}, ee = {
-  get exports() {
-    return mt;
-  },
-  set exports(n) {
-    mt = n;
-  }
-};
-(function(n, t) {
-  (function(e, r) {
-    n.exports = r();
-  })(pt, function() {
-    var e = { year: 0, month: 1, day: 2, hour: 3, minute: 4, second: 5 }, r = {};
-    return function(s, i, u) {
-      var l, d = function(D, O, T) {
-        T === void 0 && (T = {});
-        var c = new Date(D), S = function(A, x) {
-          x === void 0 && (x = {});
-          var M = x.timeZoneName || "short", N = A + "|" + M, E = r[N];
-          return E || (E = new Intl.DateTimeFormat("en-US", { hour12: !1, timeZone: A, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", timeZoneName: M }), r[N] = E), E;
-        }(O, T);
-        return S.formatToParts(c);
-      }, $ = function(D, O) {
-        for (var T = d(D, O), c = [], S = 0; S < T.length; S += 1) {
-          var A = T[S], x = A.type, M = A.value, N = e[x];
-          N >= 0 && (c[N] = parseInt(M, 10));
+})(utc$1);
+var utc = utc$1.exports;
+var timezone$1 = { exports: {} };
+(function(module, exports) {
+  !function(t, e) {
+    module.exports = e();
+  }(commonjsGlobal, function() {
+    var t = { year: 0, month: 1, day: 2, hour: 3, minute: 4, second: 5 }, e = {};
+    return function(n, i, o) {
+      var r, a = function(t2, n2, i2) {
+        void 0 === i2 && (i2 = {});
+        var o2 = new Date(t2), r2 = function(t3, n3) {
+          void 0 === n3 && (n3 = {});
+          var i3 = n3.timeZoneName || "short", o3 = t3 + "|" + i3, r3 = e[o3];
+          return r3 || (r3 = new Intl.DateTimeFormat("en-US", { hour12: false, timeZone: t3, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", timeZoneName: i3 }), e[o3] = r3), r3;
+        }(n2, i2);
+        return r2.formatToParts(o2);
+      }, u = function(e2, n2) {
+        for (var i2 = a(e2, n2), r2 = [], u2 = 0; u2 < i2.length; u2 += 1) {
+          var f2 = i2[u2], s2 = f2.type, m = f2.value, c = t[s2];
+          c >= 0 && (r2[c] = parseInt(m, 10));
         }
-        var E = c[3], R = E === 24 ? 0 : E, H = c[0] + "-" + c[1] + "-" + c[2] + " " + R + ":" + c[4] + ":" + c[5] + ":000", k = +D;
-        return (u.utc(H).valueOf() - (k -= k % 1e3)) / 6e4;
-      }, P = i.prototype;
-      P.tz = function(D, O) {
-        D === void 0 && (D = l);
-        var T = this.utcOffset(), c = this.toDate(), S = c.toLocaleString("en-US", { timeZone: D }), A = Math.round((c - new Date(S)) / 1e3 / 60), x = u(S).$set("millisecond", this.$ms).utcOffset(15 * -Math.round(c.getTimezoneOffset() / 15) - A, !0);
-        if (O) {
-          var M = x.utcOffset();
-          x = x.add(T - M, "minute");
+        var d = r2[3], l = 24 === d ? 0 : d, v = r2[0] + "-" + r2[1] + "-" + r2[2] + " " + l + ":" + r2[4] + ":" + r2[5] + ":000", h = +e2;
+        return (o.utc(v).valueOf() - (h -= h % 1e3)) / 6e4;
+      }, f = i.prototype;
+      f.tz = function(t2, e2) {
+        void 0 === t2 && (t2 = r);
+        var n2 = this.utcOffset(), i2 = this.toDate(), a2 = i2.toLocaleString("en-US", { timeZone: t2 }), u2 = Math.round((i2 - new Date(a2)) / 1e3 / 60), f2 = o(a2).$set("millisecond", this.$ms).utcOffset(15 * -Math.round(i2.getTimezoneOffset() / 15) - u2, true);
+        if (e2) {
+          var s2 = f2.utcOffset();
+          f2 = f2.add(n2 - s2, "minute");
         }
-        return x.$x.$timezone = D, x;
-      }, P.offsetName = function(D) {
-        var O = this.$x.$timezone || u.tz.guess(), T = d(this.valueOf(), O, { timeZoneName: D }).find(function(c) {
-          return c.type.toLowerCase() === "timezonename";
+        return f2.$x.$timezone = t2, f2;
+      }, f.offsetName = function(t2) {
+        var e2 = this.$x.$timezone || o.tz.guess(), n2 = a(this.valueOf(), e2, { timeZoneName: t2 }).find(function(t3) {
+          return "timezonename" === t3.type.toLowerCase();
         });
-        return T && T.value;
+        return n2 && n2.value;
       };
-      var Y = P.startOf;
-      P.startOf = function(D, O) {
+      var s = f.startOf;
+      f.startOf = function(t2, e2) {
         if (!this.$x || !this.$x.$timezone)
-          return Y.call(this, D, O);
-        var T = u(this.format("YYYY-MM-DD HH:mm:ss:SSS"));
-        return Y.call(T, D, O).tz(this.$x.$timezone, !0);
-      }, u.tz = function(D, O, T) {
-        var c = T && O, S = T || O || l, A = $(+u(), S);
-        if (typeof D != "string")
-          return u(D).tz(S);
-        var x = function(R, H, k) {
-          var z = R - 60 * H * 1e3, v = $(z, k);
-          if (H === v)
-            return [z, H];
-          var Z = $(z -= 60 * (v - H) * 1e3, k);
-          return v === Z ? [z, v] : [R - 60 * Math.min(v, Z) * 1e3, Math.max(v, Z)];
-        }(u.utc(D, c).valueOf(), A, S), M = x[0], N = x[1], E = u(M).utcOffset(N);
-        return E.$x.$timezone = S, E;
-      }, u.tz.guess = function() {
+          return s.call(this, t2, e2);
+        var n2 = o(this.format("YYYY-MM-DD HH:mm:ss:SSS"));
+        return s.call(n2, t2, e2).tz(this.$x.$timezone, true);
+      }, o.tz = function(t2, e2, n2) {
+        var i2 = n2 && e2, a2 = n2 || e2 || r, f2 = u(+o(), a2);
+        if ("string" != typeof t2)
+          return o(t2).tz(a2);
+        var s2 = function(t3, e3, n3) {
+          var i3 = t3 - 60 * e3 * 1e3, o2 = u(i3, n3);
+          if (e3 === o2)
+            return [i3, e3];
+          var r2 = u(i3 -= 60 * (o2 - e3) * 1e3, n3);
+          return o2 === r2 ? [i3, o2] : [t3 - 60 * Math.min(o2, r2) * 1e3, Math.max(o2, r2)];
+        }(o.utc(t2, i2).valueOf(), f2, a2), m = s2[0], c = s2[1], d = o(m).utcOffset(c);
+        return d.$x.$timezone = a2, d;
+      }, o.tz.guess = function() {
         return Intl.DateTimeFormat().resolvedOptions().timeZone;
-      }, u.tz.setDefault = function(D) {
-        l = D;
+      }, o.tz.setDefault = function(t2) {
+        r = t2;
       };
     };
   });
-})(ee);
-const Pt = mt;
-C.extend(It);
-C.extend(Pt);
-class re extends V {
-  constructor({ after: e = null, before: r = null } = {}, { withTime: s = !0, useUserTimezone: i = !0 } = {}) {
+})(timezone$1);
+var timezone = timezone$1.exports;
+dayjs.extend(utc);
+dayjs.extend(timezone);
+class DateRangeFilter extends Filter {
+  constructor({ after = null, before = null } = {}, { withTime = true, useUserTimezone = true } = {}) {
     super();
-    f(this, "after");
-    f(this, "before");
-    f(this, "normalizedFormat");
-    f(this, "useUserTimezone");
-    this.after = e, this.before = r, this.normalizedFormat = s ? "YYYY-MM-DD[T]HH:mm:ss[Z]" : "YYYY-MM-DD", this.useUserTimezone = i;
+    __publicField(this, "after");
+    __publicField(this, "before");
+    __publicField(this, "normalizedFormat");
+    __publicField(this, "useUserTimezone");
+    this.after = after;
+    this.before = before;
+    this.normalizedFormat = withTime ? "YYYY-MM-DD[T]HH:mm:ss[Z]" : "YYYY-MM-DD";
+    this.useUserTimezone = useUserTimezone;
   }
   normalize() {
     this.constructor.ensureTimezoneIsSet();
-    const e = this.useUserTimezone ? this.constructor.userTimezone : "UTC";
-    let r = null, s = null;
-    return F(this.after) || (r = C.tz(this.after, e).hour(0).minute(0).second(0).tz("UTC").format(this.normalizedFormat)), F(this.before) || (s = C.tz(this.before, e).hour(0).minute(0).second(0).add(1, "day").subtract(1, "second").tz("UTC").format(this.normalizedFormat)), { after: r, before: s };
+    const timezone2 = this.useUserTimezone ? this.constructor.userTimezone : "UTC";
+    let after = null;
+    let before = null;
+    if (!empty(this.after)) {
+      after = dayjs.tz(this.after, timezone2).hour(0).minute(0).second(0).tz("UTC").format(this.normalizedFormat);
+    }
+    if (!empty(this.before)) {
+      before = dayjs.tz(this.before, timezone2).hour(0).minute(0).second(0).add(1, "day").subtract(1, "second").tz("UTC").format(this.normalizedFormat);
+    }
+    return { after, before };
   }
-  async denormalize(e) {
-    this.constructor.ensureTimezoneIsSet(), this.after = null, this.before = null, F(e.after) || (this.after = this.useUserTimezone ? C.tz(e.after, "UTC").tz(this.constructor.userTimezone) : C.tz(e.after, "UTC"), this.after = this.after.hour(0).minute(0).second(0).format("YYYY-MM-DD")), F(e.before) || (this.before = this.useUserTimezone ? C.tz(e.before, "UTC").tz(this.constructor.userTimezone) : C.tz(e.before, "UTC"), this.before = this.before.hour(0).minute(0).second(0).add(1, "day").subtract(1, "second").format("YYYY-MM-DD"));
+  async denormalize(input) {
+    this.constructor.ensureTimezoneIsSet();
+    this.after = null;
+    this.before = null;
+    if (!empty(input.after)) {
+      this.after = this.useUserTimezone ? dayjs.tz(input.after, "UTC").tz(this.constructor.userTimezone) : dayjs.tz(input.after, "UTC");
+      this.after = this.after.hour(0).minute(0).second(0).format("YYYY-MM-DD");
+    }
+    if (!empty(input.before)) {
+      this.before = this.useUserTimezone ? dayjs.tz(input.before, "UTC").tz(this.constructor.userTimezone) : dayjs.tz(input.before, "UTC");
+      this.before = this.before.hour(0).minute(0).second(0).add(1, "day").subtract(1, "second").format("YYYY-MM-DD");
+    }
   }
   static ensureTimezoneIsSet() {
-    this.constructor.userTimezone = this.constructor.userTimezone ?? (C.tz.guess() || "UTC");
+    var _a;
+    this.constructor.userTimezone = (_a = this.constructor.userTimezone) != null ? _a : dayjs.tz.guess() || "UTC";
   }
 }
-f(re, "userTimezone");
-C.extend(It);
-C.extend(Pt);
-class ne extends V {
-  constructor({ after: e = null, before: r = null } = {}) {
+__publicField(DateRangeFilter, "userTimezone");
+dayjs.extend(utc);
+dayjs.extend(timezone);
+class DatetimeRangeFilter extends Filter {
+  constructor({ after = null, before = null } = {}) {
     super();
-    f(this, "after");
-    f(this, "before");
-    this.after = e, this.before = r;
+    __publicField(this, "after");
+    __publicField(this, "before");
+    this.after = after;
+    this.before = before;
   }
   normalize() {
     this.constructor.ensureTimezoneIsSet();
-    let e = null, r = null;
-    return F(this.after) || (e = C.tz(this.after, this.constructor.userTimezone).tz("UTC").format("YYYY-MM-DD[T]HH:mm:ss[Z]")), F(this.before) || (r = C.tz(this.before, this.constructor.userTimezone).tz("UTC").format("YYYY-MM-DD[T]HH:mm:ss[Z]")), { after: e, before: r };
+    let after = null;
+    let before = null;
+    if (!empty(this.after)) {
+      after = dayjs.tz(this.after, this.constructor.userTimezone).tz("UTC").format("YYYY-MM-DD[T]HH:mm:ss[Z]");
+    }
+    if (!empty(this.before)) {
+      before = dayjs.tz(this.before, this.constructor.userTimezone).tz("UTC").format("YYYY-MM-DD[T]HH:mm:ss[Z]");
+    }
+    return { after, before };
   }
-  async denormalize(e) {
-    this.constructor.ensureTimezoneIsSet(), this.after = null, this.before = null, F(e.after) || (this.after = C.tz(e.after, "UTC").tz(this.constructor.userTimezone).format("YYYY-MM-DD[T]HH:mm:ss[Z]")), F(e.before) || (this.before = C.tz(e.before, "UTC").tz(this.constructor.userTimezone).format("YYYY-MM-DD[T]HH:mm:ss[Z]"));
+  async denormalize(input) {
+    this.constructor.ensureTimezoneIsSet();
+    this.after = null;
+    this.before = null;
+    if (!empty(input.after)) {
+      this.after = dayjs.tz(input.after, "UTC").tz(this.constructor.userTimezone).format("YYYY-MM-DD[T]HH:mm:ss[Z]");
+    }
+    if (!empty(input.before)) {
+      this.before = dayjs.tz(input.before, "UTC").tz(this.constructor.userTimezone).format("YYYY-MM-DD[T]HH:mm:ss[Z]");
+    }
   }
   static ensureTimezoneIsSet() {
-    this.constructor.userTimezone = this.constructor.userTimezone ?? (C.tz.guess() || "UTC");
+    var _a;
+    this.constructor.userTimezone = (_a = this.constructor.userTimezone) != null ? _a : dayjs.tz.guess() || "UTC";
   }
 }
-f(ne, "userTimezone");
-function se(n) {
-  return n == null ? !0 : typeof n == "string" ? n.trim().length === 0 : typeof n == "function" || Array.isArray(n) ? n.length === 0 : n instanceof Object ? Object.keys(n).length === 0 : !1;
+__publicField(DatetimeRangeFilter, "userTimezone");
+function isBlank(val) {
+  if (null == val) {
+    return true;
+  }
+  if ("string" == typeof val) {
+    return val.trim().length === 0;
+  }
+  if ("function" == typeof val) {
+    return val.length === 0;
+  }
+  if (Array.isArray(val)) {
+    return val.length === 0;
+  }
+  if (val instanceof Object) {
+    return Object.keys(val).length === 0;
+  }
+  return false;
 }
-function gt(n) {
-  if (!(n instanceof Object))
-    return n;
-  if (Array.isArray(n))
-    return n.map(gt);
-  const t = { ...n };
-  return Object.keys(t).forEach((e) => {
-    t[e] instanceof Object && (t[e] = gt(t[e])), se(t[e]) && delete t[e];
-  }), t;
+function deepPrune(input) {
+  if (!(input instanceof Object)) {
+    return input;
+  }
+  if (Array.isArray(input)) {
+    return input.map(deepPrune);
+  }
+  const output = { ...input };
+  Object.keys(output).forEach((key) => {
+    if (output[key] instanceof Object) {
+      output[key] = deepPrune(output[key]);
+    }
+    if (isBlank(output[key])) {
+      delete output[key];
+    }
+  });
+  return output;
 }
-class Je {
-  constructor(t = {}) {
-    f(this, "_filters", []);
-    if (!(t instanceof Object))
+class FilterCollection {
+  constructor(filters = {}) {
+    __publicField(this, "_filters", []);
+    if (!(filters instanceof Object)) {
       throw Error("A FilterCollection expects an object.");
-    Object.keys(t).forEach((e) => {
-      if (!(t[e] instanceof V))
-        throw Error(`Filter ${e} doesn't extend the Filter class.`);
-      this[e] = t[e], this._filters.push(e);
+    }
+    Object.keys(filters).forEach((key) => {
+      if (!(filters[key] instanceof Filter)) {
+        throw Error(`Filter ${key} doesn't extend the Filter class.`);
+      }
+      this[key] = filters[key];
+      this._filters.push(key);
     });
   }
   normalize() {
-    const t = {};
-    return this._filters.forEach((e) => {
-      const r = this[e];
-      t[e] = r.normalize();
-    }), gt(t);
+    const output = {};
+    this._filters.forEach((key) => {
+      const filter = this[key];
+      output[key] = filter.normalize();
+    });
+    return deepPrune(output);
   }
-  async denormalize(t) {
-    const e = [];
-    for (const r of this._filters) {
-      const s = this[r];
-      s instanceof V && typeof t[r] < "u" && e.push(s.denormalize(t[r]));
+  async denormalize(input) {
+    const promises = [];
+    for (const key of this._filters) {
+      const filter = this[key];
+      if (filter instanceof Filter && "undefined" !== typeof input[key]) {
+        promises.push(filter.denormalize(input[key]));
+      }
     }
-    return e.length > 0 && await Promise.all(e), this;
+    if (promises.length > 0) {
+      await Promise.all(promises);
+    }
+    return this;
   }
 }
-async function Qe(n = {}, t = {
-  preserveQuery: !1,
+async function useFilters(initialState = {}, options = {
+  preserveQuery: false,
   targetRoute: void 0
 }) {
-  if (typeof n != "function")
+  if ("function" !== typeof initialState) {
     throw Error("initialState should be provided as a function.");
-  const e = Ft(), r = Vt(), s = K(n());
-  async function i($) {
-    Object.assign(b(s), await b(s).denormalize($.query));
   }
-  function u() {
-    s.value = G(n());
+  const currentRoute = useRoute();
+  const router = useRouter();
+  const filters = ref(initialState());
+  async function hydrateFiltersFromRoute(route) {
+    Object.assign(unref(filters), await unref(filters).denormalize(route.query));
   }
-  function l($ = {}) {
-    const P = {};
-    return t.preserveQuery === !0 && Object.assign(P, e.query), Object.assign(P, b(s).normalize(), $);
+  function clear() {
+    filters.value = clone(initialState());
   }
-  async function d($ = {}) {
-    const P = b(t.targetRoute) ?? e;
-    await r.push(Object.assign({ ...P }, { query: l($) }));
+  function buildQueryParams(additionalParams = {}) {
+    const output = {};
+    if (true === options.preserveQuery) {
+      Object.assign(output, currentRoute.query);
+    }
+    return Object.assign(output, unref(filters).normalize(), additionalParams);
   }
-  return qt(($) => i($)), await i(e), {
-    filters: s,
-    buildQueryParams: l,
-    submit: d,
-    clear: u
+  async function submit(additionalParams = {}) {
+    var _a;
+    const route = (_a = unref(options.targetRoute)) != null ? _a : currentRoute;
+    await router.push(Object.assign({ ...route }, { query: buildQueryParams(additionalParams) }));
+  }
+  onBeforeRouteUpdate((to) => hydrateFiltersFromRoute(to));
+  await hydrateFiltersFromRoute(currentRoute);
+  return {
+    filters,
+    buildQueryParams,
+    submit,
+    clear
   };
 }
-const We = async ({ state: n = {}, methods: t = {}, name: e = "store" } = {}) => {
-  n = B(n);
-  const r = [], s = {
-    name: e,
-    state: n,
-    ...Object.keys(t).reduce(function(i, u) {
-      const l = t[u];
-      return i[u] = function() {
-        return l(n, ...arguments);
-      }, i;
+const createStore = async ({ state = {}, methods = {}, name = "store" } = {}) => {
+  state = reactive(state);
+  const plugins = [];
+  const store = {
+    name,
+    state,
+    ...Object.keys(methods).reduce(function(resolvedMethods, name2) {
+      const func = methods[name2];
+      resolvedMethods[name2] = function() {
+        return func(state, ...arguments);
+      };
+      return resolvedMethods;
     }, {}),
-    async use(i) {
-      return r.push(i), await i.install(this), this;
+    async use(plugin) {
+      plugins.push(plugin);
+      await plugin.install(this);
+      return this;
     },
-    async reconciliate(i = !1) {
-      const u = r.filter(({ reconciliate: l }) => typeof l == "function");
-      if (i === !1)
-        return Promise.all(u.map((l) => l.reconciliate(this)));
-      for (const l of u)
-        await l.reconciliate(this);
+    async reconciliate(sequentially = false) {
+      const reconcilablePlugins = plugins.filter(({ reconciliate }) => "function" === typeof reconciliate);
+      if (false === sequentially) {
+        return Promise.all(reconcilablePlugins.map((plugin) => plugin.reconciliate(this)));
+      }
+      for (const plugin of reconcilablePlugins) {
+        await plugin.reconciliate(this);
+      }
     }
   };
-  return s.install = (i) => i.provide(e, { ...s, state: lt(n) }), s;
-}, Et = (n = "store") => xt(n);
-class ie {
-  constructor(t) {
-    Object.keys(t).forEach((e) => {
-      this[e] = new vt(t[e]);
+  store.install = (app) => app.provide(name, { ...store, state: readonly(state) });
+  return store;
+};
+const useStore = (name = "store") => inject(name);
+class HydraEndpoints {
+  constructor(data) {
+    Object.keys(data).forEach((type) => {
+      this[type] = new HydraEndpoint(data[type]);
     });
   }
-  for(t) {
-    if (typeof t == "string" && Object.keys(this).includes(t))
-      return this[t];
-    if (!Object.keys(this).includes(t["@type"]))
-      throw Error(`Endpoint not found for item ${t["@type"]}.`);
-    return this[t["@type"]];
+  for(type) {
+    if ("string" === typeof type && Object.keys(this).includes(type)) {
+      return this[type];
+    }
+    if (!Object.keys(this).includes(type["@type"])) {
+      throw Error(`Endpoint not found for item ${type["@type"]}.`);
+    }
+    return this[type["@type"]];
   }
 }
-class vt {
-  constructor(t) {
-    f(this, "endpoint");
-    this.endpoint = t;
+class HydraEndpoint {
+  constructor(endpoint) {
+    __publicField(this, "endpoint");
+    this.endpoint = endpoint;
   }
   toString() {
     return this.endpoint;
@@ -728,94 +866,130 @@ class vt {
   toJSON() {
     return this.endpoint;
   }
-  buildIri(t) {
-    let e = new et(this.endpoint);
-    return e = e.withPath(`${e.getPath()}/${t}`), e.toString();
+  buildIri(id) {
+    let uri = new URI(this.endpoint);
+    uri = uri.withPath(`${uri.getPath()}/${id}`);
+    return uri.toString();
   }
-  withQuery(t) {
-    const e = new et(this.endpoint), r = new it(e).withParams(t);
-    return new vt(e.withQuery(r.toString()).toString());
+  withQuery(params) {
+    const uri = new URI(this.endpoint);
+    const qs = new QueryString(uri).withParams(params);
+    return new HydraEndpoint(uri.withQuery(qs.toString()).toString());
   }
-  paginated(t, e = !1) {
-    t = b(t), e = b(e);
-    const r = {
-      pagination: t === !1 ? 0 : 1,
-      partial: e === !1 ? void 0 : 1,
+  paginated(itemsPerPageOrFalse, partial = false) {
+    itemsPerPageOrFalse = unref(itemsPerPageOrFalse);
+    partial = unref(partial);
+    const pager = {
+      pagination: false === itemsPerPageOrFalse ? 0 : 1,
+      partial: false === partial ? void 0 : 1,
       itemsPerPage: void 0
     };
-    return t !== !1 && (r.itemsPerPage = t), this.withQuery(r);
+    if (false !== itemsPerPageOrFalse) {
+      pager.itemsPerPage = itemsPerPageOrFalse;
+    }
+    return this.withQuery(pager);
   }
-  synchronize(t = window.location.href) {
-    return this.withQuery(new it(new et(t)).getParams());
+  synchronize(location = window.location.href) {
+    return this.withQuery(new QueryString(new URI(location)).getParams());
   }
 }
-const Be = (n, t) => Et(t).state.endpoints[n];
-function at(n) {
-  return n = b(n), n == null ? !1 : Object.keys(n).includes("@id") && n["@id"] != null;
+const useEndpoint = (endpoint, storeName) => {
+  const store = useStore(storeName);
+  return store.state.endpoints[endpoint];
+};
+function hasIri(item) {
+  item = unref(item);
+  if (null == item) {
+    return false;
+  }
+  return Object.keys(item).includes("@id") && null != item["@id"];
 }
-function U(n) {
-  return n = b(n), n === null ? null : typeof n == "string" ? n : (bt(n), n["@id"]);
+function getIri(itemOrIRI) {
+  itemOrIRI = unref(itemOrIRI);
+  if (null === itemOrIRI) {
+    return null;
+  }
+  if ("string" === typeof itemOrIRI) {
+    return itemOrIRI;
+  }
+  checkValidItem(itemOrIRI);
+  return itemOrIRI["@id"];
 }
-function ae(n) {
-  const t = U(n);
-  return t.substring(t.lastIndexOf("/") + 1);
+function getId(itemOrIRI) {
+  const iri = getIri(itemOrIRI);
+  return iri.substring(iri.lastIndexOf("/") + 1);
 }
-function Ge(n) {
-  return n.map(U);
+function getIris(itemsOrIRIs) {
+  return itemsOrIRIs.map(getIri);
 }
-function Ke(n) {
-  return n.map(ae);
+function getIds(itemsOrIRIs) {
+  return itemsOrIRIs.map(getId);
 }
-function bt(n, t = null) {
-  if (typeof n != "object" || !("@id" in n))
+function checkValidItem(item, type = null) {
+  if ("object" !== typeof item || !("@id" in item)) {
     throw Error("Invalid item.");
-  if (t !== null) {
-    if (typeof t == "string" && t !== n["@type"])
-      throw Error(`Expected item of type "${t}", got "${n["@type"]}".`);
-    if (Array.isArray(t) && t.includes(n["@type"]) === !1)
-      throw Error(`Expected item of any "${t.join("|")}", got "${n["@type"]}".`);
+  }
+  if (null !== type) {
+    if ("string" === typeof type && type !== item["@type"]) {
+      throw Error(`Expected item of type "${type}", got "${item["@type"]}".`);
+    }
+    if (Array.isArray(type) && false === type.includes(item["@type"])) {
+      throw Error(`Expected item of any "${type.join("|")}", got "${item["@type"]}".`);
+    }
   }
 }
-function rt(n, t) {
-  return U(n) === U(t);
+function areSameIris(a, b) {
+  return getIri(a) === getIri(b);
 }
-function oe(n, t) {
-  if (n = b(n), n = Array.from(n).map(b), t = b(t), Array.isArray(t)) {
-    const e = t;
-    for (const r of e)
-      if (oe(n, r))
-        return !0;
-    return !1;
+function containsIri(itemsOrIris, iriOrItem) {
+  itemsOrIris = unref(itemsOrIris);
+  itemsOrIris = Array.from(itemsOrIris).map(unref);
+  iriOrItem = unref(iriOrItem);
+  if (Array.isArray(iriOrItem)) {
+    const items = iriOrItem;
+    for (const iriOrItem2 of items) {
+      if (containsIri(itemsOrIris, iriOrItem2)) {
+        return true;
+      }
+    }
+    return false;
   }
-  for (const e of n)
-    if (rt(e, t))
-      return !0;
-  return !1;
+  for (const itemOrIri of itemsOrIris) {
+    if (areSameIris(itemOrIri, iriOrItem)) {
+      return true;
+    }
+  }
+  return false;
 }
-function Xe(n, t) {
-  const e = n.findIndex((r) => rt(r, t));
-  return e >= 0 && n.splice(e, 1), n;
+function withoutIri(itemsOrIris, itemOrIri) {
+  const index = itemsOrIris.findIndex((item) => areSameIris(item, itemOrIri));
+  if (index >= 0) {
+    itemsOrIris.splice(index, 1);
+  }
+  return itemsOrIris;
 }
-function ct(n, t) {
-  const e = n.find((r) => rt(r, t));
-  return typeof e > "u" ? null : e;
+function getItemByIri(items, iri) {
+  const item = items.find((item2) => areSameIris(item2, iri));
+  return "undefined" === typeof item ? null : item;
 }
-function tr(n, t) {
-  return n.findIndex((e) => rt(e, t));
+function getItemIndexByIri(items, iri) {
+  return items.findIndex((item) => areSameIris(item, iri));
 }
-function er(n, t) {
-  return n.filter((e) => e["@type"] === t);
+function getItemsByType(items, type) {
+  return items.filter((item) => item["@type"] === type);
 }
-function rr(n) {
-  Object.assign(n, n.map((t) => U(t)));
+function normalizeIris(itemOrIris) {
+  Object.assign(itemOrIris, itemOrIris.map((itemOrIri) => getIri(itemOrIri)));
 }
-function nr(n, t) {
-  return n = b(n), bt(n), Object.assign({ "@id": n["@id"], "@type": n["@type"] }, t);
+function partialItem(item, mergeWith) {
+  item = unref(item);
+  checkValidItem(item);
+  return Object.assign({ "@id": item["@id"], "@type": item["@type"] }, mergeWith);
 }
-class jt extends Error {
+class HydraError extends Error {
   constructor() {
     super(...arguments);
-    f(this, "statusCode");
+    __publicField(this, "statusCode");
   }
   get title() {
     return this["hydra:title"];
@@ -824,19 +998,19 @@ class jt extends Error {
     return this["hydra:description"];
   }
 }
-class ue {
+class Violation {
   constructor() {
-    f(this, "id");
-    f(this, "propertyPath");
-    f(this, "message");
-    f(this, "code");
-    this.id = Zt();
+    __publicField(this, "id");
+    __publicField(this, "propertyPath");
+    __publicField(this, "message");
+    __publicField(this, "code");
+    this.id = v4();
   }
 }
-class ce extends jt {
-  constructor(e) {
+class ConstraintViolationList extends HydraError {
+  constructor(data) {
     super();
-    f(this, "_violations", []);
+    __publicField(this, "_violations", []);
     Object.assign(
       this,
       {
@@ -844,31 +1018,35 @@ class ce extends jt {
           yield* this.violations;
         }
       }
-    ), Object.assign(this, e);
+    );
+    Object.assign(this, data);
   }
-  /**
-   * @returns Array<Violation>
-   */
   get violations() {
     return this._violations;
   }
-  set violations(e) {
-    this._violations = e.map((r) => Object.assign(new ue(), r));
+  set violations(violations) {
+    this._violations = violations.map((violation) => Object.assign(new Violation(), violation));
   }
   getPropertyPaths() {
-    return [...new Set(this.violations.map(({ propertyPath: e }) => e))];
+    return [...new Set(this.violations.map(({ propertyPath }) => propertyPath))];
   }
-  getViolations(e) {
-    const r = Array.from(arguments);
-    return r.length === 0 ? this.violations : F(r[0]) ? this.violations.filter((s) => F(s.propertyPath)) : this.violations.filter((s) => e === s.propertyPath);
+  getViolations(propertyPath) {
+    const propertyPaths = Array.from(arguments);
+    if (0 === propertyPaths.length) {
+      return this.violations;
+    }
+    if (empty(propertyPaths[0])) {
+      return this.violations.filter((violation) => empty(violation.propertyPath));
+    }
+    return this.violations.filter((violation) => propertyPath === violation.propertyPath);
   }
 }
-class he {
-  constructor(t = {}) {
+class HydraCollection {
+  constructor(data = {}) {
     Object.assign(
       this,
       {
-        ...t,
+        ...data,
         *[Symbol.iterator]() {
           yield* this["hydra:member"] || [];
         }
@@ -884,81 +1062,112 @@ class he {
   get items() {
     return this["hydra:member"] || [];
   }
-  forEach(t) {
-    return (this["hydra:member"] || []).forEach(t);
+  forEach(callback) {
+    return (this["hydra:member"] || []).forEach(callback);
   }
-  map(t) {
-    return (this["hydra:member"] || []).map(t);
+  map(callback) {
+    return (this["hydra:member"] || []).map(callback);
   }
-  filter(t) {
-    return (this["hydra:member"] || []).filter(t);
+  filter(callback) {
+    return (this["hydra:member"] || []).filter(callback);
   }
-  find(t) {
-    return (this["hydra:member"] || []).find(t);
+  find(callback) {
+    return (this["hydra:member"] || []).find(callback);
   }
-  findIndex(t) {
-    return (this["hydra:member"] || []).findIndex(t);
+  findIndex(callback) {
+    return (this["hydra:member"] || []).findIndex(callback);
   }
 }
-function le(n) {
-  if (typeof n != "object" || n == null)
+function clearObject(object) {
+  if ("object" !== typeof object || null == object) {
     throw Error("Invalid object.");
-  return Object.keys(n).forEach((t) => delete n[t]), n;
-}
-function Dt(n) {
-  return at(n) ? U(n) : n;
-}
-function fe(n) {
-  const t = G(n), e = Object.keys(t);
-  for (const r of e) {
-    const s = t[r];
-    Array.isArray(s) ? t[r] = s.map((i) => Dt(i)) : typeof s == "object" && s != null && (t[r] = Dt(s));
   }
-  return t;
+  Object.keys(object).forEach((key) => delete object[key]);
+  return object;
 }
-function ht(n, t) {
-  return n = le(n), Object.assign(n, t);
+function normalizeRelation(relation) {
+  return hasIri(relation) ? getIri(relation) : relation;
 }
-function sr(n) {
-  const t = Et(), e = K(b(n)), r = B(G(b(n))), s = ft(() => !at(b(r))), i = K(!1);
-  Lt(e, ($) => ht(r, $));
-  const u = ft(() => JSON.stringify(b(r)) !== JSON.stringify(b(e)));
-  return { item: r, isUnsavedDraft: u, isCreationMode: s, isSubmitting: i, reset: ($) => ht(r, G(b($ ?? n))), submit: async ($) => {
-    st($) && ($ = b($));
-    try {
-      i.value = !0;
-      const P = await t.upsertItem(fe($ ?? r));
-      return e.value = P, ht(r, G(P)), P;
-    } finally {
-      i.value = !1;
+function normalizeItemRelations(item) {
+  const cloned = clone(item);
+  const props = Object.keys(cloned);
+  for (const prop of props) {
+    const value = cloned[prop];
+    if (Array.isArray(value)) {
+      cloned[prop] = value.map((relation) => normalizeRelation(relation));
+    } else if ("object" === typeof value && null != value) {
+      cloned[prop] = normalizeRelation(value);
     }
-  } };
+  }
+  return cloned;
 }
-function ir() {
-  const n = (s) => {
-    s = b(s), s.querySelectorAll("[name]").forEach(function(i) {
-      i.setCustomValidity("");
-    });
-  }, t = (s, i = !0) => {
-    s = b(s);
-    const u = s.checkValidity();
-    return !u && i && s.reportValidity(), u;
-  }, e = (s, i) => {
-    n(s), Array.from(i).forEach((u) => r(s, u)), t(s);
-  }, r = (s, { propertyPath: i, message: u }) => {
-    var l;
-    s = b(s), (l = s.querySelector(`[name='${i}']`)) == null || l.setCustomValidity(u);
+function recreateState(object, withObject) {
+  object = clearObject(object);
+  return Object.assign(object, withObject);
+}
+function useItemForm(itemInitialState) {
+  const store = useStore();
+  const initialState = ref(unref(itemInitialState));
+  const item = reactive(clone(unref(itemInitialState)));
+  const isCreationMode = computed(() => !hasIri(unref(item)));
+  const isSubmitting = ref(false);
+  const isUnsavedDraft = computed(() => JSON.stringify(unref(item)) !== JSON.stringify(unref(initialState)));
+  const reset = (resetItem) => recreateState(item, clone(unref(resetItem != null ? resetItem : itemInitialState)));
+  const submit = async (submittedItem) => {
+    if (isRef(submittedItem)) {
+      submittedItem = unref(submittedItem);
+    }
+    try {
+      isSubmitting.value = true;
+      const updatedItem = await store.upsertItem(normalizeItemRelations(submittedItem != null ? submittedItem : item));
+      initialState.value = updatedItem;
+      recreateState(item, clone(updatedItem));
+      return updatedItem;
+    } finally {
+      isSubmitting.value = false;
+    }
   };
-  return { resetValidity: n, bindViolations: e, validate: t };
+  return { item, isUnsavedDraft, isCreationMode, isSubmitting, reset, submit };
 }
-let yt;
-const de = 1, me = 2;
-class ge {
-  constructor(t, e) {
-    f(this, "readyState", de);
-    f(this, "url");
-    f(this, "withCredentials");
-    this.url = t, this.withCredentials = (e == null ? void 0 : e.withCredentials) ?? !1, setTimeout(() => this.onopen(), 10);
+function useFormValidation() {
+  const resetValidity = (FormHTMLElement) => {
+    FormHTMLElement = unref(FormHTMLElement);
+    FormHTMLElement.querySelectorAll("[name]").forEach(function(element) {
+      element.setCustomValidity("");
+    });
+  };
+  const validate = (FormHTMLElement, report = true) => {
+    FormHTMLElement = unref(FormHTMLElement);
+    const isValid = FormHTMLElement.checkValidity();
+    if (!isValid && report) {
+      FormHTMLElement.reportValidity();
+    }
+    return isValid;
+  };
+  const bindViolations = (FormHTMLElement, violations) => {
+    resetValidity(FormHTMLElement);
+    Array.from(violations).forEach((violation) => addViolation(FormHTMLElement, violation));
+    validate(FormHTMLElement);
+  };
+  const addViolation = (FormHTMLElement, { propertyPath, message }) => {
+    var _a;
+    FormHTMLElement = unref(FormHTMLElement);
+    (_a = FormHTMLElement.querySelector(`[name='${propertyPath}']`)) == null ? void 0 : _a.setCustomValidity(message);
+  };
+  return { resetValidity, bindViolations, validate };
+}
+let EventSource;
+const EVENTSOURCE_READYSTATE_OPEN = 1;
+const EVENTSOURCE_READYSTATE_CLOSED = 2;
+class FakeEventSource {
+  constructor(url, configuration) {
+    __publicField(this, "readyState", EVENTSOURCE_READYSTATE_OPEN);
+    __publicField(this, "url");
+    __publicField(this, "withCredentials");
+    var _a;
+    this.url = url;
+    this.withCredentials = (_a = configuration == null ? void 0 : configuration.withCredentials) != null ? _a : false;
+    setTimeout(() => this.onopen(), 10);
   }
   onerror() {
   }
@@ -967,143 +1176,220 @@ class ge {
   onopen() {
   }
   close() {
-    this.readyState = me;
+    this.readyState = EVENTSOURCE_READYSTATE_CLOSED;
   }
-  triggerEvent(t) {
-    this.onmessage(t);
+  triggerEvent(event) {
+    this.onmessage(event);
   }
-  triggerError(t) {
-    this.onerror(t);
+  triggerError(error) {
+    this.onerror(error);
   }
 }
-const ye = () => {
-  var n, t, e;
-  return typeof process < "u" && ((n = process == null ? void 0 : process.env) == null ? void 0 : n.NODE_ENV) === "test" || ((e = (t = import.meta) == null ? void 0 : t.env) == null ? void 0 : e.NODE_ENV) === "test";
+const isTestEnv = () => {
+  var _a, _b;
+  if ("undefined" !== typeof process && "test" === ((_a = process == null ? void 0 : process.env) == null ? void 0 : _a.NODE_ENV)) {
+    return true;
+  }
+  if ("test" === ((_b = import_meta == null ? void 0 : import_meta.env) == null ? void 0 : _b.NODE_ENV)) {
+    return true;
+  }
+  return false;
 };
-ye() ? yt = ge : yt = window.EventSource;
-const pe = yt, ar = (n, t) => {
-  const e = new $e(n, t);
-  return Object.assign(e, {
-    install(r) {
-      r.provide("mercure", e);
+if (isTestEnv()) {
+  EventSource = FakeEventSource;
+} else {
+  EventSource = window.EventSource;
+}
+var EventSource$1 = EventSource;
+const createMercure = (hub, options) => {
+  const mercure = new Mercure(hub, options);
+  return Object.assign(mercure, {
+    install(app) {
+      app.provide("mercure", mercure);
     }
   });
-}, ve = () => xt("mercure");
-function be(n, t) {
-  return n.length === t.length && n.every((e) => t.includes(e));
+};
+const useMercure = () => {
+  return inject("mercure");
+};
+function areSameTopicSets(a, b) {
+  return a.length === b.length && a.every((topic) => b.includes(topic));
 }
-class $e {
-  constructor(t, e = {}) {
-    f(this, "hub");
-    f(this, "options");
-    f(this, "connection");
-    f(this, "subscribedTopics");
-    f(this, "endpoint");
-    f(this, "emitter");
-    f(this, "lastEventId");
-    Object.assign(this, { hub: t, options: B(e) }), this.lastEventId = K(), this.subscribedTopics = K([]), this.endpoint = ft(() => {
-      const r = new URL(this.hub), s = b(this.subscribedTopics);
-      return s.includes("*") ? r.searchParams.append("topic", "*") : s.forEach((i) => r.searchParams.append("topic", i)), b(this.lastEventId) && r.searchParams.append("Last-Event-ID", b(this.lastEventId)), r.toString();
-    }), this.emitter = Jt();
+class Mercure {
+  constructor(hub, options = {}) {
+    __publicField(this, "hub");
+    __publicField(this, "options");
+    __publicField(this, "connection");
+    __publicField(this, "subscribedTopics");
+    __publicField(this, "endpoint");
+    __publicField(this, "emitter");
+    __publicField(this, "lastEventId");
+    Object.assign(this, { hub, options: reactive(options) });
+    this.lastEventId = ref();
+    this.subscribedTopics = ref([]);
+    this.endpoint = computed(() => {
+      const url = new URL(this.hub);
+      const subscribedTopics = unref(this.subscribedTopics);
+      if (subscribedTopics.includes("*")) {
+        url.searchParams.append("topic", "*");
+      } else {
+        subscribedTopics.forEach((topic) => url.searchParams.append("topic", topic));
+      }
+      if (unref(this.lastEventId)) {
+        url.searchParams.append("Last-Event-ID", unref(this.lastEventId));
+      }
+      return url.toString();
+    });
+    this.emitter = mitt();
   }
-  subscribe(t = ["*"], e = !0) {
-    Array.isArray(t) || (t = [t]);
-    const r = Array.from(b(this.subscribedTopics)), s = [.../* @__PURE__ */ new Set([...b(this.subscribedTopics), ...t])];
-    this.subscribedTopics.value = s, e && !be(r, s) && this.listen();
+  subscribe(topics = ["*"], listen = true) {
+    if (!Array.isArray(topics)) {
+      topics = [topics];
+    }
+    const formerTopicSet = Array.from(unref(this.subscribedTopics));
+    const newTopicSet = [.../* @__PURE__ */ new Set([...unref(this.subscribedTopics), ...topics])];
+    this.subscribedTopics.value = newTopicSet;
+    if (listen && !areSameTopicSets(formerTopicSet, newTopicSet)) {
+      this.listen();
+    }
   }
-  unsubscribe(t) {
-    Array.isArray(t) || (t = [t]), this.subscribedTopics.value = this.subscribedTopics.value.filter((e) => !t.includes(e)), this.connection && this.listen();
+  unsubscribe(topics) {
+    if (!Array.isArray(topics)) {
+      topics = [topics];
+    }
+    this.subscribedTopics.value = this.subscribedTopics.value.filter((subscribedTopic) => !topics.includes(subscribedTopic));
+    if (this.connection) {
+      this.listen();
+    }
   }
-  addListener(t) {
-    return this.emitter.on("message", t);
+  addListener(callback) {
+    return this.emitter.on("message", callback);
   }
-  removeListener(t) {
-    return this.emitter.off("message", t);
+  removeListener(callback) {
+    return this.emitter.off("message", callback);
   }
   listen() {
-    if (b(this.subscribedTopics).length === 0) {
+    const subscribedTopics = unref(this.subscribedTopics);
+    if (0 === subscribedTopics.length) {
       this.stop();
       return;
     }
-    this.connection || this.connect();
+    if (!this.connection) {
+      this.connect();
+    }
   }
   connect() {
-    this.stop(), this.connection = new pe(b(this.endpoint), this.options), this.connection.onopen = () => this.emitter.emit("open", { endpoint: b(this.endpoint) }), this.connection.onmessage = (t) => (this.lastEventId.value = t.lastEventId, this.emitter.emit("message", t)), this.connection.onerror = (t) => {
-      this.emitter.emit("error", t), typeof this.options.reconnectInterval == "number" && (this.stop(), setTimeout(() => this.connect(), this.options.reconnectInterval));
+    this.stop();
+    this.connection = new EventSource$1(unref(this.endpoint), this.options);
+    this.connection.onopen = () => this.emitter.emit("open", { endpoint: unref(this.endpoint) });
+    this.connection.onmessage = (event) => {
+      this.lastEventId.value = event.lastEventId;
+      return this.emitter.emit("message", event);
+    };
+    this.connection.onerror = (error) => {
+      this.emitter.emit("error", error);
+      if ("number" === typeof this.options.reconnectInterval) {
+        this.stop();
+        setTimeout(() => this.connect(), this.options.reconnectInterval);
+      }
     };
   }
   stop() {
-    var t;
-    (t = this.connection) == null || t.close(), this.connection = void 0;
+    var _a;
+    (_a = this.connection) == null ? void 0 : _a.close();
+    this.connection = void 0;
   }
 }
-const Ct = (n, t) => Object.assign(t, n), At = () => {
+const defaultUpdater = (update, item) => Object.assign(item, update);
+const defaultRemover = () => {
 };
-function we(n, t, e = ["*"], r = Ct, s = At) {
-  Array.isArray(t) || (t = [t]), Array.isArray(e) || (e = [e]);
-  const i = (u) => {
+function mercureSync(mercure, items, topics = ["*"], onUpdate = defaultUpdater, onDelete = defaultRemover) {
+  if (!Array.isArray(items)) {
+    items = [items];
+  }
+  if (!Array.isArray(topics)) {
+    topics = [topics];
+  }
+  const listener = (event) => {
     try {
-      const l = JSON.parse(u.data);
-      if (!at(l))
-        return;
-      if (Object.keys(l).length === 1) {
-        s(U(l));
+      const data = JSON.parse(event.data);
+      if (!hasIri(data)) {
         return;
       }
-      for (const d of t)
-        rt(U(l), d) && r(l, b(d));
-    } catch (l) {
-      console.debug(l);
+      if (1 === Object.keys(data).length) {
+        onDelete(getIri(data));
+        return;
+      }
+      for (const item of items) {
+        if (areSameIris(getIri(data), item)) {
+          onUpdate(data, unref(item));
+        }
+      }
+    } catch (e) {
+      console.debug(e);
     }
   };
-  return n.addListener(i), n.subscribe(e), i;
+  mercure.addListener(listener);
+  mercure.subscribe(topics);
+  return listener;
 }
-const Se = (n, t, e) => {
-  Array.isArray(t) || (t = [t]);
-  const r = (s) => {
-    let i;
+const on = (mercure, topics, callback) => {
+  if (!Array.isArray(topics)) {
+    topics = [topics];
+  }
+  const wrapper = (event) => {
+    let item;
     try {
-      i = JSON.parse(s.data);
-    } catch (u) {
-      console.debug(u);
+      item = JSON.parse(event.data);
+    } catch (e) {
+      console.debug(e);
       return;
     }
-    if (typeof i != "object") {
+    if ("object" !== typeof item) {
       console.debug("Received an event which is not an object.");
       return;
     }
     try {
-      for (const u of t)
-        if (typeof Qt(u).fromUri(U(i)) < "u") {
-          e(i);
+      for (const topic of topics) {
+        if ("undefined" !== typeof uriTemplate(topic).fromUri(getIri(item))) {
+          callback(item);
           break;
         }
-    } catch (u) {
-      console.error(u);
+      }
+    } catch (e) {
+      console.error(e);
     }
   };
-  return n.addListener(r), n.subscribe(t), r;
-}, or = (n) => {
-  n = n ?? ve();
-  const t = [];
-  return Nt(() => {
-    for (const r of t)
-      n.removeListener(r);
-  }), {
-    synchronize: (r, s = ["*"], i = Ct, u = At) => {
-      t.push(we(n, r, s, i, u));
-    },
-    on(r, s) {
-      const i = Se(n, r, s);
-      return t.push(i), i;
-    }
-  };
-}, ze = {
-  "hydra:Collection": he,
-  "hydra:Error": jt,
-  ConstraintViolationList: ce
+  mercure.addListener(wrapper);
+  mercure.subscribe(topics);
+  return wrapper;
 };
-class Ot {
+const useMercureSync = (mercure) => {
+  mercure = mercure != null ? mercure : useMercure();
+  const listeners = [];
+  onUnmounted(() => {
+    for (const listener of listeners) {
+      mercure.removeListener(listener);
+    }
+  });
+  const synchronize = (items, topics = ["*"], onUpdate = defaultUpdater, onDelete = defaultRemover) => {
+    listeners.push(mercureSync(mercure, items, topics, onUpdate, onDelete));
+  };
+  return {
+    synchronize,
+    on(topics, callback) {
+      const listener = on(mercure, topics, callback);
+      listeners.push(listener);
+      return listener;
+    }
+  };
+};
+const DEFAULT_CLASSMAP = {
+  "hydra:Collection": HydraCollection,
+  "hydra:Error": HydraError,
+  "ConstraintViolationList": ConstraintViolationList
+};
+class Items {
   constructor() {
     Object.assign(
       this,
@@ -1117,383 +1403,491 @@ class Ot {
   get length() {
     return Array.from(this).length;
   }
-  forEach(t) {
-    return Array.from(this).forEach(t);
+  forEach(callback) {
+    return Array.from(this).forEach(callback);
   }
-  map(t) {
-    return Array.from(this).map(t);
+  map(callback) {
+    return Array.from(this).map(callback);
   }
-  filter(t) {
-    return Array.from(this).filter(t);
+  filter(callback) {
+    return Array.from(this).filter(callback);
   }
-  find(t) {
-    return Array.from(this).find(t);
+  find(callback) {
+    return Array.from(this).find(callback);
   }
-  findIndex(t) {
-    return Array.from(this).findIndex(t);
+  findIndex(callback) {
+    return Array.from(this).findIndex(callback);
   }
 }
-const Te = function(n) {
-  throw n;
+const DEFAULT_ERROR_HANDLER = function(error) {
+  throw error;
 };
-class ur {
-  constructor(t, e = {}) {
-    f(this, "api");
-    f(this, "endpoints");
-    f(this, "classmap");
-    this.api = t;
-    const { endpoints: r, classmap: s } = e;
-    this.endpoints = new ie(r ?? {}), this.classmap = { ...ze, ...s }, this.errorHandler = e.errorHandler ?? Te;
+class HydraPlugin {
+  constructor(api, options = {}) {
+    __publicField(this, "api");
+    __publicField(this, "endpoints");
+    __publicField(this, "classmap");
+    var _a;
+    this.api = api;
+    const { endpoints, classmap } = options;
+    this.endpoints = new HydraEndpoints(endpoints != null ? endpoints : {});
+    this.classmap = { ...DEFAULT_CLASSMAP, ...classmap };
+    this.errorHandler = (_a = options.errorHandler) != null ? _a : DEFAULT_ERROR_HANDLER;
   }
-  factory(t, e) {
-    for (const r in this.classmap)
-      if (r === (t["@type"] ?? t)) {
-        const s = this.classmap[r];
-        return t instanceof s ? t : (t = Object.assign(new s(), t), e && Object.assign(t, { statusCode: e }), B(t));
+  factory(item, statusCode) {
+    var _a;
+    for (const type in this.classmap) {
+      if (type === ((_a = item["@type"]) != null ? _a : item)) {
+        const className = this.classmap[type];
+        if (item instanceof className) {
+          return item;
+        }
+        item = Object.assign(new className(), item);
+        if (statusCode) {
+          Object.assign(item, { statusCode });
+        }
+        return reactive(item);
       }
-    return t;
+    }
+    return item;
   }
-  storeItem({ state: t }, e) {
-    const r = U(e);
-    return Object.keys(t.items).includes(r) ? Object.assign(t.items[r], e) : t.items[r] = K(e), t.items[r];
+  storeItem({ state }, item) {
+    const iri = getIri(item);
+    if (!Object.keys(state.items).includes(iri)) {
+      state.items[iri] = ref(item);
+    } else {
+      Object.assign(state.items[iri], item);
+    }
+    return state.items[iri];
   }
-  removeItem({ state: t }, e) {
-    const r = U(e);
-    delete t.items[r];
+  removeItem({ state }, item) {
+    const iri = getIri(item);
+    delete state.items[iri];
   }
-  async clearItems({ state: t }) {
-    t.items = B(new Ot());
+  async clearItems({ state }) {
+    state.items = reactive(new Items());
   }
-  async handle(t, { errorHandler: e = this.errorHandler } = {}) {
-    var r, s, i, u;
+  async handle(call, { errorHandler = this.errorHandler } = {}) {
+    var _a, _b, _c, _d, _e;
     try {
-      const { data: l } = await t();
-      return this.factory(l);
-    } catch (l) {
-      typeof ((r = l.response) == null ? void 0 : r.data) == "object" && ((s = l.response) == null ? void 0 : s.data) != null && (l = this.factory(l.response.data, (i = l.response) == null ? void 0 : i.status)), l.statusCode = l.statusCode ?? ((u = l.response) == null ? void 0 : u.status), e(l);
+      const { data } = await call();
+      return this.factory(data);
+    } catch (error) {
+      if ("object" === typeof ((_a = error.response) == null ? void 0 : _a.data) && null != ((_b = error.response) == null ? void 0 : _b.data)) {
+        error = this.factory(error.response.data, (_c = error.response) == null ? void 0 : _c.status);
+      }
+      error.statusCode = (_e = error.statusCode) != null ? _e : (_d = error.response) == null ? void 0 : _d.status;
+      errorHandler(error);
     }
   }
-  async fetchItem({ state: t }, e, r) {
-    let s = new et(U(e));
-    r != null && r.groups && (s = s.withQuery(`${new it(s.getQuery()).withParam("groups", r.groups)}`));
-    let i = await this.handle(() => this.api.get(`${s}`, r), r);
-    return i = this.factory(i), (r == null ? void 0 : r.store) ?? !0 ? this.storeItem({ state: t }, i) : i;
+  async fetchItem({ state }, itemOrIri, options) {
+    var _a;
+    let uri = new URI(getIri(itemOrIri));
+    if (options == null ? void 0 : options.groups) {
+      uri = uri.withQuery(`${new QueryString(uri.getQuery()).withParam("groups", options.groups)}`);
+    }
+    let item = await this.handle(() => this.api.get(`${uri}`, options), options);
+    item = this.factory(item);
+    const shouldStore = (_a = options == null ? void 0 : options.store) != null ? _a : true;
+    return shouldStore ? this.storeItem({ state }, item) : item;
   }
-  async getItem({ state: t }, e, r) {
-    if (e === null)
+  async getItem({ state }, itemOrIri, options) {
+    if (null === itemOrIri) {
       return null;
-    const s = U(e), i = ct(t.items, s);
-    return i ?? await this.fetchItem({ state: t }, s, r);
+    }
+    const iri = getIri(itemOrIri);
+    const existingItem = getItemByIri(state.items, iri);
+    if (null != existingItem) {
+      return existingItem;
+    }
+    return await this.fetchItem({ state }, iri, options);
   }
-  async fetchCollection({ state: t }, e, r) {
-    let s = new et(`${e}`);
-    r != null && r.groups && (s = s.withQuery(`${new it(s.getQuery()).withParam("groups", r.groups)}`));
-    const i = await this.handle(() => this.api.get(`${s}`, r), r);
-    i["hydra:member"] = i["hydra:member"].map((d) => this.factory(d));
-    const u = this.factory(i);
-    if (u["hydra:member"] = u["hydra:member"].map((d) => this.factory(d)), (r == null ? void 0 : r.store) ?? !1)
-      for (const d of u["hydra:member"])
-        this.storeItem({ state: t }, d);
-    return u;
+  async fetchCollection({ state }, iri, options) {
+    var _a;
+    let uri = new URI(`${iri}`);
+    if (options == null ? void 0 : options.groups) {
+      uri = uri.withQuery(`${new QueryString(uri.getQuery()).withParam("groups", options.groups)}`);
+    }
+    const data = await this.handle(() => this.api.get(`${uri}`, options), options);
+    data["hydra:member"] = data["hydra:member"].map((item) => this.factory(item));
+    const collection = this.factory(data);
+    collection["hydra:member"] = collection["hydra:member"].map((item) => this.factory(item));
+    const shouldStore = (_a = options == null ? void 0 : options.store) != null ? _a : false;
+    if (shouldStore) {
+      for (const item of collection["hydra:member"]) {
+        this.storeItem({ state }, item);
+      }
+    }
+    return collection;
   }
-  async createItem({ state: t }, e, r) {
-    const s = this.endpoints.for(e);
-    return e = await this.handle(() => this.api.post(s, e, r), r), (r == null ? void 0 : r.store) ?? !0 ? this.storeItem({ state: t }, e) : e;
+  async createItem({ state }, item, options) {
+    var _a;
+    const endpoint = this.endpoints.for(item);
+    item = await this.handle(() => this.api.post(endpoint, item, options), options);
+    const shouldStore = (_a = options == null ? void 0 : options.store) != null ? _a : true;
+    return shouldStore ? this.storeItem({ state }, item) : item;
   }
-  async updateItem({ state: t }, e, r) {
-    return bt(e), e = await this.handle(() => this.api.put(U(e), e, r), r), (r == null ? void 0 : r.store) ?? !0 ? this.storeItem({ state: t }, e) : e;
+  async updateItem({ state }, item, options) {
+    var _a;
+    checkValidItem(item);
+    item = await this.handle(() => this.api.put(getIri(item), item, options), options);
+    const shouldStore = (_a = options == null ? void 0 : options.store) != null ? _a : true;
+    return shouldStore ? this.storeItem({ state }, item) : item;
   }
-  async upsertItem({ state: t }, e, r) {
-    return at(e) ? this.updateItem({ state: t }, e, r) : this.createItem({ state: t }, e, r);
+  async upsertItem({ state }, item, options) {
+    return hasIri(item) ? this.updateItem({ state }, item, options) : this.createItem({ state }, item, options);
   }
-  async deleteItem({ state: t }, e, r) {
-    const s = U(e);
-    await this.handle(() => this.api.delete(s, r), r), e = ct(t.items, s), e !== null && this.removeItem({ state: t }, e);
+  async deleteItem({ state }, item, options) {
+    const iri = getIri(item);
+    await this.handle(() => this.api.delete(iri, options), options);
+    item = getItemByIri(state.items, iri);
+    if (null !== item) {
+      this.removeItem({ state }, item);
+    }
   }
-  async getRelation({ state: t }, e, r = {}) {
-    if (e === null)
+  async getRelation({ state }, itemOrIri, options = {}) {
+    var _a, _b, _c;
+    if (null === itemOrIri) {
       return null;
-    if (typeof e == "function") {
-      const s = St(() => this.getRelation({ state: t }, e(), r));
-      return await zt(s).not.toBe(void 0), s;
     }
-    if ((r.useExisting ?? !0) === !0) {
-      const s = ct(t.items, e);
-      if (s != null)
-        return s;
+    if ("function" === typeof itemOrIri) {
+      const synchronizedRelation = asyncComputed(() => this.getRelation({ state }, itemOrIri(), options));
+      await until(synchronizedRelation).not.toBe(void 0);
+      return synchronizedRelation;
     }
-    if (typeof e == "object" && (r.force ?? !1) === !1) {
-      const s = this.factory(e);
-      return (r == null ? void 0 : r.store) ?? !1 ? this.storeItem({ state: t }, s) : s;
+    if (true === ((_a = options.useExisting) != null ? _a : true)) {
+      const existingItem = getItemByIri(state.items, itemOrIri);
+      if (null != existingItem) {
+        return existingItem;
+      }
     }
-    return await this.getItem({ state: t }, e, r);
+    if ("object" === typeof itemOrIri && false === ((_b = options.force) != null ? _b : false)) {
+      const item = this.factory(itemOrIri);
+      const shouldStore = (_c = options == null ? void 0 : options.store) != null ? _c : false;
+      return shouldStore ? this.storeItem({ state }, item) : item;
+    }
+    return await this.getItem({ state }, itemOrIri, options);
   }
-  async getRelations({ state: t }, e, r) {
-    if (typeof e == "function") {
-      const s = St(() => this.getRelations({ state: t }, e(), r));
-      return await zt(s).not.toBe(void 0), s;
+  async getRelations({ state }, itemsOrIris, options) {
+    if ("function" === typeof itemsOrIris) {
+      const synchronizedRelations = asyncComputed(() => this.getRelations({ state }, itemsOrIris(), options));
+      await until(synchronizedRelations).not.toBe(void 0);
+      return synchronizedRelations;
     }
-    return Promise.all(e.map((s) => this.getRelation({ state: t }, s, r)));
+    return Promise.all(itemsOrIris.map((itemOrIri) => this.getRelation({ state }, itemOrIri, options)));
   }
-  async install(t) {
-    t.state.items = B(new Ot()), t.state.endpoints = lt(this.endpoints), t.state.classmap = lt(this.classmap), t.storeItem = (e) => this.storeItem(t, e), t.removeItem = (e) => this.removeItem(t, e), t.clearItems = () => this.clearItems(t), t.getItem = (e, r) => this.getItem(t, e, r), t.fetchItem = (e, r) => this.fetchItem(t, e, r), t.fetchCollection = (e, r) => this.fetchCollection(t, e, r), t.createItem = (e, r) => this.createItem(t, e, r), t.updateItem = (e, r) => this.updateItem(t, e, r), t.upsertItem = (e, r) => this.upsertItem(t, e, r), t.deleteItem = (e, r) => this.deleteItem(t, e, r), t.getRelation = (e, r) => this.getRelation(t, e, r), t.getRelations = (e, r) => this.getRelations(t, e, r), t.endpoint = (e) => t.state.endpoints[e], t.getItemsByType = (e) => t.state.items.filter((r) => e === r["@type"]), t.factory = (e, r) => (r = r ?? e, typeof e == "string" && (r["@type"] = e), this.factory(r));
+  async install(store) {
+    store.state.items = reactive(new Items());
+    store.state.endpoints = readonly(this.endpoints);
+    store.state.classmap = readonly(this.classmap);
+    store.storeItem = (item) => this.storeItem(store, item);
+    store.removeItem = (item) => this.removeItem(store, item);
+    store.clearItems = () => this.clearItems(store);
+    store.getItem = (itemOrIri, options) => this.getItem(store, itemOrIri, options);
+    store.fetchItem = (iri, options) => this.fetchItem(store, iri, options);
+    store.fetchCollection = (iri, options) => this.fetchCollection(store, iri, options);
+    store.createItem = (item, options) => this.createItem(store, item, options);
+    store.updateItem = (item, options) => this.updateItem(store, item, options);
+    store.upsertItem = (item, options) => this.upsertItem(store, item, options);
+    store.deleteItem = (itemOrIri, options) => this.deleteItem(store, itemOrIri, options);
+    store.getRelation = (itemOrIri, options) => this.getRelation(store, itemOrIri, options);
+    store.getRelations = (itemsOrIris, options) => this.getRelations(store, itemsOrIris, options);
+    store.endpoint = (name) => store.state.endpoints[name];
+    store.getItemsByType = (type) => store.state.items.filter((item) => type === item["@type"]);
+    store.factory = (typeOrObject, object) => {
+      object = object != null ? object : typeOrObject;
+      if ("string" === typeof typeOrObject) {
+        object["@type"] = typeOrObject;
+      }
+      return this.factory(object);
+    };
   }
 }
-function Yt(n) {
-  if (typeof n == "string")
-    return n;
+function normalizeSingle(item) {
+  if ("string" === typeof item) {
+    return item;
+  }
   try {
-    return U(n);
-  } catch {
+    return getIri(item);
+  } catch (e) {
     return null;
   }
 }
-function De(n) {
-  return n.map((t) => Yt(t));
+function normalizeMultiple(items) {
+  return items.map((item) => normalizeSingle(item));
 }
-async function _t(n, t) {
+async function denormalizeSingle(item, store) {
   try {
-    return await t.getItem(n);
-  } catch {
+    return await store.getItem(item);
+  } catch (e) {
     return null;
   }
 }
-async function Oe(n, t) {
-  return Promise.all(n.map((e) => _t(e, t)));
+async function denormalizeMultiple(items, store) {
+  return Promise.all(items.map((item) => denormalizeSingle(item, store)));
 }
-class cr extends V {
-  constructor(e, { store: r, multiple: s = !1 }) {
+class ItemFilter extends Filter {
+  constructor(items, { store, multiple = false }) {
     super();
-    f(this, "items", []);
-    f(this, "multiple");
-    f(this, "store");
-    this.items = Array.isArray(e) ? e : [e], this.store = r, this.multiple = s;
+    __publicField(this, "items", []);
+    __publicField(this, "multiple");
+    __publicField(this, "store");
+    this.items = Array.isArray(items) ? items : [items];
+    this.store = store;
+    this.multiple = multiple;
   }
   get item() {
-    return this.items[0] ?? null;
+    var _a;
+    return (_a = this.items[0]) != null ? _a : null;
   }
-  set item(e) {
-    this.items = [e], this.multiple = !1;
+  set item(item) {
+    this.items = [item];
+    this.multiple = false;
   }
   normalize() {
-    return this.multiple || this.items.length > 1 ? De(this.items) : Yt(this.item);
+    return this.multiple || this.items.length > 1 ? normalizeMultiple(this.items) : normalizeSingle(this.item);
   }
-  async denormalize(e) {
-    if (Array.isArray(e)) {
-      this.items = await Oe(e, this.store);
+  async denormalize(input) {
+    if (Array.isArray(input)) {
+      this.items = await denormalizeMultiple(input, this.store);
       return;
     }
-    this.items = [await _t(e, this.store)];
+    this.items = [await denormalizeSingle(input, this.store)];
   }
 }
-const xe = {
+const reverts = {
   asc: "desc",
   desc: "asc"
 };
-class hr extends V {
-  constructor(e = {}) {
+class OrderFilter extends Filter {
+  constructor(order = {}) {
     super();
-    f(this, "order");
-    this.order = e;
+    __publicField(this, "order");
+    this.order = order;
   }
   revert() {
-    const e = {};
-    for (const r in this.order) {
-      const s = this.order[r];
-      e[r] = xe[s] ?? s;
+    var _a;
+    const order = {};
+    for (const key in this.order) {
+      const value = this.order[key];
+      order[key] = (_a = reverts[value]) != null ? _a : value;
     }
-    return this.order = e, this;
+    this.order = order;
+    return this;
   }
   normalize() {
     return this.order;
   }
-  async denormalize(e) {
-    this.order = {}, typeof e == "object" && e != null && (this.order = e);
+  async denormalize(input) {
+    this.order = {};
+    if ("object" === typeof input && null != input) {
+      this.order = input;
+    }
   }
 }
-class lr extends V {
-  constructor(t, e, r = !0, s = !0) {
-    super(), this.left = t, this.right = e, this.includeLeft = r, this.includeRight = s;
+class RangeFilter extends Filter {
+  constructor(left, right, includeLeft = true, includeRight = true) {
+    super();
+    this.left = left;
+    this.right = right;
+    this.includeLeft = includeLeft;
+    this.includeRight = includeRight;
   }
   normalize() {
-    const t = {};
-    return this.left != null && (t[this.includeLeft ? "gte" : "gt"] = `${this.left}`), this.right != null && (t[this.includeRight ? "lte" : "lt"] = `${this.right}`), Object.keys(t).length > 0 ? t : void 0;
+    const output = {};
+    if (null != this.left) {
+      output[this.includeLeft ? "gte" : "gt"] = `${this.left}`;
+    }
+    if (null != this.right) {
+      output[this.includeRight ? "lte" : "lt"] = `${this.right}`;
+    }
+    return Object.keys(output).length > 0 ? output : void 0;
   }
-  async denormalize(t) {
-    t == null || typeof t != "object" || (Object.keys(t).includes("gt") && (this.left = parseFloat(t.gt), this.includeLeft = !1), Object.keys(t).includes("gte") && (this.left = parseFloat(t.gte), this.includeLeft = !0), Object.keys(t).includes("lt") && (this.right = parseFloat(t.lt), this.includeRight = !1), Object.keys(t).includes("lte") && (this.right = parseFloat(t.lte), this.includeRight = !0));
+  async denormalize(input) {
+    if (null == input || "object" !== typeof input) {
+      return;
+    }
+    if (Object.keys(input).includes("gt")) {
+      this.left = parseFloat(input["gt"]);
+      this.includeLeft = false;
+    }
+    if (Object.keys(input).includes("gte")) {
+      this.left = parseFloat(input["gte"]);
+      this.includeLeft = true;
+    }
+    if (Object.keys(input).includes("lt")) {
+      this.right = parseFloat(input["lt"]);
+      this.includeRight = false;
+    }
+    if (Object.keys(input).includes("lte")) {
+      this.right = parseFloat(input["lte"]);
+      this.includeRight = true;
+    }
   }
 }
-class fr extends V {
-  constructor(e = null) {
+class TextFilter extends Filter {
+  constructor(value = null) {
     super();
-    f(this, "_value");
-    this.value = e;
+    __publicField(this, "_value");
+    this.value = value;
   }
   get value() {
     return this._value;
   }
-  set value(e) {
-    this._value = e && e.toString();
+  set value(value) {
+    this._value = !value ? value : value.toString();
   }
   normalize() {
-    var e;
-    return [void 0, null, ""].includes((e = this.value) == null ? void 0 : e.trim()) ? null : this.value.trim();
+    var _a;
+    if ([void 0, null, ""].includes((_a = this.value) == null ? void 0 : _a.trim())) {
+      return null;
+    }
+    return this.value.trim();
   }
-  async denormalize(e) {
-    if (typeof e == "string" && (e = e.trim()), [void 0, null, ""].includes(e)) {
+  async denormalize(input) {
+    if ("string" === typeof input) {
+      input = input.trim();
+    }
+    if ([void 0, null, ""].includes(input)) {
       this.value = null;
       return;
     }
-    this.value = e;
+    this.value = input;
   }
 }
-class dr extends V {
-  constructor(e = null) {
+class TruthyFilter extends Filter {
+  constructor(value = null) {
     super();
-    f(this, "value");
-    this.value = e;
+    __publicField(this, "value");
+    this.value = value;
   }
   normalize() {
-    return this.value == null ? null : this.value ? "true" : "false";
+    if (null == this.value) {
+      return null;
+    }
+    return this.value ? "true" : "false";
   }
-  async denormalize(e) {
-    if (e == null) {
+  async denormalize(input) {
+    if (null == input) {
       this.value = null;
       return;
     }
-    e = `${e}`.trim(), this.value = ["true", "on", "yes", "1"].includes(e.toLowerCase());
+    input = `${input}`.trim();
+    this.value = ["true", "on", "yes", "1"].includes(input.toLowerCase());
   }
 }
-function mr({ itemsPerPage: n, currentPage: t, totalItems: e }) {
-  return e == null ? new Pe({ itemsPerPage: n, currentPage: t }) : new Ie({ itemsPerPage: n, currentPage: t, totalItems: e });
+function createPager({ itemsPerPage, currentPage, totalItems }) {
+  if (null == totalItems) {
+    return new PartialPager({ itemsPerPage, currentPage });
+  }
+  return new StandardPager({ itemsPerPage, currentPage, totalItems });
 }
-function Me(n) {
-  return Array.from({ length: n }, (t, e) => e + 1);
+function generatePages(lastPage) {
+  return Array.from({ length: lastPage }, (_, i) => i + 1);
 }
-class $t {
-  constructor({ itemsPerPage: t, currentPage: e }) {
-    f(this, "itemsPerPage");
-    f(this, "totalItems");
-    f(this, "currentPage");
-    f(this, "previousPage");
-    f(this, "nextPage");
-    f(this, "lastPage");
-    f(this, "offset");
-    f(this, "_pages");
-    this.itemsPerPage = parseInt(t), this.currentPage = parseInt(e), this.offset = Math.max(0, e * t - t), this.previousPage = Math.max(1, this.currentPage - 1);
+class Pager {
+  constructor({ itemsPerPage, currentPage }) {
+    __publicField(this, "itemsPerPage");
+    __publicField(this, "totalItems");
+    __publicField(this, "currentPage");
+    __publicField(this, "previousPage");
+    __publicField(this, "nextPage");
+    __publicField(this, "lastPage");
+    __publicField(this, "offset");
+    __publicField(this, "_pages");
+    this.itemsPerPage = parseInt(itemsPerPage);
+    this.currentPage = parseInt(currentPage);
+    this.offset = Math.max(0, currentPage * itemsPerPage - itemsPerPage);
+    this.previousPage = Math.max(1, this.currentPage - 1);
   }
   get pages() {
-    return this._pages === void 0 && (this._pages = Me(this.lastPage)), this._pages;
+    if (void 0 === this._pages) {
+      this._pages = generatePages(this.lastPage);
+    }
+    return this._pages;
   }
   isPartial() {
-    return this.totalItems == null;
+    return null == this.totalItems;
   }
-  isFirstPage(t = void 0) {
-    return parseInt(t ?? this.currentPage) === 1;
+  isFirstPage(page = void 0) {
+    return parseInt(page != null ? page : this.currentPage) === 1;
   }
-  isPreviousPage(t) {
-    return parseInt(t) === this.previousPage;
+  isPreviousPage(page) {
+    return parseInt(page) === this.previousPage;
   }
-  isCurrentPage(t) {
-    return parseInt(t) === this.currentPage;
+  isCurrentPage(page) {
+    return parseInt(page) === this.currentPage;
   }
-  isNextPage(t) {
-    return parseInt(t) === this.nextPage;
+  isNextPage(page) {
+    return parseInt(page) === this.nextPage;
   }
-  isLastPage(t = void 0) {
-    return parseInt(t ?? this.currentPage) === this.lastPage;
+  isLastPage(page = void 0) {
+    return parseInt(page != null ? page : this.currentPage) === this.lastPage;
   }
   *[Symbol.iterator]() {
     yield* this.pages;
   }
-  truncate(t, e = !1) {
-    return new Ee(this, t, e);
+  truncate(delta, includeEdges = false) {
+    return new TruncatedPager(this, delta, includeEdges);
   }
 }
-class Ie extends $t {
-  constructor({ itemsPerPage: t, currentPage: e, totalItems: r }) {
-    super({ itemsPerPage: t, currentPage: e }), this.totalItems = parseInt(r), this.lastPage = Math.max(1, Math.ceil(this.totalItems / Math.max(1, this.itemsPerPage))), this.nextPage = Math.min(this.lastPage, this.currentPage + 1);
+class StandardPager extends Pager {
+  constructor({ itemsPerPage, currentPage, totalItems }) {
+    super({ itemsPerPage, currentPage });
+    this.totalItems = parseInt(totalItems);
+    this.lastPage = Math.max(1, Math.ceil(this.totalItems / Math.max(1, this.itemsPerPage)));
+    this.nextPage = Math.min(this.lastPage, this.currentPage + 1);
   }
 }
-class Pe extends $t {
-  constructor({ itemsPerPage: t, currentPage: e, totalItems: r }) {
-    super({ itemsPerPage: t, currentPage: e, totalItems: r }), this.nextPage = this.lastPage = this.currentPage + 1;
+class PartialPager extends Pager {
+  constructor({ itemsPerPage, currentPage, totalItems }) {
+    super({ itemsPerPage, currentPage, totalItems });
+    this.nextPage = this.lastPage = this.currentPage + 1;
   }
 }
-class Ee extends $t {
-  constructor(t, e, r = !1) {
-    super(t), Object.assign(this, t);
-    const s = [];
-    r && s.push(1);
-    for (let i = 1; i <= this.lastPage; i++)
-      i === this.currentPage && s.push(i), i < this.currentPage && i >= this.currentPage - e && s.push(i), i > this.currentPage && i <= this.currentPage + e && s.push(i);
-    r && s.push(this.lastPage), this._pages = [...new Set(s)];
+class TruncatedPager extends Pager {
+  constructor(pager, delta, includeEdges = false) {
+    super(pager);
+    Object.assign(this, pager);
+    const pages = [];
+    if (includeEdges) {
+      pages.push(1);
+    }
+    for (let page = 1; page <= this.lastPage; page++) {
+      if (page === this.currentPage) {
+        pages.push(page);
+      }
+      if (page < this.currentPage && page >= this.currentPage - delta) {
+        pages.push(page);
+      }
+      if (page > this.currentPage && page <= this.currentPage + delta) {
+        pages.push(page);
+      }
+    }
+    if (includeEdges) {
+      pages.push(this.lastPage);
+    }
+    this._pages = [...new Set(pages)];
   }
 }
-class je {
+class Vulcain {
   constructor() {
-    f(this, "fields");
-    f(this, "preload");
+    __publicField(this, "fields");
+    __publicField(this, "preload");
   }
   get headers() {
-    var e, r;
-    const t = {};
-    return (((e = this.preload) == null ? void 0 : e.length) ?? 0) !== 0 && (t.preload = [...new Set(this.preload)].map((s) => `"${s}"`).join(", ")), (((r = this.fields) == null ? void 0 : r.length) ?? 0) !== 0 && (t.fields = [.../* @__PURE__ */ new Set([...this.fields, ...this.preload ?? []])].map((s) => `"${s}"`).join(", ")), t;
+    var _a, _b, _c, _d, _e;
+    const output = {};
+    if (0 !== ((_b = (_a = this.preload) == null ? void 0 : _a.length) != null ? _b : 0)) {
+      output.preload = [...new Set(this.preload)].map((field) => `"${field}"`).join(", ");
+    }
+    if (0 !== ((_d = (_c = this.fields) == null ? void 0 : _c.length) != null ? _d : 0)) {
+      output.fields = [.../* @__PURE__ */ new Set([...this.fields, ...(_e = this.preload) != null ? _e : []])].map((field) => `"${field}"`).join(", ");
+    }
+    return output;
   }
 }
-function gr({ fields: n, preload: t } = {}) {
-  return Object.assign(new je(), { fields: n }, { preload: t }).headers;
+function vulcain({ fields, preload } = {}) {
+  return Object.assign(new Vulcain(), { fields }, { preload }).headers;
 }
-export {
-  Bt as AbortError,
-  Ve as ApiClient,
-  Ze as ArrayFilter,
-  ce as ConstraintViolationList,
-  re as DateRangeFilter,
-  ne as DatetimeRangeFilter,
-  ge as FakeEventSource,
-  Je as FilterCollection,
-  Wt as HttpError,
-  he as HydraCollection,
-  vt as HydraEndpoint,
-  ie as HydraEndpoints,
-  jt as HydraError,
-  ur as HydraPlugin,
-  cr as ItemFilter,
-  $e as Mercure,
-  hr as OrderFilter,
-  lr as RangeFilter,
-  fr as TextFilter,
-  dr as TruthyFilter,
-  ue as Violation,
-  rt as areSameIris,
-  bt as checkValidItem,
-  G as clone,
-  oe as containsIri,
-  ar as createMercure,
-  mr as createPager,
-  We as createStore,
-  ae as getId,
-  Ke as getIds,
-  U as getIri,
-  Ge as getIris,
-  ct as getItemByIri,
-  tr as getItemIndexByIri,
-  er as getItemsByType,
-  at as hasIri,
-  we as mercureSync,
-  rr as normalizeIris,
-  fe as normalizeItemRelations,
-  Se as on,
-  nr as partialItem,
-  Be as useEndpoint,
-  Qe as useFilters,
-  ir as useFormValidation,
-  sr as useItemForm,
-  ve as useMercure,
-  or as useMercureSync,
-  Et as useStore,
-  gr as vulcain,
-  qe as withoutDuplicates,
-  Xe as withoutIri
-};
+export { AbortError, ApiClient, ArrayFilter, ConstraintViolationList, DateRangeFilter, DatetimeRangeFilter, FakeEventSource, FilterCollection, HttpError, HydraCollection, HydraEndpoint, HydraEndpoints, HydraError, HydraPlugin, ItemFilter, Mercure, OrderFilter, RangeFilter, TextFilter, TruthyFilter, Violation, areSameIris, checkValidItem, clone, containsIri, createMercure, createPager, createStore, getId, getIds, getIri, getIris, getItemByIri, getItemIndexByIri, getItemsByType, hasIri, mercureSync, normalizeIris, normalizeItemRelations, on, partialItem, useEndpoint, useFilters, useFormValidation, useItemForm, useMercure, useMercureSync, useStore, vulcain, withoutDuplicates, withoutIri };
