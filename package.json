@@ -50,5 +50,8 @@
     "typescript": "^4.5.5",
     "vite": "^4.0.4",
     "vue-tsc": "^0.31.2"
+  },
+  "resolutions": {
+    "@vue/test-utils/pretty/js-beautify": "1.14.6"
   }
 }
