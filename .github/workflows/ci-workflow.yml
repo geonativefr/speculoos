@@ -56,6 +56,9 @@ jobs:
       - name: Install dependencies
         run: yarn install
 
+      - name: Show lock file
+        run: cat yarn.lock
+
       - name: Enforce vue version to avoid warnings about missing <Suspense>
         run: yarn add -D vue@3.2.31
 
