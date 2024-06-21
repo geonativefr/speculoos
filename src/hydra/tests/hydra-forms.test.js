@@ -159,7 +159,7 @@ test('initial item can get deep changes without impacting form state', async () 
 it('binds violations', () => {
   const form = document.createElement('form');
   const FormHTMLElement = ref(form);
-  const {validate, bindViolations, resetValidity} = useFormValidation();
+  const {validate, bindViolations, unmappedViolations, resetValidity} = useFormValidation();
 
   // When
   const name = document.createElement('input');
@@ -190,16 +190,23 @@ it('binds violations', () => {
         'message': 'The value cannot be `foo`.',
         'code': 'c1051bb4-d103-4f74-8988-acbcafc7fdc3',
       },
+      {
+        'propertyPath': 'configuration',
+        'message': 'Misconfigured.',
+        'code': 'c1051bb4-d103-4f74-8988-acbcafc7fdc4',
+      },
     ],
   });
   bindViolations(FormHTMLElement, violations);
   // Then
   expect(validate(FormHTMLElement)).toBe(false); // We have no API to retrieve customValidity message :/
+  expect(unmappedViolations.value).toEqual([{message: 'Misconfigured.', propertyPath: 'configuration'}]);
 
   // When
   resetValidity(FormHTMLElement);
   // Then
   expect(validate(FormHTMLElement)).toBe(true);
+  expect(unmappedViolations.value).toEqual([]);
 });
 
 it('normalize the item\'s relations', () => {
