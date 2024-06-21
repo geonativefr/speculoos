@@ -1,17 +1,17 @@
-var _t = Object.defineProperty;
-var Rt = (n, t, e) => t in n ? _t(n, t, { enumerable: !0, configurable: !0, writable: !0, value: e }) : n[t] = e;
-var f = (n, t, e) => (Rt(n, typeof t != "symbol" ? t + "" : t, e), e);
-import { whenever as Ht, asyncComputed as wt, until as St } from "@vueuse/core";
-import { unref as b, isRef as st, ref as K, reactive as B, readonly as ht, inject as xt, computed as lt, onUnmounted as Lt } from "vue";
-import zt from "clone-deep";
-import Nt from "md5";
+var Ht = Object.defineProperty;
+var Lt = (n, t, e) => t in n ? Ht(n, t, { enumerable: !0, configurable: !0, writable: !0, value: e }) : n[t] = e;
+var f = (n, t, e) => (Lt(n, typeof t != "symbol" ? t + "" : t, e), e);
+import { whenever as Nt, asyncComputed as $t, until as wt } from "@vueuse/core";
+import { unref as b, isRef as st, ref as W, reactive as G, readonly as ht, inject as Dt, computed as lt, onUnmounted as kt } from "vue";
+import St from "clone-deep";
+import Ft from "md5";
 import F from "is-empty";
-import { useRoute as kt, useRouter as Ft, onBeforeRouteUpdate as Vt } from "vue-router";
+import { useRoute as Vt, useRouter as qt, onBeforeRouteUpdate as Zt } from "vue-router";
 import { URI as et, QueryString as it } from "psr7-js";
-import { v4 as qt } from "uuid";
-import Zt from "mitt";
-import Jt from "uri-templates";
-class Qt extends Error {
+import { v4 as Jt } from "uuid";
+import Qt from "mitt";
+import Wt from "uri-templates";
+class Bt extends Error {
   constructor(t) {
     super(t.statusText), this.response = t, this.statusCode = parseInt(this.response.status);
   }
@@ -34,7 +34,7 @@ class Qt extends Error {
     return t;
   }
 }
-class Wt extends Error {
+class Gt extends Error {
   constructor(t) {
     super(), this.name = "AbortError", this.reason = t;
   }
@@ -46,7 +46,7 @@ const ut = (n) => {
   for (let e of n.keys())
     t[e] = n.get(e);
   return t;
-}, Bt = {
+}, Kt = {
   Accept: "application/ld+json, application/json"
 }, Mt = async (n) => {
   try {
@@ -60,13 +60,13 @@ const ut = (n) => {
   }
   return n;
 };
-class Fe {
+class qe {
   constructor({ baseUri: t = "", options: e = {}, fetcher: r } = {}) {
     f(this, "baseUri");
     f(this, "options");
     f(this, "fetch");
     var s;
-    this.baseUri = t, this.options = e, r = r ?? ((s = window.fetch) == null ? void 0 : s.bind(window)), this.fetch = async (i, u) => r(i, u).then(Mt);
+    this.baseUri = t, this.options = e, r = r ?? ((s = window.fetch) == null ? void 0 : s.bind(window)), this.fetch = async (i, o) => r(i, o).then(Mt);
   }
   resolve(t) {
     return new URL(t, this.baseUri).toString();
@@ -76,22 +76,22 @@ class Fe {
     Object.keys(e).includes("headers") && (e.headers = ut(e.headers));
     for (let r of arguments) {
       let s = { ...r };
-      Object.keys(s).includes("headers") && (s.headers = { ...ut(s.headers) }), e = { ...zt(e), ...zt(s) };
+      Object.keys(s).includes("headers") && (s.headers = { ...ut(s.headers) }), e = { ...St(e), ...St(s) };
     }
     return e;
   }
   async request(t, e, r) {
-    e = `${b(e)}`, r = this.mergeOptions({ method: t }, r), Object.keys(r).includes("headers") && (r.headers = new Headers({ ...Bt, ...ut(r.headers) }));
+    e = `${b(e)}`, r = this.mergeOptions({ method: t }, r), Object.keys(r).includes("headers") && (r.headers = new Headers({ ...Kt, ...ut(r.headers) }));
     try {
       if (st(r == null ? void 0 : r.isLoading) && (r.isLoading.value = !0), st(r == null ? void 0 : r.aborted)) {
         const s = new AbortController(), { signal: i } = s;
-        r.signal = i, Ht(r.aborted, () => s.abort(), { immediate: !0 });
+        r.signal = i, Nt(r.aborted, () => s.abort(), { immediate: !0 });
       }
       try {
         const s = await this.fetch(e, r);
-        return Qt.guard(s);
+        return Bt.guard(s);
       } catch (s) {
-        throw s.name === "AbortError" ? new Wt(s.reason) : s;
+        throw s.name === "AbortError" ? new Gt(s.reason) : s;
       }
     } finally {
       st(r == null ? void 0 : r.isLoading) && (r.isLoading.value = !1);
@@ -126,17 +126,17 @@ class Fe {
     return await this.request("DELETE", this.resolve(t), this.mergeOptions(e));
   }
 }
-class Gt {
+class Xt {
   constructor(t = ((e) => (e = window.fetch) == null ? void 0 : e.bind(window))()) {
     f(this, "fetch");
     f(this, "pendingRequests", []);
     return this.fetch = t, (r, s) => {
       try {
-        const i = Nt(JSON.stringify({ url: r, ...s })), u = this.pendingRequests.findIndex((d) => i === d.hash);
-        if (u >= 0)
-          return this.pendingRequests[u].promise;
-        const l = this.fetch(r, s).then(Mt);
-        return this.pendingRequests.push({ hash: i, promise: l }), l.then(
+        const i = Ft(JSON.stringify({ url: r, ...s })), o = this.pendingRequests.findIndex((d) => i === d.hash);
+        if (o >= 0)
+          return this.pendingRequests[o].promise;
+        const c = this.fetch(r, s).then(Mt);
+        return this.pendingRequests.push({ hash: i, promise: c }), c.then(
           (d) => (this.removePendingRequest(i), d),
           (d) => {
             throw this.removePendingRequest(i), d;
@@ -152,10 +152,10 @@ class Gt {
     e >= 0 && this.pendingRequests.splice(e, 1);
   }
 }
-function Ve(n = void 0) {
-  return new Gt(n);
+function Ze(n = void 0) {
+  return new Xt(n);
 }
-const G = (n, t = !0, e = []) => {
+const K = (n, t = !0, e = []) => {
   if (typeof n != "object" || n == null)
     return n;
   const r = e.find((i) => i.orig === n);
@@ -164,7 +164,7 @@ const G = (n, t = !0, e = []) => {
   let s = Object.assign(Object.create(Object.getPrototypeOf(n)), n);
   if (Array.isArray(n) && (s = Object.values(s)), e.push({ orig: n, cloned: s }), t)
     for (const i in s)
-      typeof s[i] == "object" && s[i] != null && (s[i] = G(s[i], t, e));
+      typeof s[i] == "object" && s[i] != null && (s[i] = K(s[i], t, e));
   return "__clone" in s && typeof s.__clone == "function" && s.__clone(), s;
 };
 class V {
@@ -175,7 +175,7 @@ class V {
     throw Error("This method is meant to be overriden.");
   }
 }
-class qe extends V {
+class Je extends V {
   constructor(e = []) {
     super();
     f(this, "values");
@@ -192,285 +192,277 @@ class qe extends V {
     Array.isArray(e) || (e = [e]), this.values = e;
   }
 }
-var yt = typeof globalThis < "u" ? globalThis : typeof window < "u" ? window : typeof global < "u" ? global : typeof self < "u" ? self : {}, C = {}, Kt = {
-  get exports() {
-    return C;
-  },
-  set exports(n) {
-    C = n;
-  }
-};
+var mt = typeof globalThis < "u" ? globalThis : typeof window < "u" ? window : typeof global < "u" ? global : typeof self < "u" ? self : {};
+function yt(n) {
+  return n && n.__esModule && Object.prototype.hasOwnProperty.call(n, "default") ? n.default : n;
+}
+var It = { exports: {} };
 (function(n, t) {
   (function(e, r) {
     n.exports = r();
-  })(yt, function() {
-    var e = 1e3, r = 6e4, s = 36e5, i = "millisecond", u = "second", l = "minute", d = "hour", $ = "day", P = "week", Y = "month", O = "quarter", D = "year", T = "date", c = "Invalid Date", S = /^(\d{4})[-/]?(\d{1,2})?[-/]?(\d{0,2})[Tt\s]*(\d{1,2})?:?(\d{1,2})?:?(\d{1,2})?[.:]?(\d+)?$/, A = /\[([^\]]+)]|Y{1,4}|M{1,4}|D{1,2}|d{1,4}|H{1,2}|h{1,2}|a|A|m{1,2}|s{1,2}|Z{1,2}|SSS/g, x = { name: "en", weekdays: "Sunday_Monday_Tuesday_Wednesday_Thursday_Friday_Saturday".split("_"), months: "January_February_March_April_May_June_July_August_September_October_November_December".split("_") }, M = function(p, h, a) {
+  })(mt, function() {
+    var e = 1e3, r = 6e4, s = 36e5, i = "millisecond", o = "second", c = "minute", d = "hour", $ = "day", E = "week", A = "month", O = "quarter", D = "year", T = "date", h = "Invalid Date", S = /^(\d{4})[-/]?(\d{1,2})?[-/]?(\d{0,2})[Tt\s]*(\d{1,2})?:?(\d{1,2})?:?(\d{1,2})?[.:]?(\d+)?$/, C = /\[([^\]]+)]|Y{1,4}|M{1,4}|D{1,2}|d{1,4}|H{1,2}|h{1,2}|a|A|m{1,2}|s{1,2}|Z{1,2}|SSS/g, M = { name: "en", weekdays: "Sunday_Monday_Tuesday_Wednesday_Thursday_Friday_Saturday".split("_"), months: "January_February_March_April_May_June_July_August_September_October_November_December".split("_") }, I = function(p, l, a) {
       var m = String(p);
-      return !m || m.length >= h ? p : "" + Array(h + 1 - m.length).join(a) + p;
-    }, N = { s: M, z: function(p) {
-      var h = -p.utcOffset(), a = Math.abs(h), m = Math.floor(a / 60), o = a % 60;
-      return (h <= 0 ? "+" : "-") + M(m, 2, "0") + ":" + M(o, 2, "0");
-    }, m: function p(h, a) {
-      if (h.date() < a.date())
-        return -p(a, h);
-      var m = 12 * (a.year() - h.year()) + (a.month() - h.month()), o = h.clone().add(m, Y), y = a - o < 0, g = h.clone().add(m + (y ? -1 : 1), Y);
-      return +(-(m + (a - o) / (y ? o - g : g - o)) || 0);
+      return !m || m.length >= l ? p : "" + Array(l + 1 - m.length).join(a) + p;
+    }, N = { s: I, z: function(p) {
+      var l = -p.utcOffset(), a = Math.abs(l), m = Math.floor(a / 60), u = a % 60;
+      return (l <= 0 ? "+" : "-") + I(m, 2, "0") + ":" + I(u, 2, "0");
+    }, m: function p(l, a) {
+      if (l.date() < a.date())
+        return -p(a, l);
+      var m = 12 * (a.year() - l.year()) + (a.month() - l.month()), u = l.clone().add(m, A), g = a - u < 0, y = l.clone().add(m + (g ? -1 : 1), A);
+      return +(-(m + (a - u) / (g ? u - y : y - u)) || 0);
     }, a: function(p) {
       return p < 0 ? Math.ceil(p) || 0 : Math.floor(p);
     }, p: function(p) {
-      return { M: Y, y: D, w: P, d: $, D: T, h: d, m: l, s: u, ms: i, Q: O }[p] || String(p || "").toLowerCase().replace(/s$/, "");
+      return { M: A, y: D, w: E, d: $, D: T, h: d, m: c, s: o, ms: i, Q: O }[p] || String(p || "").toLowerCase().replace(/s$/, "");
     }, u: function(p) {
       return p === void 0;
-    } }, E = "en", R = {};
-    R[E] = x;
+    } }, P = "en", R = {};
+    R[P] = M;
     var H = function(p) {
       return p instanceof Z;
-    }, k = function p(h, a, m) {
-      var o;
-      if (!h)
-        return E;
-      if (typeof h == "string") {
-        var y = h.toLowerCase();
-        R[y] && (o = y), a && (R[y] = a, o = y);
-        var g = h.split("-");
-        if (!o && g.length > 1)
-          return p(g[0]);
+    }, k = function p(l, a, m) {
+      var u;
+      if (!l)
+        return P;
+      if (typeof l == "string") {
+        var g = l.toLowerCase();
+        R[g] && (u = g), a && (R[g] = a, u = g);
+        var y = l.split("-");
+        if (!u && y.length > 1)
+          return p(y[0]);
       } else {
-        var w = h.name;
-        R[w] = h, o = w;
+        var w = l.name;
+        R[w] = l, u = w;
       }
-      return !m && o && (E = o), o || !m && E;
-    }, z = function(p, h) {
+      return !m && u && (P = u), u || !m && P;
+    }, z = function(p, l) {
       if (H(p))
         return p.clone();
-      var a = typeof h == "object" ? h : {};
+      var a = typeof l == "object" ? l : {};
       return a.date = p, a.args = arguments, new Z(a);
     }, v = N;
-    v.l = k, v.i = H, v.w = function(p, h) {
-      return z(p, { locale: h.$L, utc: h.$u, x: h.$x, $offset: h.$offset });
+    v.l = k, v.i = H, v.w = function(p, l) {
+      return z(p, { locale: l.$L, utc: l.$u, x: l.$x, $offset: l.$offset });
     };
     var Z = function() {
       function p(a) {
         this.$L = k(a.locale, null, !0), this.parse(a);
       }
-      var h = p.prototype;
-      return h.parse = function(a) {
+      var l = p.prototype;
+      return l.parse = function(a) {
         this.$d = function(m) {
-          var o = m.date, y = m.utc;
-          if (o === null)
-            return new Date(NaN);
-          if (v.u(o))
-            return new Date();
-          if (o instanceof Date)
-            return new Date(o);
-          if (typeof o == "string" && !/Z$/i.test(o)) {
-            var g = o.match(S);
-            if (g) {
-              var w = g[2] - 1 || 0, j = (g[7] || "0").substring(0, 3);
-              return y ? new Date(Date.UTC(g[1], w, g[3] || 1, g[4] || 0, g[5] || 0, g[6] || 0, j)) : new Date(g[1], w, g[3] || 1, g[4] || 0, g[5] || 0, g[6] || 0, j);
+          var u = m.date, g = m.utc;
+          if (u === null)
+            return /* @__PURE__ */ new Date(NaN);
+          if (v.u(u))
+            return /* @__PURE__ */ new Date();
+          if (u instanceof Date)
+            return new Date(u);
+          if (typeof u == "string" && !/Z$/i.test(u)) {
+            var y = u.match(S);
+            if (y) {
+              var w = y[2] - 1 || 0, j = (y[7] || "0").substring(0, 3);
+              return g ? new Date(Date.UTC(y[1], w, y[3] || 1, y[4] || 0, y[5] || 0, y[6] || 0, j)) : new Date(y[1], w, y[3] || 1, y[4] || 0, y[5] || 0, y[6] || 0, j);
             }
           }
-          return new Date(o);
+          return new Date(u);
         }(a), this.$x = a.x || {}, this.init();
-      }, h.init = function() {
+      }, l.init = function() {
         var a = this.$d;
         this.$y = a.getFullYear(), this.$M = a.getMonth(), this.$D = a.getDate(), this.$W = a.getDay(), this.$H = a.getHours(), this.$m = a.getMinutes(), this.$s = a.getSeconds(), this.$ms = a.getMilliseconds();
-      }, h.$utils = function() {
+      }, l.$utils = function() {
         return v;
-      }, h.isValid = function() {
-        return this.$d.toString() !== c;
-      }, h.isSame = function(a, m) {
-        var o = z(a);
-        return this.startOf(m) <= o && o <= this.endOf(m);
-      }, h.isAfter = function(a, m) {
+      }, l.isValid = function() {
+        return this.$d.toString() !== h;
+      }, l.isSame = function(a, m) {
+        var u = z(a);
+        return this.startOf(m) <= u && u <= this.endOf(m);
+      }, l.isAfter = function(a, m) {
         return z(a) < this.startOf(m);
-      }, h.isBefore = function(a, m) {
+      }, l.isBefore = function(a, m) {
         return this.endOf(m) < z(a);
-      }, h.$g = function(a, m, o) {
-        return v.u(a) ? this[m] : this.set(o, a);
-      }, h.unix = function() {
+      }, l.$g = function(a, m, u) {
+        return v.u(a) ? this[m] : this.set(u, a);
+      }, l.unix = function() {
         return Math.floor(this.valueOf() / 1e3);
-      }, h.valueOf = function() {
+      }, l.valueOf = function() {
         return this.$d.getTime();
-      }, h.startOf = function(a, m) {
-        var o = this, y = !!v.u(m) || m, g = v.p(a), w = function(W, L) {
-          var Q = v.w(o.$u ? Date.UTC(o.$y, L, W) : new Date(o.$y, L, W), o);
-          return y ? Q : Q.endOf($);
-        }, j = function(W, L) {
-          return v.w(o.toDate()[W].apply(o.toDate("s"), (y ? [0, 0, 0, 0] : [23, 59, 59, 999]).slice(L)), o);
-        }, I = this.$W, U = this.$M, J = this.$D, q = "set" + (this.$u ? "UTC" : "");
-        switch (g) {
+      }, l.startOf = function(a, m) {
+        var u = this, g = !!v.u(m) || m, y = v.p(a), w = function(B, L) {
+          var Q = v.w(u.$u ? Date.UTC(u.$y, L, B) : new Date(u.$y, L, B), u);
+          return g ? Q : Q.endOf($);
+        }, j = function(B, L) {
+          return v.w(u.toDate()[B].apply(u.toDate("s"), (g ? [0, 0, 0, 0] : [23, 59, 59, 999]).slice(L)), u);
+        }, x = this.$W, Y = this.$M, J = this.$D, q = "set" + (this.$u ? "UTC" : "");
+        switch (y) {
           case D:
-            return y ? w(1, 0) : w(31, 11);
-          case Y:
-            return y ? w(1, U) : w(0, U + 1);
-          case P:
-            var X = this.$locale().weekStart || 0, tt = (I < X ? I + 7 : I) - X;
-            return w(y ? J - tt : J + (6 - tt), U);
+            return g ? w(1, 0) : w(31, 11);
+          case A:
+            return g ? w(1, Y) : w(0, Y + 1);
+          case E:
+            var X = this.$locale().weekStart || 0, tt = (x < X ? x + 7 : x) - X;
+            return w(g ? J - tt : J + (6 - tt), Y);
           case $:
           case T:
             return j(q + "Hours", 0);
           case d:
             return j(q + "Minutes", 1);
-          case l:
+          case c:
             return j(q + "Seconds", 2);
-          case u:
+          case o:
             return j(q + "Milliseconds", 3);
           default:
             return this.clone();
         }
-      }, h.endOf = function(a) {
+      }, l.endOf = function(a) {
         return this.startOf(a, !1);
-      }, h.$set = function(a, m) {
-        var o, y = v.p(a), g = "set" + (this.$u ? "UTC" : ""), w = (o = {}, o[$] = g + "Date", o[T] = g + "Date", o[Y] = g + "Month", o[D] = g + "FullYear", o[d] = g + "Hours", o[l] = g + "Minutes", o[u] = g + "Seconds", o[i] = g + "Milliseconds", o)[y], j = y === $ ? this.$D + (m - this.$W) : m;
-        if (y === Y || y === D) {
-          var I = this.clone().set(T, 1);
-          I.$d[w](j), I.init(), this.$d = I.set(T, Math.min(this.$D, I.daysInMonth())).$d;
+      }, l.$set = function(a, m) {
+        var u, g = v.p(a), y = "set" + (this.$u ? "UTC" : ""), w = (u = {}, u[$] = y + "Date", u[T] = y + "Date", u[A] = y + "Month", u[D] = y + "FullYear", u[d] = y + "Hours", u[c] = y + "Minutes", u[o] = y + "Seconds", u[i] = y + "Milliseconds", u)[g], j = g === $ ? this.$D + (m - this.$W) : m;
+        if (g === A || g === D) {
+          var x = this.clone().set(T, 1);
+          x.$d[w](j), x.init(), this.$d = x.set(T, Math.min(this.$D, x.daysInMonth())).$d;
         } else
           w && this.$d[w](j);
         return this.init(), this;
-      }, h.set = function(a, m) {
+      }, l.set = function(a, m) {
         return this.clone().$set(a, m);
-      }, h.get = function(a) {
+      }, l.get = function(a) {
         return this[v.p(a)]();
-      }, h.add = function(a, m) {
-        var o, y = this;
+      }, l.add = function(a, m) {
+        var u, g = this;
         a = Number(a);
-        var g = v.p(m), w = function(U) {
-          var J = z(y);
-          return v.w(J.date(J.date() + Math.round(U * a)), y);
+        var y = v.p(m), w = function(Y) {
+          var J = z(g);
+          return v.w(J.date(J.date() + Math.round(Y * a)), g);
         };
-        if (g === Y)
-          return this.set(Y, this.$M + a);
-        if (g === D)
+        if (y === A)
+          return this.set(A, this.$M + a);
+        if (y === D)
           return this.set(D, this.$y + a);
-        if (g === $)
+        if (y === $)
           return w(1);
-        if (g === P)
+        if (y === E)
           return w(7);
-        var j = (o = {}, o[l] = r, o[d] = s, o[u] = e, o)[g] || 1, I = this.$d.getTime() + a * j;
-        return v.w(I, this);
-      }, h.subtract = function(a, m) {
+        var j = (u = {}, u[c] = r, u[d] = s, u[o] = e, u)[y] || 1, x = this.$d.getTime() + a * j;
+        return v.w(x, this);
+      }, l.subtract = function(a, m) {
         return this.add(-1 * a, m);
-      }, h.format = function(a) {
-        var m = this, o = this.$locale();
+      }, l.format = function(a) {
+        var m = this, u = this.$locale();
         if (!this.isValid())
-          return o.invalidDate || c;
-        var y = a || "YYYY-MM-DDTHH:mm:ssZ", g = v.z(this), w = this.$H, j = this.$m, I = this.$M, U = o.weekdays, J = o.months, q = function(L, Q, ot, nt) {
-          return L && (L[Q] || L(m, y)) || ot[Q].slice(0, nt);
+          return u.invalidDate || h;
+        var g = a || "YYYY-MM-DDTHH:mm:ssZ", y = v.z(this), w = this.$H, j = this.$m, x = this.$M, Y = u.weekdays, J = u.months, q = function(L, Q, ot, nt) {
+          return L && (L[Q] || L(m, g)) || ot[Q].slice(0, nt);
         }, X = function(L) {
           return v.s(w % 12 || 12, L, "0");
-        }, tt = o.meridiem || function(L, Q, ot) {
+        }, tt = u.meridiem || function(L, Q, ot) {
           var nt = L < 12 ? "AM" : "PM";
           return ot ? nt.toLowerCase() : nt;
-        }, W = { YY: String(this.$y).slice(-2), YYYY: this.$y, M: I + 1, MM: v.s(I + 1, 2, "0"), MMM: q(o.monthsShort, I, J, 3), MMMM: q(J, I), D: this.$D, DD: v.s(this.$D, 2, "0"), d: String(this.$W), dd: q(o.weekdaysMin, this.$W, U, 2), ddd: q(o.weekdaysShort, this.$W, U, 3), dddd: U[this.$W], H: String(w), HH: v.s(w, 2, "0"), h: X(1), hh: X(2), a: tt(w, j, !0), A: tt(w, j, !1), m: String(j), mm: v.s(j, 2, "0"), s: String(this.$s), ss: v.s(this.$s, 2, "0"), SSS: v.s(this.$ms, 3, "0"), Z: g };
-        return y.replace(A, function(L, Q) {
-          return Q || W[L] || g.replace(":", "");
+        }, B = { YY: String(this.$y).slice(-2), YYYY: this.$y, M: x + 1, MM: v.s(x + 1, 2, "0"), MMM: q(u.monthsShort, x, J, 3), MMMM: q(J, x), D: this.$D, DD: v.s(this.$D, 2, "0"), d: String(this.$W), dd: q(u.weekdaysMin, this.$W, Y, 2), ddd: q(u.weekdaysShort, this.$W, Y, 3), dddd: Y[this.$W], H: String(w), HH: v.s(w, 2, "0"), h: X(1), hh: X(2), a: tt(w, j, !0), A: tt(w, j, !1), m: String(j), mm: v.s(j, 2, "0"), s: String(this.$s), ss: v.s(this.$s, 2, "0"), SSS: v.s(this.$ms, 3, "0"), Z: y };
+        return g.replace(C, function(L, Q) {
+          return Q || B[L] || y.replace(":", "");
         });
-      }, h.utcOffset = function() {
+      }, l.utcOffset = function() {
         return 15 * -Math.round(this.$d.getTimezoneOffset() / 15);
-      }, h.diff = function(a, m, o) {
-        var y, g = v.p(m), w = z(a), j = (w.utcOffset() - this.utcOffset()) * r, I = this - w, U = v.m(this, w);
-        return U = (y = {}, y[D] = U / 12, y[Y] = U, y[O] = U / 3, y[P] = (I - j) / 6048e5, y[$] = (I - j) / 864e5, y[d] = I / s, y[l] = I / r, y[u] = I / e, y)[g] || I, o ? U : v.a(U);
-      }, h.daysInMonth = function() {
-        return this.endOf(Y).$D;
-      }, h.$locale = function() {
+      }, l.diff = function(a, m, u) {
+        var g, y = v.p(m), w = z(a), j = (w.utcOffset() - this.utcOffset()) * r, x = this - w, Y = v.m(this, w);
+        return Y = (g = {}, g[D] = Y / 12, g[A] = Y, g[O] = Y / 3, g[E] = (x - j) / 6048e5, g[$] = (x - j) / 864e5, g[d] = x / s, g[c] = x / r, g[o] = x / e, g)[y] || x, u ? Y : v.a(Y);
+      }, l.daysInMonth = function() {
+        return this.endOf(A).$D;
+      }, l.$locale = function() {
         return R[this.$L];
-      }, h.locale = function(a, m) {
+      }, l.locale = function(a, m) {
         if (!a)
           return this.$L;
-        var o = this.clone(), y = k(a, m, !0);
-        return y && (o.$L = y), o;
-      }, h.clone = function() {
+        var u = this.clone(), g = k(a, m, !0);
+        return g && (u.$L = g), u;
+      }, l.clone = function() {
         return v.w(this.$d, this);
-      }, h.toDate = function() {
+      }, l.toDate = function() {
         return new Date(this.valueOf());
-      }, h.toJSON = function() {
+      }, l.toJSON = function() {
         return this.isValid() ? this.toISOString() : null;
-      }, h.toISOString = function() {
+      }, l.toISOString = function() {
         return this.$d.toISOString();
-      }, h.toString = function() {
+      }, l.toString = function() {
         return this.$d.toUTCString();
       }, p;
-    }(), $t = Z.prototype;
-    return z.prototype = $t, [["$ms", i], ["$s", u], ["$m", l], ["$H", d], ["$W", $], ["$M", Y], ["$y", D], ["$D", T]].forEach(function(p) {
-      $t[p[1]] = function(h) {
-        return this.$g(h, p[0], p[1]);
+    }(), bt = Z.prototype;
+    return z.prototype = bt, [["$ms", i], ["$s", o], ["$m", c], ["$H", d], ["$W", $], ["$M", A], ["$y", D], ["$D", T]].forEach(function(p) {
+      bt[p[1]] = function(l) {
+        return this.$g(l, p[0], p[1]);
       };
-    }), z.extend = function(p, h) {
-      return p.$i || (p(h, Z, z), p.$i = !0), z;
+    }), z.extend = function(p, l) {
+      return p.$i || (p(l, Z, z), p.$i = !0), z;
     }, z.locale = k, z.isDayjs = H, z.unix = function(p) {
       return z(1e3 * p);
-    }, z.en = R[E], z.Ls = R, z.p = {}, z;
+    }, z.en = R[P], z.Ls = R, z.p = {}, z;
   });
-})(Kt);
-var ft = {}, Xt = {
-  get exports() {
-    return ft;
-  },
-  set exports(n) {
-    ft = n;
-  }
-};
+})(It);
+var te = It.exports;
+const _ = /* @__PURE__ */ yt(te);
+var xt = { exports: {} };
 (function(n, t) {
   (function(e, r) {
     n.exports = r();
-  })(yt, function() {
+  })(mt, function() {
     var e = "minute", r = /[+-]\d\d(?::?\d\d)?/g, s = /([+-]|\d\d)/g;
-    return function(i, u, l) {
-      var d = u.prototype;
-      l.utc = function(c) {
-        var S = { date: c, utc: !0, args: arguments };
-        return new u(S);
-      }, d.utc = function(c) {
-        var S = l(this.toDate(), { locale: this.$L, utc: !0 });
-        return c ? S.add(this.utcOffset(), e) : S;
+    return function(i, o, c) {
+      var d = o.prototype;
+      c.utc = function(h) {
+        var S = { date: h, utc: !0, args: arguments };
+        return new o(S);
+      }, d.utc = function(h) {
+        var S = c(this.toDate(), { locale: this.$L, utc: !0 });
+        return h ? S.add(this.utcOffset(), e) : S;
       }, d.local = function() {
-        return l(this.toDate(), { locale: this.$L, utc: !1 });
+        return c(this.toDate(), { locale: this.$L, utc: !1 });
       };
       var $ = d.parse;
-      d.parse = function(c) {
-        c.utc && (this.$u = !0), this.$utils().u(c.$offset) || (this.$offset = c.$offset), $.call(this, c);
+      d.parse = function(h) {
+        h.utc && (this.$u = !0), this.$utils().u(h.$offset) || (this.$offset = h.$offset), $.call(this, h);
       };
-      var P = d.init;
+      var E = d.init;
       d.init = function() {
         if (this.$u) {
-          var c = this.$d;
-          this.$y = c.getUTCFullYear(), this.$M = c.getUTCMonth(), this.$D = c.getUTCDate(), this.$W = c.getUTCDay(), this.$H = c.getUTCHours(), this.$m = c.getUTCMinutes(), this.$s = c.getUTCSeconds(), this.$ms = c.getUTCMilliseconds();
+          var h = this.$d;
+          this.$y = h.getUTCFullYear(), this.$M = h.getUTCMonth(), this.$D = h.getUTCDate(), this.$W = h.getUTCDay(), this.$H = h.getUTCHours(), this.$m = h.getUTCMinutes(), this.$s = h.getUTCSeconds(), this.$ms = h.getUTCMilliseconds();
         } else
-          P.call(this);
+          E.call(this);
       };
-      var Y = d.utcOffset;
-      d.utcOffset = function(c, S) {
-        var A = this.$utils().u;
-        if (A(c))
-          return this.$u ? 0 : A(this.$offset) ? Y.call(this) : this.$offset;
-        if (typeof c == "string" && (c = function(E) {
-          E === void 0 && (E = "");
-          var R = E.match(r);
+      var A = d.utcOffset;
+      d.utcOffset = function(h, S) {
+        var C = this.$utils().u;
+        if (C(h))
+          return this.$u ? 0 : C(this.$offset) ? A.call(this) : this.$offset;
+        if (typeof h == "string" && (h = function(P) {
+          P === void 0 && (P = "");
+          var R = P.match(r);
           if (!R)
             return null;
           var H = ("" + R[0]).match(s) || ["-", 0, 0], k = H[0], z = 60 * +H[1] + +H[2];
           return z === 0 ? 0 : k === "+" ? z : -z;
-        }(c), c === null))
+        }(h), h === null))
           return this;
-        var x = Math.abs(c) <= 16 ? 60 * c : c, M = this;
+        var M = Math.abs(h) <= 16 ? 60 * h : h, I = this;
         if (S)
-          return M.$offset = x, M.$u = c === 0, M;
-        if (c !== 0) {
+          return I.$offset = M, I.$u = h === 0, I;
+        if (h !== 0) {
           var N = this.$u ? this.toDate().getTimezoneOffset() : -1 * this.utcOffset();
-          (M = this.local().add(x + N, e)).$offset = x, M.$x.$localOffset = N;
+          (I = this.local().add(M + N, e)).$offset = M, I.$x.$localOffset = N;
         } else
-          M = this.utc();
-        return M;
+          I = this.utc();
+        return I;
       };
       var O = d.format;
-      d.format = function(c) {
-        var S = c || (this.$u ? "YYYY-MM-DDTHH:mm:ss[Z]" : "");
+      d.format = function(h) {
+        var S = h || (this.$u ? "YYYY-MM-DDTHH:mm:ss[Z]" : "");
         return O.call(this, S);
       }, d.valueOf = function() {
-        var c = this.$utils().u(this.$offset) ? 0 : this.$offset + (this.$x.$localOffset || this.$d.getTimezoneOffset());
-        return this.$d.valueOf() - 6e4 * c;
+        var h = this.$utils().u(this.$offset) ? 0 : this.$offset + (this.$x.$localOffset || this.$d.getTimezoneOffset());
+        return this.$d.valueOf() - 6e4 * h;
       }, d.isUTC = function() {
         return !!this.$u;
       }, d.toISOString = function() {
@@ -479,94 +471,89 @@ var ft = {}, Xt = {
         return this.toDate().toUTCString();
       };
       var D = d.toDate;
-      d.toDate = function(c) {
-        return c === "s" && this.$offset ? l(this.format("YYYY-MM-DD HH:mm:ss:SSS")).toDate() : D.call(this);
+      d.toDate = function(h) {
+        return h === "s" && this.$offset ? c(this.format("YYYY-MM-DD HH:mm:ss:SSS")).toDate() : D.call(this);
       };
       var T = d.diff;
-      d.diff = function(c, S, A) {
-        if (c && this.$u === c.$u)
-          return T.call(this, c, S, A);
-        var x = this.local(), M = l(c).local();
-        return T.call(x, M, S, A);
+      d.diff = function(h, S, C) {
+        if (h && this.$u === h.$u)
+          return T.call(this, h, S, C);
+        var M = this.local(), I = c(h).local();
+        return T.call(M, I, S, C);
       };
     };
   });
-})(Xt);
-const It = ft;
-var dt = {}, te = {
-  get exports() {
-    return dt;
-  },
-  set exports(n) {
-    dt = n;
-  }
-};
+})(xt);
+var ee = xt.exports;
+const Et = /* @__PURE__ */ yt(ee);
+var Pt = { exports: {} };
 (function(n, t) {
   (function(e, r) {
     n.exports = r();
-  })(yt, function() {
+  })(mt, function() {
     var e = { year: 0, month: 1, day: 2, hour: 3, minute: 4, second: 5 }, r = {};
-    return function(s, i, u) {
-      var l, d = function(O, D, T) {
+    return function(s, i, o) {
+      var c, d = function(O, D, T) {
         T === void 0 && (T = {});
-        var c = new Date(O), S = function(A, x) {
-          x === void 0 && (x = {});
-          var M = x.timeZoneName || "short", N = A + "|" + M, E = r[N];
-          return E || (E = new Intl.DateTimeFormat("en-US", { hour12: !1, timeZone: A, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", timeZoneName: M }), r[N] = E), E;
+        var h = new Date(O), S = function(C, M) {
+          M === void 0 && (M = {});
+          var I = M.timeZoneName || "short", N = C + "|" + I, P = r[N];
+          return P || (P = new Intl.DateTimeFormat("en-US", { hour12: !1, timeZone: C, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", timeZoneName: I }), r[N] = P), P;
         }(D, T);
-        return S.formatToParts(c);
+        return S.formatToParts(h);
       }, $ = function(O, D) {
-        for (var T = d(O, D), c = [], S = 0; S < T.length; S += 1) {
-          var A = T[S], x = A.type, M = A.value, N = e[x];
-          N >= 0 && (c[N] = parseInt(M, 10));
+        for (var T = d(O, D), h = [], S = 0; S < T.length; S += 1) {
+          var C = T[S], M = C.type, I = C.value, N = e[M];
+          N >= 0 && (h[N] = parseInt(I, 10));
         }
-        var E = c[3], R = E === 24 ? 0 : E, H = c[0] + "-" + c[1] + "-" + c[2] + " " + R + ":" + c[4] + ":" + c[5] + ":000", k = +O;
-        return (u.utc(H).valueOf() - (k -= k % 1e3)) / 6e4;
-      }, P = i.prototype;
-      P.tz = function(O, D) {
-        O === void 0 && (O = l);
-        var T = this.utcOffset(), c = this.toDate(), S = c.toLocaleString("en-US", { timeZone: O }), A = Math.round((c - new Date(S)) / 1e3 / 60), x = u(S).$set("millisecond", this.$ms).utcOffset(15 * -Math.round(c.getTimezoneOffset() / 15) - A, !0);
+        var P = h[3], R = P === 24 ? 0 : P, H = h[0] + "-" + h[1] + "-" + h[2] + " " + R + ":" + h[4] + ":" + h[5] + ":000", k = +O;
+        return (o.utc(H).valueOf() - (k -= k % 1e3)) / 6e4;
+      }, E = i.prototype;
+      E.tz = function(O, D) {
+        O === void 0 && (O = c);
+        var T = this.utcOffset(), h = this.toDate(), S = h.toLocaleString("en-US", { timeZone: O }), C = Math.round((h - new Date(S)) / 1e3 / 60), M = o(S).$set("millisecond", this.$ms).utcOffset(15 * -Math.round(h.getTimezoneOffset() / 15) - C, !0);
         if (D) {
-          var M = x.utcOffset();
-          x = x.add(T - M, "minute");
+          var I = M.utcOffset();
+          M = M.add(T - I, "minute");
         }
-        return x.$x.$timezone = O, x;
-      }, P.offsetName = function(O) {
-        var D = this.$x.$timezone || u.tz.guess(), T = d(this.valueOf(), D, { timeZoneName: O }).find(function(c) {
-          return c.type.toLowerCase() === "timezonename";
+        return M.$x.$timezone = O, M;
+      }, E.offsetName = function(O) {
+        var D = this.$x.$timezone || o.tz.guess(), T = d(this.valueOf(), D, { timeZoneName: O }).find(function(h) {
+          return h.type.toLowerCase() === "timezonename";
         });
         return T && T.value;
       };
-      var Y = P.startOf;
-      P.startOf = function(O, D) {
+      var A = E.startOf;
+      E.startOf = function(O, D) {
         if (!this.$x || !this.$x.$timezone)
-          return Y.call(this, O, D);
-        var T = u(this.format("YYYY-MM-DD HH:mm:ss:SSS"));
-        return Y.call(T, O, D).tz(this.$x.$timezone, !0);
-      }, u.tz = function(O, D, T) {
-        var c = T && D, S = T || D || l, A = $(+u(), S);
+          return A.call(this, O, D);
+        var T = o(this.format("YYYY-MM-DD HH:mm:ss:SSS"));
+        return A.call(T, O, D).tz(this.$x.$timezone, !0);
+      }, o.tz = function(O, D, T) {
+        var h = T && D, S = T || D || c, C = $(+o(), S);
         if (typeof O != "string")
-          return u(O).tz(S);
-        var x = function(R, H, k) {
+          return o(O).tz(S);
+        var M = function(R, H, k) {
           var z = R - 60 * H * 1e3, v = $(z, k);
           if (H === v)
             return [z, H];
           var Z = $(z -= 60 * (v - H) * 1e3, k);
           return v === Z ? [z, v] : [R - 60 * Math.min(v, Z) * 1e3, Math.max(v, Z)];
-        }(u.utc(O, c).valueOf(), A, S), M = x[0], N = x[1], E = u(M).utcOffset(N);
-        return E.$x.$timezone = S, E;
-      }, u.tz.guess = function() {
+        }(o.utc(O, h).valueOf(), C, S), I = M[0], N = M[1], P = o(I).utcOffset(N);
+        return P.$x.$timezone = S, P;
+      }, o.tz.guess = function() {
         return Intl.DateTimeFormat().resolvedOptions().timeZone;
-      }, u.tz.setDefault = function(O) {
-        l = O;
+      }, o.tz.setDefault = function(O) {
+        c = O;
       };
     };
   });
-})(te);
-const Pt = dt;
-C.extend(It);
-C.extend(Pt);
-class ee extends V {
+})(Pt);
+var re = Pt.exports;
+const jt = /* @__PURE__ */ yt(re);
+_.extend(Et);
+_.extend(jt);
+class ne extends V {
   constructor({ after: e = null, before: r = null } = {}, { withTime: s = !0, useUserTimezone: i = !0 } = {}) {
     super();
     f(this, "after");
@@ -579,19 +566,19 @@ class ee extends V {
     this.constructor.ensureTimezoneIsSet();
     const e = this.useUserTimezone ? this.constructor.userTimezone : "UTC";
     let r = null, s = null;
-    return F(this.after) || (r = C.tz(this.after, e).hour(0).minute(0).second(0).tz("UTC").format(this.normalizedFormat)), F(this.before) || (s = C.tz(this.before, e).hour(0).minute(0).second(0).add(1, "day").subtract(1, "second").tz("UTC").format(this.normalizedFormat)), { after: r, before: s };
+    return F(this.after) || (r = _.tz(this.after, e).hour(0).minute(0).second(0).tz("UTC").format(this.normalizedFormat)), F(this.before) || (s = _.tz(this.before, e).hour(0).minute(0).second(0).add(1, "day").subtract(1, "second").tz("UTC").format(this.normalizedFormat)), { after: r, before: s };
   }
   async denormalize(e) {
-    this.constructor.ensureTimezoneIsSet(), this.after = null, this.before = null, F(e.after) || (this.after = this.useUserTimezone ? C.tz(e.after, "UTC").tz(this.constructor.userTimezone) : C.tz(e.after, "UTC"), this.after = this.after.hour(0).minute(0).second(0).format("YYYY-MM-DD")), F(e.before) || (this.before = this.useUserTimezone ? C.tz(e.before, "UTC").tz(this.constructor.userTimezone) : C.tz(e.before, "UTC"), this.before = this.before.hour(0).minute(0).second(0).add(1, "day").subtract(1, "second").format("YYYY-MM-DD"));
+    this.constructor.ensureTimezoneIsSet(), this.after = null, this.before = null, F(e.after) || (this.after = this.useUserTimezone ? _.tz(e.after, "UTC").tz(this.constructor.userTimezone) : _.tz(e.after, "UTC"), this.after = this.after.hour(0).minute(0).second(0).format("YYYY-MM-DD")), F(e.before) || (this.before = this.useUserTimezone ? _.tz(e.before, "UTC").tz(this.constructor.userTimezone) : _.tz(e.before, "UTC"), this.before = this.before.hour(0).minute(0).second(0).add(1, "day").subtract(1, "second").format("YYYY-MM-DD"));
   }
   static ensureTimezoneIsSet() {
-    this.constructor.userTimezone = this.constructor.userTimezone ?? (C.tz.guess() || "UTC");
+    this.constructor.userTimezone = this.constructor.userTimezone ?? (_.tz.guess() || "UTC");
   }
 }
-f(ee, "userTimezone");
-C.extend(It);
-C.extend(Pt);
-class re extends V {
+f(ne, "userTimezone");
+_.extend(Et);
+_.extend(jt);
+class se extends V {
   constructor({ after: e = null, before: r = null } = {}) {
     super();
     f(this, "after");
@@ -601,30 +588,30 @@ class re extends V {
   normalize() {
     this.constructor.ensureTimezoneIsSet();
     let e = null, r = null;
-    return F(this.after) || (e = C.tz(this.after, this.constructor.userTimezone).tz("UTC").format("YYYY-MM-DD[T]HH:mm:ss[Z]")), F(this.before) || (r = C.tz(this.before, this.constructor.userTimezone).tz("UTC").format("YYYY-MM-DD[T]HH:mm:ss[Z]")), { after: e, before: r };
+    return F(this.after) || (e = _.tz(this.after, this.constructor.userTimezone).tz("UTC").format("YYYY-MM-DD[T]HH:mm:ss[Z]")), F(this.before) || (r = _.tz(this.before, this.constructor.userTimezone).tz("UTC").format("YYYY-MM-DD[T]HH:mm:ss[Z]")), { after: e, before: r };
   }
   async denormalize(e) {
-    this.constructor.ensureTimezoneIsSet(), this.after = null, this.before = null, F(e.after) || (this.after = C.tz(e.after, "UTC").tz(this.constructor.userTimezone).format("YYYY-MM-DD[T]HH:mm:ss[Z]")), F(e.before) || (this.before = C.tz(e.before, "UTC").tz(this.constructor.userTimezone).format("YYYY-MM-DD[T]HH:mm:ss[Z]"));
+    this.constructor.ensureTimezoneIsSet(), this.after = null, this.before = null, F(e.after) || (this.after = _.tz(e.after, "UTC").tz(this.constructor.userTimezone).format("YYYY-MM-DD[T]HH:mm:ss[Z]")), F(e.before) || (this.before = _.tz(e.before, "UTC").tz(this.constructor.userTimezone).format("YYYY-MM-DD[T]HH:mm:ss[Z]"));
   }
   static ensureTimezoneIsSet() {
-    this.constructor.userTimezone = this.constructor.userTimezone ?? (C.tz.guess() || "UTC");
+    this.constructor.userTimezone = this.constructor.userTimezone ?? (_.tz.guess() || "UTC");
   }
 }
-f(re, "userTimezone");
-function ne(n) {
+f(se, "userTimezone");
+function ie(n) {
   return n == null ? !0 : typeof n == "string" ? n.trim().length === 0 : typeof n == "function" || Array.isArray(n) ? n.length === 0 : n instanceof Object ? Object.keys(n).length === 0 : !1;
 }
-function mt(n) {
+function ft(n) {
   if (!(n instanceof Object))
     return n;
   if (Array.isArray(n))
-    return n.map(mt);
+    return n.map(ft);
   const t = { ...n };
   return Object.keys(t).forEach((e) => {
-    t[e] instanceof Object && (t[e] = mt(t[e])), ne(t[e]) && delete t[e];
+    t[e] instanceof Object && (t[e] = ft(t[e])), ie(t[e]) && delete t[e];
   }), t;
 }
-class Ze {
+class Qe {
   constructor(t = {}) {
     f(this, "_filters", []);
     if (!(t instanceof Object))
@@ -640,7 +627,7 @@ class Ze {
     return this._filters.forEach((e) => {
       const r = this[e];
       t[e] = r.normalize();
-    }), mt(t);
+    }), ft(t);
   }
   async denormalize(t) {
     const e = [];
@@ -651,62 +638,62 @@ class Ze {
     return e.length > 0 && await Promise.all(e), this;
   }
 }
-async function Je(n = {}, t = {
+async function We(n = {}, t = {
   preserveQuery: !1,
   targetRoute: void 0
 }) {
   if (typeof n != "function")
     throw Error("initialState should be provided as a function.");
-  const e = kt(), r = Ft(), s = K(n());
+  const e = Vt(), r = qt(), s = W(n());
   async function i($) {
     Object.assign(b(s), await b(s).denormalize($.query));
   }
-  function u() {
-    s.value = G(n());
+  function o() {
+    s.value = K(n());
   }
-  function l($ = {}) {
-    const P = {};
-    return t.preserveQuery === !0 && Object.assign(P, e.query), Object.assign(P, b(s).normalize(), $);
+  function c($ = {}) {
+    const E = {};
+    return t.preserveQuery === !0 && Object.assign(E, e.query), Object.assign(E, b(s).normalize(), $);
   }
   async function d($ = {}) {
-    const P = b(t.targetRoute) ?? e;
-    await r.push(Object.assign({ ...P }, { query: l($) }));
+    const E = b(t.targetRoute) ?? e;
+    await r.push(Object.assign({ ...E }, { query: c($) }));
   }
-  return Vt(($) => i($)), await i(e), {
+  return Zt(($) => i($)), await i(e), {
     filters: s,
-    buildQueryParams: l,
+    buildQueryParams: c,
     submit: d,
-    clear: u
+    clear: o
   };
 }
-const Qe = async ({ state: n = {}, methods: t = {}, name: e = "store" } = {}) => {
-  n = B(n);
+const Be = async ({ state: n = {}, methods: t = {}, name: e = "store" } = {}) => {
+  n = G(n);
   const r = [], s = {
     name: e,
     state: n,
-    ...Object.keys(t).reduce(function(i, u) {
-      const l = t[u];
-      return i[u] = function() {
-        return l(n, ...arguments);
+    ...Object.keys(t).reduce(function(i, o) {
+      const c = t[o];
+      return i[o] = function() {
+        return c(n, ...arguments);
       }, i;
     }, {}),
     async use(i) {
       return r.push(i), await i.install(this), this;
     },
     async reconciliate(i = !1) {
-      const u = r.filter(({ reconciliate: l }) => typeof l == "function");
+      const o = r.filter(({ reconciliate: c }) => typeof c == "function");
       if (i === !1)
-        return Promise.all(u.map((l) => l.reconciliate(this)));
-      for (const l of u)
-        await l.reconciliate(this);
+        return Promise.all(o.map((c) => c.reconciliate(this)));
+      for (const c of o)
+        await c.reconciliate(this);
     }
   };
   return s.install = (i) => i.provide(e, { ...s, state: ht(n) }), s;
-}, Et = (n = "store") => xt(n);
-class se {
+}, Ct = (n = "store") => Dt(n);
+class ae {
   constructor(t) {
     Object.keys(t).forEach((e) => {
-      this[e] = new pt(t[e]);
+      this[e] = new gt(t[e]);
     });
   }
   for(t) {
@@ -717,7 +704,7 @@ class se {
     return this[t["@type"]];
   }
 }
-class pt {
+class gt {
   constructor(t) {
     f(this, "endpoint");
     this.endpoint = t;
@@ -734,7 +721,7 @@ class pt {
   }
   withQuery(t) {
     const e = new et(this.endpoint), r = new it(e).withParams(t);
-    return new pt(e.withQuery(r.toString()).toString());
+    return new gt(e.withQuery(r.toString()).toString());
   }
   paginated(t, e = !1) {
     t = b(t), e = b(e);
@@ -749,24 +736,24 @@ class pt {
     return this.withQuery(new it(new et(t)).getParams());
   }
 }
-const We = (n, t) => Et(t).state.endpoints[n];
+const Ge = (n, t) => Ct(t).state.endpoints[n];
 function at(n) {
   return n = b(n), n == null ? !1 : Object.keys(n).includes("@id") && n["@id"] != null;
 }
-function _(n) {
-  return n = b(n), n === null ? null : typeof n == "string" ? n : (vt(n), n["@id"]);
+function U(n) {
+  return n = b(n), n === null ? null : typeof n == "string" ? n : (pt(n), n["@id"]);
 }
-function ie(n) {
-  const t = _(n);
+function oe(n) {
+  const t = U(n);
   return t.substring(t.lastIndexOf("/") + 1);
 }
-function Be(n) {
-  return n.map(_);
+function Ke(n) {
+  return n.map(U);
 }
-function Ge(n) {
-  return n.map(ie);
+function Xe(n) {
+  return n.map(oe);
 }
-function vt(n, t = null) {
+function pt(n, t = null) {
   if (typeof n != "object" || !("@id" in n))
     throw Error("Invalid item.");
   if (t !== null) {
@@ -777,13 +764,13 @@ function vt(n, t = null) {
   }
 }
 function rt(n, t) {
-  return _(n) === _(t);
+  return U(n) === U(t);
 }
-function ae(n, t) {
+function ue(n, t) {
   if (n = b(n), n = Array.from(n).map(b), t = b(t), Array.isArray(t)) {
     const e = t;
     for (const r of e)
-      if (ae(n, r))
+      if (ue(n, r))
         return !0;
     return !1;
   }
@@ -792,7 +779,7 @@ function ae(n, t) {
       return !0;
   return !1;
 }
-function Ke(n, t) {
+function tr(n, t) {
   const e = n.findIndex((r) => rt(r, t));
   return e >= 0 && n.splice(e, 1), n;
 }
@@ -800,19 +787,19 @@ function ct(n, t) {
   const e = n.find((r) => rt(r, t));
   return typeof e > "u" ? null : e;
 }
-function Xe(n, t) {
+function er(n, t) {
   return n.findIndex((e) => rt(e, t));
 }
-function tr(n, t) {
+function rr(n, t) {
   return n.filter((e) => e["@type"] === t);
 }
-function er(n) {
-  Object.assign(n, n.map((t) => _(t)));
+function nr(n) {
+  Object.assign(n, n.map((t) => U(t)));
 }
-function rr(n, t) {
-  return n = b(n), vt(n), Object.assign({ "@id": n["@id"], "@type": n["@type"] }, t);
+function sr(n, t) {
+  return n = b(n), pt(n), Object.assign({ "@id": n["@id"], "@type": n["@type"] }, t);
 }
-class jt extends Error {
+class At extends Error {
   constructor() {
     super(...arguments);
     f(this, "statusCode");
@@ -824,16 +811,16 @@ class jt extends Error {
     return this["hydra:description"];
   }
 }
-class oe {
+class ce {
   constructor() {
     f(this, "id");
     f(this, "propertyPath");
     f(this, "message");
     f(this, "code");
-    this.id = qt();
+    this.id = Jt();
   }
 }
-class ue extends jt {
+class he extends At {
   constructor(e) {
     super();
     f(this, "_violations", []);
@@ -853,7 +840,7 @@ class ue extends jt {
     return this._violations;
   }
   set violations(e) {
-    this._violations = e.map((r) => Object.assign(new oe(), r));
+    this._violations = e.map((r) => Object.assign(new ce(), r));
   }
   getPropertyPaths() {
     return [...new Set(this.violations.map(({ propertyPath: e }) => e))];
@@ -863,7 +850,7 @@ class ue extends jt {
     return r.length === 0 ? this.violations : F(r[0]) ? this.violations.filter((s) => F(s.propertyPath)) : this.violations.filter((s) => e === s.propertyPath);
   }
 }
-class ce {
+class le {
   constructor(t = {}) {
     Object.assign(
       this,
@@ -900,60 +887,61 @@ class ce {
     return (this["hydra:member"] || []).findIndex(t);
   }
 }
-function he(n) {
+function fe(n) {
   if (typeof n != "object" || n == null)
     throw Error("Invalid object.");
   return Object.keys(n).forEach((t) => delete n[t]), n;
 }
-function Tt(n) {
-  return at(n) ? _(n) : n;
+function zt(n) {
+  return at(n) ? U(n) : n;
 }
-function le(n) {
-  const t = G(n), e = Object.keys(t);
+function de(n) {
+  const t = K(n), e = Object.keys(t);
   for (const r of e) {
     const s = t[r];
-    Array.isArray(s) ? t[r] = s.map((i) => Tt(i)) : typeof s == "object" && s != null && (t[r] = Tt(s));
+    Array.isArray(s) ? t[r] = s.map((i) => zt(i)) : typeof s == "object" && s != null && (t[r] = zt(s));
   }
   return t;
 }
-function Ot(n, t) {
-  return n = he(n), Object.assign(n, t);
+function Tt(n, t) {
+  return n = fe(n), Object.assign(n, t);
 }
-function nr(n) {
-  const t = Et(), e = K(b(n)), r = B(G(b(n))), s = lt(() => !at(b(r))), i = K(!1), u = lt(() => JSON.stringify(b(r)) !== JSON.stringify(b(e)));
-  return { item: r, isUnsavedDraft: u, isCreationMode: s, isSubmitting: i, reset: ($) => Ot(r, G(b($ ?? n))), submit: async ($) => {
+function ir(n) {
+  const t = Ct(), e = W(b(n)), r = G(K(b(n))), s = lt(() => !at(b(r))), i = W(!1), o = lt(() => JSON.stringify(b(r)) !== JSON.stringify(b(e)));
+  return { item: r, isUnsavedDraft: o, isCreationMode: s, isSubmitting: i, reset: ($) => Tt(r, K(b($ ?? n))), submit: async ($) => {
     st($) && ($ = b($));
     try {
       i.value = !0;
-      const P = await t.upsertItem(le($ ?? r));
-      return e.value = P, Ot(r, G(P)), P;
+      const E = await t.upsertItem(de($ ?? r));
+      return e.value = E, Tt(r, K(E)), E;
     } finally {
       i.value = !1;
     }
   } };
 }
-function sr() {
-  const n = (s) => {
-    s = b(s), s.querySelectorAll("[name]").forEach(function(i) {
-      i.setCustomValidity("");
-    });
-  }, t = (s, i = !0) => {
-    s = b(s);
-    const u = s.checkValidity();
-    return !u && i && s.reportValidity(), u;
-  }, e = (s, i) => {
-    n(s), Array.from(i).forEach((u) => r(s, u)), t(s);
-  }, r = (s, { propertyPath: i, message: u }) => {
-    var l;
-    s = b(s), (l = s.querySelector(`[name='${i}']`)) == null || l.setCustomValidity(u);
+function ar() {
+  const n = W([]), t = (i) => {
+    i = b(i), i.querySelectorAll("[name]").forEach(function(o) {
+      o.setCustomValidity("");
+    }), n.value = [];
+  }, e = (i, o = !0) => {
+    i = b(i);
+    const c = i.checkValidity();
+    return !c && o && i.reportValidity(), c;
+  }, r = (i, o) => {
+    t(i), Array.from(o).forEach((c) => s(i, c)), e(i);
+  }, s = (i, { propertyPath: o, message: c }) => {
+    i = b(i);
+    const d = i.querySelector(`[name='${o}']`);
+    d == null || d.setCustomValidity(c), d || n.value.push({ propertyPath: o, message: c });
   };
-  return { resetValidity: n, bindViolations: e, validate: t };
+  return { resetValidity: t, bindViolations: r, unmappedViolations: n, validate: e };
 }
-let gt;
-const fe = 1, de = 2;
-class me {
+let dt;
+const me = 1, ye = 2;
+class ge {
   constructor(t, e) {
-    f(this, "readyState", fe);
+    f(this, "readyState", me);
     f(this, "url");
     f(this, "withCredentials");
     this.url = t, this.withCredentials = (e == null ? void 0 : e.withCredentials) ?? !1, setTimeout(() => this.onopen(), 10);
@@ -965,7 +953,7 @@ class me {
   onopen() {
   }
   close() {
-    this.readyState = de;
+    this.readyState = ye;
   }
   triggerEvent(t) {
     this.onmessage(t);
@@ -974,23 +962,23 @@ class me {
     this.onerror(t);
   }
 }
-const ge = () => {
+const pe = () => {
   var n, t, e;
   return typeof process < "u" && ((n = process == null ? void 0 : process.env) == null ? void 0 : n.NODE_ENV) === "test" || ((e = (t = import.meta) == null ? void 0 : t.env) == null ? void 0 : e.NODE_ENV) === "test";
 };
-ge() ? gt = me : gt = window.EventSource;
-const ye = gt, ir = (n, t) => {
-  const e = new be(n, t);
+pe() ? dt = ge : dt = window.EventSource;
+const ve = dt, or = (n, t) => {
+  const e = new we(n, t);
   return Object.assign(e, {
     install(r) {
       r.provide("mercure", e);
     }
   });
-}, pe = () => xt("mercure");
-function ve(n, t) {
+}, be = () => Dt("mercure");
+function $e(n, t) {
   return n.length === t.length && n.every((e) => t.includes(e));
 }
-class be {
+class we {
   constructor(t, e = {}) {
     f(this, "hub");
     f(this, "options");
@@ -999,15 +987,15 @@ class be {
     f(this, "endpoint");
     f(this, "emitter");
     f(this, "lastEventId");
-    Object.assign(this, { hub: t, options: B(e) }), this.lastEventId = K(), this.subscribedTopics = K([]), this.endpoint = lt(() => {
+    Object.assign(this, { hub: t, options: G(e) }), this.lastEventId = W(), this.subscribedTopics = W([]), this.endpoint = lt(() => {
       const r = new URL(this.hub), s = b(this.subscribedTopics);
       return s.includes("*") ? r.searchParams.append("topic", "*") : s.forEach((i) => r.searchParams.append("topic", i)), b(this.lastEventId) && r.searchParams.append("Last-Event-ID", b(this.lastEventId)), r.toString();
-    }), this.emitter = Zt();
+    }), this.emitter = Qt();
   }
   subscribe(t = ["*"], e = !0) {
     Array.isArray(t) || (t = [t]);
     const r = Array.from(b(this.subscribedTopics)), s = [.../* @__PURE__ */ new Set([...b(this.subscribedTopics), ...t])];
-    this.subscribedTopics.value = s, e && !ve(r, s) && this.listen();
+    this.subscribedTopics.value = s, e && !$e(r, s) && this.listen();
   }
   unsubscribe(t) {
     Array.isArray(t) || (t = [t]), this.subscribedTopics.value = this.subscribedTopics.value.filter((e) => !t.includes(e)), this.connection && this.listen();
@@ -1026,7 +1014,7 @@ class be {
     this.connection || this.connect();
   }
   connect() {
-    this.stop(), this.connection = new ye(b(this.endpoint), this.options), this.connection.onopen = () => this.emitter.emit("open", { endpoint: b(this.endpoint) }), this.connection.onmessage = (t) => (this.lastEventId.value = t.lastEventId, this.emitter.emit("message", t)), this.connection.onerror = (t) => {
+    this.stop(), this.connection = new ve(b(this.endpoint), this.options), this.connection.onopen = () => this.emitter.emit("open", { endpoint: b(this.endpoint) }), this.connection.onmessage = (t) => (this.lastEventId.value = t.lastEventId, this.emitter.emit("message", t)), this.connection.onerror = (t) => {
       this.emitter.emit("error", t), typeof this.options.reconnectInterval == "number" && (this.stop(), setTimeout(() => this.connect(), this.options.reconnectInterval));
     };
   }
@@ -1035,35 +1023,35 @@ class be {
     (t = this.connection) == null || t.close(), this.connection = void 0;
   }
 }
-const Ct = (n, t) => Object.assign(t, n), At = () => {
+const Yt = (n, t) => Object.assign(t, n), _t = () => {
 };
-function $e(n, t, e = ["*"], r = Ct, s = At) {
+function Se(n, t, e = ["*"], r = Yt, s = _t) {
   Array.isArray(t) || (t = [t]), Array.isArray(e) || (e = [e]);
-  const i = (u) => {
+  const i = (o) => {
     try {
-      const l = JSON.parse(u.data);
-      if (!at(l))
+      const c = JSON.parse(o.data);
+      if (!at(c))
         return;
-      if (Object.keys(l).length === 1) {
-        s(_(l));
+      if (Object.keys(c).length === 1) {
+        s(U(c));
         return;
       }
       for (const d of t)
-        rt(_(l), d) && r(l, b(d));
-    } catch (l) {
-      console.debug(l);
+        rt(U(c), d) && r(c, b(d));
+    } catch (c) {
+      console.debug(c);
     }
   };
   return n.addListener(i), n.subscribe(e), i;
 }
-const we = (n, t, e) => {
+const ze = (n, t, e) => {
   Array.isArray(t) || (t = [t]);
   const r = (s) => {
     let i;
     try {
       i = JSON.parse(s.data);
-    } catch (u) {
-      console.debug(u);
+    } catch (o) {
+      console.debug(o);
       return;
     }
     if (typeof i != "object") {
@@ -1071,37 +1059,37 @@ const we = (n, t, e) => {
       return;
     }
     try {
-      for (const u of t)
-        if (typeof Jt(u).fromUri(_(i)) < "u") {
+      for (const o of t)
+        if (typeof Wt(o).fromUri(U(i)) < "u") {
           e(i);
           break;
         }
-    } catch (u) {
-      console.error(u);
+    } catch (o) {
+      console.error(o);
     }
   };
   return n.addListener(r), n.subscribe(t), r;
-}, ar = (n, t = { removeListenersOnUnmount: !0 }) => {
-  n = n ?? pe();
+}, ur = (n, t = { removeListenersOnUnmount: !0 }) => {
+  n = n ?? be();
   const e = [];
-  return t.removeListenersOnUnmount && Lt(() => {
+  return t.removeListenersOnUnmount && kt(() => {
     for (const s of e)
       n.removeListener(s);
   }), {
-    synchronize: (s, i = ["*"], u = Ct, l = At) => {
-      e.push($e(n, s, i, u, l));
+    synchronize: (s, i = ["*"], o = Yt, c = _t) => {
+      e.push(Se(n, s, i, o, c));
     },
     on(s, i) {
-      const u = we(n, s, i);
-      return e.push(u), u;
+      const o = ze(n, s, i);
+      return e.push(o), o;
     }
   };
-}, Se = {
-  "hydra:Collection": ce,
-  "hydra:Error": jt,
-  ConstraintViolationList: ue
+}, Te = {
+  "hydra:Collection": le,
+  "hydra:Error": At,
+  ConstraintViolationList: he
 };
-class Dt {
+class Ot {
   constructor() {
     Object.assign(
       this,
@@ -1131,48 +1119,48 @@ class Dt {
     return Array.from(this).findIndex(t);
   }
 }
-const ze = function(n) {
+const Oe = function(n) {
   throw n;
 };
-class or {
+class cr {
   constructor(t, e = {}) {
     f(this, "api");
     f(this, "endpoints");
     f(this, "classmap");
     this.api = t;
     const { endpoints: r, classmap: s } = e;
-    this.endpoints = new se(r ?? {}), this.classmap = { ...Se, ...s }, this.errorHandler = e.errorHandler ?? ze;
+    this.endpoints = new ae(r ?? {}), this.classmap = { ...Te, ...s }, this.errorHandler = e.errorHandler ?? Oe;
   }
   factory(t, e) {
     for (const r in this.classmap)
       if (r === (t["@type"] ?? t)) {
         const s = this.classmap[r];
-        return t instanceof s ? t : (t = Object.assign(new s(), t), e && Object.assign(t, { statusCode: e }), B(t));
+        return t instanceof s ? t : (t = Object.assign(new s(), t), e && Object.assign(t, { statusCode: e }), G(t));
       }
     return t;
   }
   storeItem({ state: t }, e) {
-    const r = _(e);
-    return Object.keys(t.items).includes(r) ? Object.assign(t.items[r], e) : t.items[r] = K(e), t.items[r];
+    const r = U(e);
+    return Object.keys(t.items).includes(r) ? Object.assign(t.items[r], e) : t.items[r] = W(e), t.items[r];
   }
   removeItem({ state: t }, e) {
-    const r = _(e);
+    const r = U(e);
     delete t.items[r];
   }
   async clearItems({ state: t }) {
-    t.items = B(new Dt());
+    t.items = G(new Ot());
   }
   async handle(t, { errorHandler: e = this.errorHandler } = {}) {
-    var r, s, i, u;
+    var r, s, i, o;
     try {
-      const { data: l } = await t();
-      return this.factory(l);
-    } catch (l) {
-      typeof ((r = l.response) == null ? void 0 : r.data) == "object" && ((s = l.response) == null ? void 0 : s.data) != null && (l = this.factory(l.response.data, (i = l.response) == null ? void 0 : i.status)), l.statusCode = l.statusCode ?? ((u = l.response) == null ? void 0 : u.status), e(l);
+      const { data: c } = await t();
+      return this.factory(c);
+    } catch (c) {
+      typeof ((r = c.response) == null ? void 0 : r.data) == "object" && ((s = c.response) == null ? void 0 : s.data) != null && (c = this.factory(c.response.data, (i = c.response) == null ? void 0 : i.status)), c.statusCode = c.statusCode ?? ((o = c.response) == null ? void 0 : o.status), e(c);
     }
   }
   async fetchItem({ state: t }, e, r) {
-    let s = new et(_(e));
+    let s = new et(U(e));
     r != null && r.groups && (s = s.withQuery(`${new it(s.getQuery()).withParam("groups", r.groups)}`));
     let i = await this.handle(() => this.api.get(`${s}`, r), r);
     return i = this.factory(i), (r == null ? void 0 : r.store) ?? !0 ? this.storeItem({ state: t }, i) : i;
@@ -1180,7 +1168,7 @@ class or {
   async getItem({ state: t }, e, r) {
     if (e === null)
       return null;
-    const s = _(e), i = ct(t.items, s);
+    const s = U(e), i = ct(t.items, s);
     return i ?? await this.fetchItem({ state: t }, s, r);
   }
   async fetchCollection({ state: t }, e, r) {
@@ -1188,32 +1176,32 @@ class or {
     r != null && r.groups && (s = s.withQuery(`${new it(s.getQuery()).withParam("groups", r.groups)}`));
     const i = await this.handle(() => this.api.get(`${s}`, r), r);
     i["hydra:member"] = i["hydra:member"].map((d) => this.factory(d));
-    const u = this.factory(i);
-    if (u["hydra:member"] = u["hydra:member"].map((d) => this.factory(d)), (r == null ? void 0 : r.store) ?? !1)
-      for (const d of u["hydra:member"])
+    const o = this.factory(i);
+    if (o["hydra:member"] = o["hydra:member"].map((d) => this.factory(d)), (r == null ? void 0 : r.store) ?? !1)
+      for (const d of o["hydra:member"])
         this.storeItem({ state: t }, d);
-    return u;
+    return o;
   }
   async createItem({ state: t }, e, r) {
     const s = this.endpoints.for(e);
     return e = await this.handle(() => this.api.post(s, e, r), r), (r == null ? void 0 : r.store) ?? !0 ? this.storeItem({ state: t }, e) : e;
   }
   async updateItem({ state: t }, e, r) {
-    return vt(e), e = await this.handle(() => this.api.put(_(e), e, r), r), (r == null ? void 0 : r.store) ?? !0 ? this.storeItem({ state: t }, e) : e;
+    return pt(e), e = await this.handle(() => this.api.put(U(e), e, r), r), (r == null ? void 0 : r.store) ?? !0 ? this.storeItem({ state: t }, e) : e;
   }
   async upsertItem({ state: t }, e, r) {
     return at(e) ? this.updateItem({ state: t }, e, r) : this.createItem({ state: t }, e, r);
   }
   async deleteItem({ state: t }, e, r) {
-    const s = _(e);
+    const s = U(e);
     await this.handle(() => this.api.delete(s, r), r), e = ct(t.items, s), e !== null && this.removeItem({ state: t }, e);
   }
   async getRelation({ state: t }, e, r = {}) {
     if (e === null)
       return null;
     if (typeof e == "function") {
-      const s = wt(() => this.getRelation({ state: t }, e(), r));
-      return await St(s).not.toBe(void 0), s;
+      const s = $t(() => this.getRelation({ state: t }, e(), r));
+      return await wt(s).not.toBe(void 0), s;
     }
     if ((r.useExisting ?? !0) === !0) {
       const s = ct(t.items, e);
@@ -1228,38 +1216,38 @@ class or {
   }
   async getRelations({ state: t }, e, r) {
     if (typeof e == "function") {
-      const s = wt(() => this.getRelations({ state: t }, e(), r));
-      return await St(s).not.toBe(void 0), s;
+      const s = $t(() => this.getRelations({ state: t }, e(), r));
+      return await wt(s).not.toBe(void 0), s;
     }
     return Promise.all(e.map((s) => this.getRelation({ state: t }, s, r)));
   }
   async install(t) {
-    t.state.items = B(new Dt()), t.state.endpoints = ht(this.endpoints), t.state.classmap = ht(this.classmap), t.storeItem = (e) => this.storeItem(t, e), t.removeItem = (e) => this.removeItem(t, e), t.clearItems = () => this.clearItems(t), t.getItem = (e, r) => this.getItem(t, e, r), t.fetchItem = (e, r) => this.fetchItem(t, e, r), t.fetchCollection = (e, r) => this.fetchCollection(t, e, r), t.createItem = (e, r) => this.createItem(t, e, r), t.updateItem = (e, r) => this.updateItem(t, e, r), t.upsertItem = (e, r) => this.upsertItem(t, e, r), t.deleteItem = (e, r) => this.deleteItem(t, e, r), t.getRelation = (e, r) => this.getRelation(t, e, r), t.getRelations = (e, r) => this.getRelations(t, e, r), t.endpoint = (e) => t.state.endpoints[e], t.getItemsByType = (e) => t.state.items.filter((r) => e === r["@type"]), t.factory = (e, r) => (r = r ?? e, typeof e == "string" && (r["@type"] = e), this.factory(r));
+    t.state.items = G(new Ot()), t.state.endpoints = ht(this.endpoints), t.state.classmap = ht(this.classmap), t.storeItem = (e) => this.storeItem(t, e), t.removeItem = (e) => this.removeItem(t, e), t.clearItems = () => this.clearItems(t), t.getItem = (e, r) => this.getItem(t, e, r), t.fetchItem = (e, r) => this.fetchItem(t, e, r), t.fetchCollection = (e, r) => this.fetchCollection(t, e, r), t.createItem = (e, r) => this.createItem(t, e, r), t.updateItem = (e, r) => this.updateItem(t, e, r), t.upsertItem = (e, r) => this.upsertItem(t, e, r), t.deleteItem = (e, r) => this.deleteItem(t, e, r), t.getRelation = (e, r) => this.getRelation(t, e, r), t.getRelations = (e, r) => this.getRelations(t, e, r), t.endpoint = (e) => t.state.endpoints[e], t.getItemsByType = (e) => t.state.items.filter((r) => e === r["@type"]), t.factory = (e, r) => (r = r ?? e, typeof e == "string" && (r["@type"] = e), this.factory(r));
   }
 }
-function Yt(n) {
+function Ut(n) {
   if (typeof n == "string")
     return n;
   try {
-    return _(n);
+    return U(n);
   } catch {
     return null;
   }
 }
-function Te(n) {
-  return n.map((t) => Yt(t));
+function De(n) {
+  return n.map((t) => Ut(t));
 }
-async function Ut(n, t) {
+async function Rt(n, t) {
   try {
     return await t.getItem(n);
   } catch {
     return null;
   }
 }
-async function Oe(n, t) {
-  return Promise.all(n.map((e) => Ut(e, t)));
+async function Me(n, t) {
+  return Promise.all(n.map((e) => Rt(e, t)));
 }
-class ur extends V {
+class hr extends V {
   constructor(e, { store: r, multiple: s = !1 }) {
     super();
     f(this, "items", []);
@@ -1274,21 +1262,21 @@ class ur extends V {
     this.items = [e], this.multiple = !1;
   }
   normalize() {
-    return this.multiple || this.items.length > 1 ? Te(this.items) : Yt(this.item);
+    return this.multiple || this.items.length > 1 ? De(this.items) : Ut(this.item);
   }
   async denormalize(e) {
     if (Array.isArray(e)) {
-      this.items = await Oe(e, this.store);
+      this.items = await Me(e, this.store);
       return;
     }
-    this.items = [await Ut(e, this.store)];
+    this.items = [await Rt(e, this.store)];
   }
 }
-const De = {
+const Ie = {
   asc: "desc",
   desc: "asc"
 };
-class cr extends V {
+class lr extends V {
   constructor(e = {}) {
     super();
     f(this, "order");
@@ -1298,7 +1286,7 @@ class cr extends V {
     const e = {};
     for (const r in this.order) {
       const s = this.order[r];
-      e[r] = De[s] ?? s;
+      e[r] = Ie[s] ?? s;
     }
     return this.order = e, this;
   }
@@ -1309,7 +1297,7 @@ class cr extends V {
     this.order = {}, typeof e == "object" && e != null && (this.order = e);
   }
 }
-class hr extends V {
+class fr extends V {
   constructor(t, e, r = !0, s = !0) {
     super(), this.left = t, this.right = e, this.includeLeft = r, this.includeRight = s;
   }
@@ -1321,7 +1309,7 @@ class hr extends V {
     t == null || typeof t != "object" || (Object.keys(t).includes("gt") && (this.left = parseFloat(t.gt), this.includeLeft = !1), Object.keys(t).includes("gte") && (this.left = parseFloat(t.gte), this.includeLeft = !0), Object.keys(t).includes("lt") && (this.right = parseFloat(t.lt), this.includeRight = !1), Object.keys(t).includes("lte") && (this.right = parseFloat(t.lte), this.includeRight = !0));
   }
 }
-class lr extends V {
+class dr extends V {
   constructor(e = null) {
     super();
     f(this, "_value");
@@ -1345,7 +1333,7 @@ class lr extends V {
     this.value = e;
   }
 }
-class fr extends V {
+class mr extends V {
   constructor(e = null) {
     super();
     f(this, "value");
@@ -1362,13 +1350,13 @@ class fr extends V {
     e = `${e}`.trim(), this.value = ["true", "on", "yes", "1"].includes(e.toLowerCase());
   }
 }
-function dr({ itemsPerPage: n, currentPage: t, totalItems: e }) {
-  return e == null ? new Ie({ itemsPerPage: n, currentPage: t }) : new Me({ itemsPerPage: n, currentPage: t, totalItems: e });
+function yr({ itemsPerPage: n, currentPage: t, totalItems: e }) {
+  return e == null ? new Pe({ itemsPerPage: n, currentPage: t }) : new Ee({ itemsPerPage: n, currentPage: t, totalItems: e });
 }
 function xe(n) {
   return Array.from({ length: n }, (t, e) => e + 1);
 }
-class bt {
+class vt {
   constructor({ itemsPerPage: t, currentPage: e }) {
     f(this, "itemsPerPage");
     f(this, "totalItems");
@@ -1405,20 +1393,20 @@ class bt {
     yield* this.pages;
   }
   truncate(t, e = !1) {
-    return new Pe(this, t, e);
+    return new je(this, t, e);
   }
 }
-class Me extends bt {
+class Ee extends vt {
   constructor({ itemsPerPage: t, currentPage: e, totalItems: r }) {
     super({ itemsPerPage: t, currentPage: e }), this.totalItems = parseInt(r), this.lastPage = Math.max(1, Math.ceil(this.totalItems / Math.max(1, this.itemsPerPage))), this.nextPage = Math.min(this.lastPage, this.currentPage + 1);
   }
 }
-class Ie extends bt {
+class Pe extends vt {
   constructor({ itemsPerPage: t, currentPage: e, totalItems: r }) {
     super({ itemsPerPage: t, currentPage: e, totalItems: r }), this.nextPage = this.lastPage = this.currentPage + 1;
   }
 }
-class Pe extends bt {
+class je extends vt {
   constructor(t, e, r = !1) {
     super(t), Object.assign(this, t);
     const s = [];
@@ -1428,7 +1416,7 @@ class Pe extends bt {
     r && s.push(this.lastPage), this._pages = [...new Set(s)];
   }
 }
-class Ee {
+class Ce {
   constructor() {
     f(this, "fields");
     f(this, "preload");
@@ -1439,59 +1427,59 @@ class Ee {
     return (((e = this.preload) == null ? void 0 : e.length) ?? 0) !== 0 && (t.preload = [...new Set(this.preload)].map((s) => `"${s}"`).join(", ")), (((r = this.fields) == null ? void 0 : r.length) ?? 0) !== 0 && (t.fields = [.../* @__PURE__ */ new Set([...this.fields, ...this.preload ?? []])].map((s) => `"${s}"`).join(", ")), t;
   }
 }
-function mr({ fields: n, preload: t } = {}) {
-  return Object.assign(new Ee(), { fields: n }, { preload: t }).headers;
+function gr({ fields: n, preload: t } = {}) {
+  return Object.assign(new Ce(), { fields: n }, { preload: t }).headers;
 }
 export {
-  Wt as AbortError,
-  Fe as ApiClient,
-  qe as ArrayFilter,
-  ue as ConstraintViolationList,
-  ee as DateRangeFilter,
-  re as DatetimeRangeFilter,
-  me as FakeEventSource,
-  Ze as FilterCollection,
-  Qt as HttpError,
-  ce as HydraCollection,
-  pt as HydraEndpoint,
-  se as HydraEndpoints,
-  jt as HydraError,
-  or as HydraPlugin,
-  ur as ItemFilter,
-  be as Mercure,
-  cr as OrderFilter,
-  hr as RangeFilter,
-  lr as TextFilter,
-  fr as TruthyFilter,
-  oe as Violation,
+  Gt as AbortError,
+  qe as ApiClient,
+  Je as ArrayFilter,
+  he as ConstraintViolationList,
+  ne as DateRangeFilter,
+  se as DatetimeRangeFilter,
+  ge as FakeEventSource,
+  Qe as FilterCollection,
+  Bt as HttpError,
+  le as HydraCollection,
+  gt as HydraEndpoint,
+  ae as HydraEndpoints,
+  At as HydraError,
+  cr as HydraPlugin,
+  hr as ItemFilter,
+  we as Mercure,
+  lr as OrderFilter,
+  fr as RangeFilter,
+  dr as TextFilter,
+  mr as TruthyFilter,
+  ce as Violation,
   rt as areSameIris,
-  vt as checkValidItem,
-  G as clone,
-  ae as containsIri,
-  ir as createMercure,
-  dr as createPager,
-  Qe as createStore,
-  ie as getId,
-  Ge as getIds,
-  _ as getIri,
-  Be as getIris,
+  pt as checkValidItem,
+  K as clone,
+  ue as containsIri,
+  or as createMercure,
+  yr as createPager,
+  Be as createStore,
+  oe as getId,
+  Xe as getIds,
+  U as getIri,
+  Ke as getIris,
   ct as getItemByIri,
-  Xe as getItemIndexByIri,
-  tr as getItemsByType,
+  er as getItemIndexByIri,
+  rr as getItemsByType,
   at as hasIri,
-  $e as mercureSync,
-  er as normalizeIris,
-  le as normalizeItemRelations,
-  we as on,
-  rr as partialItem,
-  We as useEndpoint,
-  Je as useFilters,
-  sr as useFormValidation,
-  nr as useItemForm,
-  pe as useMercure,
-  ar as useMercureSync,
-  Et as useStore,
-  mr as vulcain,
-  Ve as withoutDuplicates,
-  Ke as withoutIri
+  Se as mercureSync,
+  nr as normalizeIris,
+  de as normalizeItemRelations,
+  ze as on,
+  sr as partialItem,
+  Ge as useEndpoint,
+  We as useFilters,
+  ar as useFormValidation,
+  ir as useItemForm,
+  be as useMercure,
+  ur as useMercureSync,
+  Ct as useStore,
+  gr as vulcain,
+  Ze as withoutDuplicates,
+  tr as withoutIri
 };
