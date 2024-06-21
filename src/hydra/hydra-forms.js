@@ -64,14 +64,14 @@ export function useItemForm(itemInitialState) {
 }
 
 export function useFormValidation() {
-  const notFoundViolations = ref([]);
+  const unmappedViolations = ref([]);
 
   const resetValidity = (FormHTMLElement) => {
     FormHTMLElement = unref(FormHTMLElement);
     FormHTMLElement.querySelectorAll('[name]').forEach(function (element) {
       element.setCustomValidity('');
     });
-    notFoundViolations.value = [];
+    unmappedViolations.value = [];
   };
 
   const validate = (FormHTMLElement, report = true) => {
@@ -95,11 +95,11 @@ export function useFormValidation() {
     const element =  FormHTMLElement.querySelector(`[name='${propertyPath}']`);
     element?.setCustomValidity(message);
     if (!element) {
-      notFoundViolations.value.push({propertyPath, message});
+      unmappedViolations.value.push({propertyPath, message});
     }
   };
 
-  return {resetValidity, bindViolations, notFoundViolations, validate};
+  return {resetValidity, bindViolations, unmappedViolations, validate};
 }
 
 export * from './factories/constraint-violation-list.js';

@@ -159,7 +159,7 @@ test('initial item can get deep changes without impacting form state', async () 
 it('binds violations', () => {
   const form = document.createElement('form');
   const FormHTMLElement = ref(form);
-  const {validate, bindViolations, notFoundViolations, resetValidity} = useFormValidation();
+  const {validate, bindViolations, unmappedViolations, resetValidity} = useFormValidation();
 
   // When
   const name = document.createElement('input');
@@ -200,13 +200,13 @@ it('binds violations', () => {
   bindViolations(FormHTMLElement, violations);
   // Then
   expect(validate(FormHTMLElement)).toBe(false); // We have no API to retrieve customValidity message :/
-  expect(notFoundViolations.value).toEqual([{message: 'Misconfigured.', propertyPath: 'configuration'}]);
+  expect(unmappedViolations.value).toEqual([{message: 'Misconfigured.', propertyPath: 'configuration'}]);
 
   // When
   resetValidity(FormHTMLElement);
   // Then
   expect(validate(FormHTMLElement)).toBe(true);
-  expect(notFoundViolations.value).toEqual([]);
+  expect(unmappedViolations.value).toEqual([]);
 });
 
 it('normalize the item\'s relations', () => {
