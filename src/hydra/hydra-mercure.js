@@ -86,7 +86,9 @@ export const useMercureSync = (mercure, options = {removeListenersOnUnmount: tru
   }
 
   const synchronize = (items, topics = ['*'], onUpdate = defaultUpdater, onDelete = defaultRemover) => {
-    listeners.push(mercureSync(mercure, items, topics, onUpdate, onDelete));
+    const listener = mercureSync(mercure, items, topics, onUpdate, onDelete);
+    listeners.push(listener);
+    return listener;
   };
 
   return {
