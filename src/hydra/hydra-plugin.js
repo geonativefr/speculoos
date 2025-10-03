@@ -10,6 +10,7 @@ import { URI, QueryString } from 'psr7-js';
 const DEFAULT_CLASSMAP = {
   'hydra:Collection': HydraCollection,
   'hydra:Error': HydraError,
+  'ConstraintViolation': ConstraintViolationList,
   'ConstraintViolationList': ConstraintViolationList,
 };
 
