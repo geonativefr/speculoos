@@ -11,7 +11,6 @@ const DEFAULT_CLASSMAP = {
   'hydra:Collection': HydraCollection,
   'hydra:Error': HydraError,
   'ConstraintViolation': ConstraintViolationList,
-  'ConstraintViolationList': ConstraintViolationList,
 };
 
 class Items {
