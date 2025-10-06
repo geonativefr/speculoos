@@ -1,17 +1,17 @@
-var Lt = Object.defineProperty;
-var Nt = (n, t, e) => t in n ? Lt(n, t, { enumerable: !0, configurable: !0, writable: !0, value: e }) : n[t] = e;
-var d = (n, t, e) => (Nt(n, typeof t != "symbol" ? t + "" : t, e), e);
-import { whenever as kt, asyncComputed as $t, until as wt } from "@vueuse/core";
-import { unref as b, isRef as st, ref as W, reactive as G, readonly as ht, inject as Mt, computed as lt, onUnmounted as Vt } from "vue";
+var Ht = Object.defineProperty;
+var Lt = (n, t, e) => t in n ? Ht(n, t, { enumerable: !0, configurable: !0, writable: !0, value: e }) : n[t] = e;
+var d = (n, t, e) => (Lt(n, typeof t != "symbol" ? t + "" : t, e), e);
+import { whenever as Nt, asyncComputed as $t, until as wt } from "@vueuse/core";
+import { unref as b, isRef as st, ref as W, reactive as G, readonly as ht, inject as Dt, computed as lt, onUnmounted as kt } from "vue";
 import St from "clone-deep";
 import Ft from "md5";
-import V from "is-empty";
-import { useRoute as qt, useRouter as Zt, onBeforeRouteUpdate as Jt } from "vue-router";
+import F from "is-empty";
+import { useRoute as Vt, useRouter as qt, onBeforeRouteUpdate as Zt } from "vue-router";
 import { URI as et, QueryString as it } from "psr7-js";
-import { v4 as Qt } from "uuid";
-import Wt from "mitt";
-import Bt from "uri-templates";
-class Gt extends Error {
+import { v4 as Jt } from "uuid";
+import Qt from "mitt";
+import Wt from "uri-templates";
+class Bt extends Error {
   constructor(t) {
     super(t.statusText), this.response = t, this.statusCode = parseInt(this.response.status);
   }
@@ -34,7 +34,7 @@ class Gt extends Error {
     return t;
   }
 }
-class Kt extends Error {
+class Gt extends Error {
   constructor(t) {
     super(), this.name = "AbortError", this.reason = t;
   }
@@ -46,9 +46,9 @@ const ut = (n) => {
   for (let e of n.keys())
     t[e] = n.get(e);
   return t;
-}, Xt = {
+}, Kt = {
   Accept: "application/ld+json, application/json"
-}, It = async (n) => {
+}, Mt = async (n) => {
   try {
     const t = await n.text();
     try {
@@ -66,7 +66,7 @@ class qe {
     d(this, "options");
     d(this, "fetch");
     var s;
-    this.baseUri = t, this.options = e, r = r ?? ((s = window.fetch) == null ? void 0 : s.bind(window)), this.fetch = async (i, a) => r(i, a).then(It);
+    this.baseUri = t, this.options = e, r = r ?? ((s = window.fetch) == null ? void 0 : s.bind(window)), this.fetch = async (i, o) => r(i, o).then(Mt);
   }
   resolve(t) {
     return new URL(t, this.baseUri).toString();
@@ -81,17 +81,17 @@ class qe {
     return e;
   }
   async request(t, e, r) {
-    e = `${b(e)}`, r = this.mergeOptions({ method: t }, r), Object.keys(r).includes("headers") && (r.headers = new Headers({ ...Xt, ...ut(r.headers) }));
+    e = `${b(e)}`, r = this.mergeOptions({ method: t }, r), Object.keys(r).includes("headers") && (r.headers = new Headers({ ...Kt, ...ut(r.headers) }));
     try {
       if (st(r == null ? void 0 : r.isLoading) && (r.isLoading.value = !0), st(r == null ? void 0 : r.aborted)) {
         const s = new AbortController(), { signal: i } = s;
-        r.signal = i, kt(r.aborted, () => s.abort(), { immediate: !0 });
+        r.signal = i, Nt(r.aborted, () => s.abort(), { immediate: !0 });
       }
       try {
         const s = await this.fetch(e, r);
-        return Gt.guard(s);
+        return Bt.guard(s);
       } catch (s) {
-        throw s.name === "AbortError" ? new Kt(s.reason) : s;
+        throw s.name === "AbortError" ? new Gt(s.reason) : s;
       }
     } finally {
       st(r == null ? void 0 : r.isLoading) && (r.isLoading.value = !1);
@@ -126,16 +126,16 @@ class qe {
     return await this.request("DELETE", this.resolve(t), this.mergeOptions(e));
   }
 }
-class te {
+class Xt {
   constructor(t = ((e) => (e = window.fetch) == null ? void 0 : e.bind(window))()) {
     d(this, "fetch");
     d(this, "pendingRequests", []);
     return this.fetch = t, (r, s) => {
       try {
-        const i = Ft(JSON.stringify({ url: r, ...s })), a = this.pendingRequests.findIndex((f) => i === f.hash);
-        if (a >= 0)
-          return this.pendingRequests[a].promise;
-        const c = this.fetch(r, s).then(It);
+        const i = Ft(JSON.stringify({ url: r, ...s })), o = this.pendingRequests.findIndex((f) => i === f.hash);
+        if (o >= 0)
+          return this.pendingRequests[o].promise;
+        const c = this.fetch(r, s).then(Mt);
         return this.pendingRequests.push({ hash: i, promise: c }), c.then(
           (f) => (this.removePendingRequest(i), f),
           (f) => {
@@ -153,7 +153,7 @@ class te {
   }
 }
 function Ze(n = void 0) {
-  return new te(n);
+  return new Xt(n);
 }
 const K = (n, t = !0, e = []) => {
   if (typeof n != "object" || n == null)
@@ -167,7 +167,7 @@ const K = (n, t = !0, e = []) => {
       typeof s[i] == "object" && s[i] != null && (s[i] = K(s[i], t, e));
   return "__clone" in s && typeof s.__clone == "function" && s.__clone(), s;
 };
-class F {
+class V {
   normalize() {
     throw Error("This method is meant to be overriden.");
   }
@@ -175,7 +175,7 @@ class F {
     throw Error("This method is meant to be overriden.");
   }
 }
-class Je extends F {
+class Je extends V {
   constructor(e = []) {
     super();
     d(this, "values");
@@ -196,39 +196,39 @@ var mt = typeof globalThis < "u" ? globalThis : typeof window < "u" ? window : t
 function yt(n) {
   return n && n.__esModule && Object.prototype.hasOwnProperty.call(n, "default") ? n.default : n;
 }
-var xt = { exports: {} };
+var It = { exports: {} };
 (function(n, t) {
   (function(e, r) {
     n.exports = r();
   })(mt, function() {
-    var e = 1e3, r = 6e4, s = 36e5, i = "millisecond", a = "second", c = "minute", f = "hour", $ = "day", E = "week", A = "month", O = "quarter", D = "year", T = "date", h = "Invalid Date", S = /^(\d{4})[-/]?(\d{1,2})?[-/]?(\d{0,2})[Tt\s]*(\d{1,2})?:?(\d{1,2})?:?(\d{1,2})?[.:]?(\d+)?$/, C = /\[([^\]]+)]|Y{1,4}|M{1,4}|D{1,2}|d{1,4}|H{1,2}|h{1,2}|a|A|m{1,2}|s{1,2}|Z{1,2}|SSS/g, M = { name: "en", weekdays: "Sunday_Monday_Tuesday_Wednesday_Thursday_Friday_Saturday".split("_"), months: "January_February_March_April_May_June_July_August_September_October_November_December".split("_") }, I = function(p, l, o) {
+    var e = 1e3, r = 6e4, s = 36e5, i = "millisecond", o = "second", c = "minute", f = "hour", $ = "day", E = "week", A = "month", O = "quarter", D = "year", T = "date", h = "Invalid Date", S = /^(\d{4})[-/]?(\d{1,2})?[-/]?(\d{0,2})[Tt\s]*(\d{1,2})?:?(\d{1,2})?:?(\d{1,2})?[.:]?(\d+)?$/, C = /\[([^\]]+)]|Y{1,4}|M{1,4}|D{1,2}|d{1,4}|H{1,2}|h{1,2}|a|A|m{1,2}|s{1,2}|Z{1,2}|SSS/g, M = { name: "en", weekdays: "Sunday_Monday_Tuesday_Wednesday_Thursday_Friday_Saturday".split("_"), months: "January_February_March_April_May_June_July_August_September_October_November_December".split("_") }, I = function(p, l, a) {
       var m = String(p);
-      return !m || m.length >= l ? p : "" + Array(l + 1 - m.length).join(o) + p;
+      return !m || m.length >= l ? p : "" + Array(l + 1 - m.length).join(a) + p;
     }, N = { s: I, z: function(p) {
-      var l = -p.utcOffset(), o = Math.abs(l), m = Math.floor(o / 60), u = o % 60;
+      var l = -p.utcOffset(), a = Math.abs(l), m = Math.floor(a / 60), u = a % 60;
       return (l <= 0 ? "+" : "-") + I(m, 2, "0") + ":" + I(u, 2, "0");
-    }, m: function p(l, o) {
-      if (l.date() < o.date())
-        return -p(o, l);
-      var m = 12 * (o.year() - l.year()) + (o.month() - l.month()), u = l.clone().add(m, A), g = o - u < 0, y = l.clone().add(m + (g ? -1 : 1), A);
-      return +(-(m + (o - u) / (g ? u - y : y - u)) || 0);
+    }, m: function p(l, a) {
+      if (l.date() < a.date())
+        return -p(a, l);
+      var m = 12 * (a.year() - l.year()) + (a.month() - l.month()), u = l.clone().add(m, A), g = a - u < 0, y = l.clone().add(m + (g ? -1 : 1), A);
+      return +(-(m + (a - u) / (g ? u - y : y - u)) || 0);
     }, a: function(p) {
       return p < 0 ? Math.ceil(p) || 0 : Math.floor(p);
     }, p: function(p) {
-      return { M: A, y: D, w: E, d: $, D: T, h: f, m: c, s: a, ms: i, Q: O }[p] || String(p || "").toLowerCase().replace(/s$/, "");
+      return { M: A, y: D, w: E, d: $, D: T, h: f, m: c, s: o, ms: i, Q: O }[p] || String(p || "").toLowerCase().replace(/s$/, "");
     }, u: function(p) {
       return p === void 0;
     } }, P = "en", R = {};
     R[P] = M;
     var H = function(p) {
       return p instanceof Z;
-    }, k = function p(l, o, m) {
+    }, k = function p(l, a, m) {
       var u;
       if (!l)
         return P;
       if (typeof l == "string") {
         var g = l.toLowerCase();
-        R[g] && (u = g), o && (R[g] = o, u = g);
+        R[g] && (u = g), a && (R[g] = a, u = g);
         var y = l.split("-");
         if (!u && y.length > 1)
           return p(y[0]);
@@ -240,18 +240,18 @@ var xt = { exports: {} };
     }, z = function(p, l) {
       if (H(p))
         return p.clone();
-      var o = typeof l == "object" ? l : {};
-      return o.date = p, o.args = arguments, new Z(o);
+      var a = typeof l == "object" ? l : {};
+      return a.date = p, a.args = arguments, new Z(a);
     }, v = N;
     v.l = k, v.i = H, v.w = function(p, l) {
       return z(p, { locale: l.$L, utc: l.$u, x: l.$x, $offset: l.$offset });
     };
     var Z = function() {
-      function p(o) {
-        this.$L = k(o.locale, null, !0), this.parse(o);
+      function p(a) {
+        this.$L = k(a.locale, null, !0), this.parse(a);
       }
       var l = p.prototype;
-      return l.parse = function(o) {
+      return l.parse = function(a) {
         this.$d = function(m) {
           var u = m.date, g = m.utc;
           if (u === null)
@@ -268,29 +268,29 @@ var xt = { exports: {} };
             }
           }
           return new Date(u);
-        }(o), this.$x = o.x || {}, this.init();
+        }(a), this.$x = a.x || {}, this.init();
       }, l.init = function() {
-        var o = this.$d;
-        this.$y = o.getFullYear(), this.$M = o.getMonth(), this.$D = o.getDate(), this.$W = o.getDay(), this.$H = o.getHours(), this.$m = o.getMinutes(), this.$s = o.getSeconds(), this.$ms = o.getMilliseconds();
+        var a = this.$d;
+        this.$y = a.getFullYear(), this.$M = a.getMonth(), this.$D = a.getDate(), this.$W = a.getDay(), this.$H = a.getHours(), this.$m = a.getMinutes(), this.$s = a.getSeconds(), this.$ms = a.getMilliseconds();
       }, l.$utils = function() {
         return v;
       }, l.isValid = function() {
         return this.$d.toString() !== h;
-      }, l.isSame = function(o, m) {
-        var u = z(o);
+      }, l.isSame = function(a, m) {
+        var u = z(a);
         return this.startOf(m) <= u && u <= this.endOf(m);
-      }, l.isAfter = function(o, m) {
-        return z(o) < this.startOf(m);
-      }, l.isBefore = function(o, m) {
-        return this.endOf(m) < z(o);
-      }, l.$g = function(o, m, u) {
-        return v.u(o) ? this[m] : this.set(u, o);
+      }, l.isAfter = function(a, m) {
+        return z(a) < this.startOf(m);
+      }, l.isBefore = function(a, m) {
+        return this.endOf(m) < z(a);
+      }, l.$g = function(a, m, u) {
+        return v.u(a) ? this[m] : this.set(u, a);
       }, l.unix = function() {
         return Math.floor(this.valueOf() / 1e3);
       }, l.valueOf = function() {
         return this.$d.getTime();
-      }, l.startOf = function(o, m) {
-        var u = this, g = !!v.u(m) || m, y = v.p(o), w = function(B, L) {
+      }, l.startOf = function(a, m) {
+        var u = this, g = !!v.u(m) || m, y = v.p(a), w = function(B, L) {
           var Q = v.w(u.$u ? Date.UTC(u.$y, L, B) : new Date(u.$y, L, B), u);
           return g ? Q : Q.endOf($);
         }, j = function(B, L) {
@@ -311,72 +311,72 @@ var xt = { exports: {} };
             return j(q + "Minutes", 1);
           case c:
             return j(q + "Seconds", 2);
-          case a:
+          case o:
             return j(q + "Milliseconds", 3);
           default:
             return this.clone();
         }
-      }, l.endOf = function(o) {
-        return this.startOf(o, !1);
-      }, l.$set = function(o, m) {
-        var u, g = v.p(o), y = "set" + (this.$u ? "UTC" : ""), w = (u = {}, u[$] = y + "Date", u[T] = y + "Date", u[A] = y + "Month", u[D] = y + "FullYear", u[f] = y + "Hours", u[c] = y + "Minutes", u[a] = y + "Seconds", u[i] = y + "Milliseconds", u)[g], j = g === $ ? this.$D + (m - this.$W) : m;
+      }, l.endOf = function(a) {
+        return this.startOf(a, !1);
+      }, l.$set = function(a, m) {
+        var u, g = v.p(a), y = "set" + (this.$u ? "UTC" : ""), w = (u = {}, u[$] = y + "Date", u[T] = y + "Date", u[A] = y + "Month", u[D] = y + "FullYear", u[f] = y + "Hours", u[c] = y + "Minutes", u[o] = y + "Seconds", u[i] = y + "Milliseconds", u)[g], j = g === $ ? this.$D + (m - this.$W) : m;
         if (g === A || g === D) {
           var x = this.clone().set(T, 1);
           x.$d[w](j), x.init(), this.$d = x.set(T, Math.min(this.$D, x.daysInMonth())).$d;
         } else
           w && this.$d[w](j);
         return this.init(), this;
-      }, l.set = function(o, m) {
-        return this.clone().$set(o, m);
-      }, l.get = function(o) {
-        return this[v.p(o)]();
-      }, l.add = function(o, m) {
+      }, l.set = function(a, m) {
+        return this.clone().$set(a, m);
+      }, l.get = function(a) {
+        return this[v.p(a)]();
+      }, l.add = function(a, m) {
         var u, g = this;
-        o = Number(o);
+        a = Number(a);
         var y = v.p(m), w = function(Y) {
           var J = z(g);
-          return v.w(J.date(J.date() + Math.round(Y * o)), g);
+          return v.w(J.date(J.date() + Math.round(Y * a)), g);
         };
         if (y === A)
-          return this.set(A, this.$M + o);
+          return this.set(A, this.$M + a);
         if (y === D)
-          return this.set(D, this.$y + o);
+          return this.set(D, this.$y + a);
         if (y === $)
           return w(1);
         if (y === E)
           return w(7);
-        var j = (u = {}, u[c] = r, u[f] = s, u[a] = e, u)[y] || 1, x = this.$d.getTime() + o * j;
+        var j = (u = {}, u[c] = r, u[f] = s, u[o] = e, u)[y] || 1, x = this.$d.getTime() + a * j;
         return v.w(x, this);
-      }, l.subtract = function(o, m) {
-        return this.add(-1 * o, m);
-      }, l.format = function(o) {
+      }, l.subtract = function(a, m) {
+        return this.add(-1 * a, m);
+      }, l.format = function(a) {
         var m = this, u = this.$locale();
         if (!this.isValid())
           return u.invalidDate || h;
-        var g = o || "YYYY-MM-DDTHH:mm:ssZ", y = v.z(this), w = this.$H, j = this.$m, x = this.$M, Y = u.weekdays, J = u.months, q = function(L, Q, at, nt) {
-          return L && (L[Q] || L(m, g)) || at[Q].slice(0, nt);
+        var g = a || "YYYY-MM-DDTHH:mm:ssZ", y = v.z(this), w = this.$H, j = this.$m, x = this.$M, Y = u.weekdays, J = u.months, q = function(L, Q, ot, nt) {
+          return L && (L[Q] || L(m, g)) || ot[Q].slice(0, nt);
         }, X = function(L) {
           return v.s(w % 12 || 12, L, "0");
-        }, tt = u.meridiem || function(L, Q, at) {
+        }, tt = u.meridiem || function(L, Q, ot) {
           var nt = L < 12 ? "AM" : "PM";
-          return at ? nt.toLowerCase() : nt;
+          return ot ? nt.toLowerCase() : nt;
         }, B = { YY: String(this.$y).slice(-2), YYYY: this.$y, M: x + 1, MM: v.s(x + 1, 2, "0"), MMM: q(u.monthsShort, x, J, 3), MMMM: q(J, x), D: this.$D, DD: v.s(this.$D, 2, "0"), d: String(this.$W), dd: q(u.weekdaysMin, this.$W, Y, 2), ddd: q(u.weekdaysShort, this.$W, Y, 3), dddd: Y[this.$W], H: String(w), HH: v.s(w, 2, "0"), h: X(1), hh: X(2), a: tt(w, j, !0), A: tt(w, j, !1), m: String(j), mm: v.s(j, 2, "0"), s: String(this.$s), ss: v.s(this.$s, 2, "0"), SSS: v.s(this.$ms, 3, "0"), Z: y };
         return g.replace(C, function(L, Q) {
           return Q || B[L] || y.replace(":", "");
         });
       }, l.utcOffset = function() {
         return 15 * -Math.round(this.$d.getTimezoneOffset() / 15);
-      }, l.diff = function(o, m, u) {
-        var g, y = v.p(m), w = z(o), j = (w.utcOffset() - this.utcOffset()) * r, x = this - w, Y = v.m(this, w);
-        return Y = (g = {}, g[D] = Y / 12, g[A] = Y, g[O] = Y / 3, g[E] = (x - j) / 6048e5, g[$] = (x - j) / 864e5, g[f] = x / s, g[c] = x / r, g[a] = x / e, g)[y] || x, u ? Y : v.a(Y);
+      }, l.diff = function(a, m, u) {
+        var g, y = v.p(m), w = z(a), j = (w.utcOffset() - this.utcOffset()) * r, x = this - w, Y = v.m(this, w);
+        return Y = (g = {}, g[D] = Y / 12, g[A] = Y, g[O] = Y / 3, g[E] = (x - j) / 6048e5, g[$] = (x - j) / 864e5, g[f] = x / s, g[c] = x / r, g[o] = x / e, g)[y] || x, u ? Y : v.a(Y);
       }, l.daysInMonth = function() {
         return this.endOf(A).$D;
       }, l.$locale = function() {
         return R[this.$L];
-      }, l.locale = function(o, m) {
-        if (!o)
+      }, l.locale = function(a, m) {
+        if (!a)
           return this.$L;
-        var u = this.clone(), g = k(o, m, !0);
+        var u = this.clone(), g = k(a, m, !0);
         return g && (u.$L = g), u;
       }, l.clone = function() {
         return v.w(this.$d, this);
@@ -390,7 +390,7 @@ var xt = { exports: {} };
         return this.$d.toUTCString();
       }, p;
     }(), bt = Z.prototype;
-    return z.prototype = bt, [["$ms", i], ["$s", a], ["$m", c], ["$H", f], ["$W", $], ["$M", A], ["$y", D], ["$D", T]].forEach(function(p) {
+    return z.prototype = bt, [["$ms", i], ["$s", o], ["$m", c], ["$H", f], ["$W", $], ["$M", A], ["$y", D], ["$D", T]].forEach(function(p) {
       bt[p[1]] = function(l) {
         return this.$g(l, p[0], p[1]);
       };
@@ -400,20 +400,20 @@ var xt = { exports: {} };
       return z(1e3 * p);
     }, z.en = R[P], z.Ls = R, z.p = {}, z;
   });
-})(xt);
-var ee = xt.exports;
-const _ = /* @__PURE__ */ yt(ee);
-var Et = { exports: {} };
+})(It);
+var te = It.exports;
+const _ = /* @__PURE__ */ yt(te);
+var xt = { exports: {} };
 (function(n, t) {
   (function(e, r) {
     n.exports = r();
   })(mt, function() {
     var e = "minute", r = /[+-]\d\d(?::?\d\d)?/g, s = /([+-]|\d\d)/g;
-    return function(i, a, c) {
-      var f = a.prototype;
+    return function(i, o, c) {
+      var f = o.prototype;
       c.utc = function(h) {
         var S = { date: h, utc: !0, args: arguments };
-        return new a(S);
+        return new o(S);
       }, f.utc = function(h) {
         var S = c(this.toDate(), { locale: this.$L, utc: !0 });
         return h ? S.add(this.utcOffset(), e) : S;
@@ -483,16 +483,16 @@ var Et = { exports: {} };
       };
     };
   });
-})(Et);
-var re = Et.exports;
-const Pt = /* @__PURE__ */ yt(re);
-var jt = { exports: {} };
+})(xt);
+var ee = xt.exports;
+const Et = /* @__PURE__ */ yt(ee);
+var Pt = { exports: {} };
 (function(n, t) {
   (function(e, r) {
     n.exports = r();
   })(mt, function() {
     var e = { year: 0, month: 1, day: 2, hour: 3, minute: 4, second: 5 }, r = {};
-    return function(s, i, a) {
+    return function(s, i, o) {
       var c, f = function(O, D, T) {
         T === void 0 && (T = {});
         var h = new Date(O), S = function(C, M) {
@@ -507,18 +507,18 @@ var jt = { exports: {} };
           N >= 0 && (h[N] = parseInt(I, 10));
         }
         var P = h[3], R = P === 24 ? 0 : P, H = h[0] + "-" + h[1] + "-" + h[2] + " " + R + ":" + h[4] + ":" + h[5] + ":000", k = +O;
-        return (a.utc(H).valueOf() - (k -= k % 1e3)) / 6e4;
+        return (o.utc(H).valueOf() - (k -= k % 1e3)) / 6e4;
       }, E = i.prototype;
       E.tz = function(O, D) {
         O === void 0 && (O = c);
-        var T = this.utcOffset(), h = this.toDate(), S = h.toLocaleString("en-US", { timeZone: O }), C = Math.round((h - new Date(S)) / 1e3 / 60), M = a(S).$set("millisecond", this.$ms).utcOffset(15 * -Math.round(h.getTimezoneOffset() / 15) - C, !0);
+        var T = this.utcOffset(), h = this.toDate(), S = h.toLocaleString("en-US", { timeZone: O }), C = Math.round((h - new Date(S)) / 1e3 / 60), M = o(S).$set("millisecond", this.$ms).utcOffset(15 * -Math.round(h.getTimezoneOffset() / 15) - C, !0);
         if (D) {
           var I = M.utcOffset();
           M = M.add(T - I, "minute");
         }
         return M.$x.$timezone = O, M;
       }, E.offsetName = function(O) {
-        var D = this.$x.$timezone || a.tz.guess(), T = f(this.valueOf(), D, { timeZoneName: O }).find(function(h) {
+        var D = this.$x.$timezone || o.tz.guess(), T = f(this.valueOf(), D, { timeZoneName: O }).find(function(h) {
           return h.type.toLowerCase() === "timezonename";
         });
         return T && T.value;
@@ -527,33 +527,33 @@ var jt = { exports: {} };
       E.startOf = function(O, D) {
         if (!this.$x || !this.$x.$timezone)
           return A.call(this, O, D);
-        var T = a(this.format("YYYY-MM-DD HH:mm:ss:SSS"));
+        var T = o(this.format("YYYY-MM-DD HH:mm:ss:SSS"));
         return A.call(T, O, D).tz(this.$x.$timezone, !0);
-      }, a.tz = function(O, D, T) {
-        var h = T && D, S = T || D || c, C = $(+a(), S);
+      }, o.tz = function(O, D, T) {
+        var h = T && D, S = T || D || c, C = $(+o(), S);
         if (typeof O != "string")
-          return a(O).tz(S);
+          return o(O).tz(S);
         var M = function(R, H, k) {
           var z = R - 60 * H * 1e3, v = $(z, k);
           if (H === v)
             return [z, H];
           var Z = $(z -= 60 * (v - H) * 1e3, k);
           return v === Z ? [z, v] : [R - 60 * Math.min(v, Z) * 1e3, Math.max(v, Z)];
-        }(a.utc(O, h).valueOf(), C, S), I = M[0], N = M[1], P = a(I).utcOffset(N);
+        }(o.utc(O, h).valueOf(), C, S), I = M[0], N = M[1], P = o(I).utcOffset(N);
         return P.$x.$timezone = S, P;
-      }, a.tz.guess = function() {
+      }, o.tz.guess = function() {
         return Intl.DateTimeFormat().resolvedOptions().timeZone;
-      }, a.tz.setDefault = function(O) {
+      }, o.tz.setDefault = function(O) {
         c = O;
       };
     };
   });
-})(jt);
-var ne = jt.exports;
-const Ct = /* @__PURE__ */ yt(ne);
-_.extend(Pt);
-_.extend(Ct);
-class se extends F {
+})(Pt);
+var re = Pt.exports;
+const jt = /* @__PURE__ */ yt(re);
+_.extend(Et);
+_.extend(jt);
+class ne extends V {
   constructor({ after: e = null, before: r = null } = {}, { withTime: s = !0, useUserTimezone: i = !0 } = {}) {
     super();
     d(this, "after");
@@ -566,19 +566,19 @@ class se extends F {
     this.constructor.ensureTimezoneIsSet();
     const e = this.useUserTimezone ? this.constructor.userTimezone : "UTC";
     let r = null, s = null;
-    return V(this.after) || (r = _.tz(this.after, e).hour(0).minute(0).second(0).tz("UTC").format(this.normalizedFormat)), V(this.before) || (s = _.tz(this.before, e).hour(0).minute(0).second(0).add(1, "day").subtract(1, "second").tz("UTC").format(this.normalizedFormat)), { after: r, before: s };
+    return F(this.after) || (r = _.tz(this.after, e).hour(0).minute(0).second(0).tz("UTC").format(this.normalizedFormat)), F(this.before) || (s = _.tz(this.before, e).hour(0).minute(0).second(0).add(1, "day").subtract(1, "second").tz("UTC").format(this.normalizedFormat)), { after: r, before: s };
   }
   async denormalize(e) {
-    this.constructor.ensureTimezoneIsSet(), this.after = null, this.before = null, V(e.after) || (this.after = this.useUserTimezone ? _.tz(e.after, "UTC").tz(this.constructor.userTimezone) : _.tz(e.after, "UTC"), this.after = this.after.hour(0).minute(0).second(0).format("YYYY-MM-DD")), V(e.before) || (this.before = this.useUserTimezone ? _.tz(e.before, "UTC").tz(this.constructor.userTimezone) : _.tz(e.before, "UTC"), this.before = this.before.hour(0).minute(0).second(0).add(1, "day").subtract(1, "second").format("YYYY-MM-DD"));
+    this.constructor.ensureTimezoneIsSet(), this.after = null, this.before = null, F(e.after) || (this.after = this.useUserTimezone ? _.tz(e.after, "UTC").tz(this.constructor.userTimezone) : _.tz(e.after, "UTC"), this.after = this.after.hour(0).minute(0).second(0).format("YYYY-MM-DD")), F(e.before) || (this.before = this.useUserTimezone ? _.tz(e.before, "UTC").tz(this.constructor.userTimezone) : _.tz(e.before, "UTC"), this.before = this.before.hour(0).minute(0).second(0).add(1, "day").subtract(1, "second").format("YYYY-MM-DD"));
   }
   static ensureTimezoneIsSet() {
     this.constructor.userTimezone = this.constructor.userTimezone ?? (_.tz.guess() || "UTC");
   }
 }
-d(se, "userTimezone");
-_.extend(Pt);
-_.extend(Ct);
-class ie extends F {
+d(ne, "userTimezone");
+_.extend(Et);
+_.extend(jt);
+class se extends V {
   constructor({ after: e = null, before: r = null } = {}) {
     super();
     d(this, "after");
@@ -588,17 +588,17 @@ class ie extends F {
   normalize() {
     this.constructor.ensureTimezoneIsSet();
     let e = null, r = null;
-    return V(this.after) || (e = _.tz(this.after, this.constructor.userTimezone).tz("UTC").format("YYYY-MM-DD[T]HH:mm:ss[Z]")), V(this.before) || (r = _.tz(this.before, this.constructor.userTimezone).tz("UTC").format("YYYY-MM-DD[T]HH:mm:ss[Z]")), { after: e, before: r };
+    return F(this.after) || (e = _.tz(this.after, this.constructor.userTimezone).tz("UTC").format("YYYY-MM-DD[T]HH:mm:ss[Z]")), F(this.before) || (r = _.tz(this.before, this.constructor.userTimezone).tz("UTC").format("YYYY-MM-DD[T]HH:mm:ss[Z]")), { after: e, before: r };
   }
   async denormalize(e) {
-    this.constructor.ensureTimezoneIsSet(), this.after = null, this.before = null, V(e.after) || (this.after = _.tz(e.after, "UTC").tz(this.constructor.userTimezone).format("YYYY-MM-DD[T]HH:mm:ss[Z]")), V(e.before) || (this.before = _.tz(e.before, "UTC").tz(this.constructor.userTimezone).format("YYYY-MM-DD[T]HH:mm:ss[Z]"));
+    this.constructor.ensureTimezoneIsSet(), this.after = null, this.before = null, F(e.after) || (this.after = _.tz(e.after, "UTC").tz(this.constructor.userTimezone).format("YYYY-MM-DD[T]HH:mm:ss[Z]")), F(e.before) || (this.before = _.tz(e.before, "UTC").tz(this.constructor.userTimezone).format("YYYY-MM-DD[T]HH:mm:ss[Z]"));
   }
   static ensureTimezoneIsSet() {
     this.constructor.userTimezone = this.constructor.userTimezone ?? (_.tz.guess() || "UTC");
   }
 }
-d(ie, "userTimezone");
-function oe(n) {
+d(se, "userTimezone");
+function ie(n) {
   return n == null ? !0 : typeof n == "string" ? n.trim().length === 0 : typeof n == "function" || Array.isArray(n) ? n.length === 0 : n instanceof Object ? Object.keys(n).length === 0 : !1;
 }
 function ft(n) {
@@ -608,7 +608,7 @@ function ft(n) {
     return n.map(ft);
   const t = { ...n };
   return Object.keys(t).forEach((e) => {
-    t[e] instanceof Object && (t[e] = ft(t[e])), oe(t[e]) && delete t[e];
+    t[e] instanceof Object && (t[e] = ft(t[e])), ie(t[e]) && delete t[e];
   }), t;
 }
 class Qe {
@@ -617,7 +617,7 @@ class Qe {
     if (!(t instanceof Object))
       throw Error("A FilterCollection expects an object.");
     Object.keys(t).forEach((e) => {
-      if (!(t[e] instanceof F))
+      if (!(t[e] instanceof V))
         throw Error(`Filter ${e} doesn't extend the Filter class.`);
       this[e] = t[e], this._filters.push(e);
     });
@@ -633,7 +633,7 @@ class Qe {
     const e = [];
     for (const r of this._filters) {
       const s = this[r];
-      s instanceof F && typeof t[r] < "u" && e.push(s.denormalize(t[r]));
+      s instanceof V && typeof t[r] < "u" && e.push(s.denormalize(t[r]));
     }
     return e.length > 0 && await Promise.all(e), this;
   }
@@ -644,11 +644,11 @@ async function We(n = {}, t = {
 }) {
   if (typeof n != "function")
     throw Error("initialState should be provided as a function.");
-  const e = qt(), r = Zt(), s = W(n());
+  const e = Vt(), r = qt(), s = W(n());
   async function i($) {
     Object.assign(b(s), await b(s).denormalize($.query));
   }
-  function a() {
+  function o() {
     s.value = K(n());
   }
   function c($ = {}) {
@@ -659,11 +659,11 @@ async function We(n = {}, t = {
     const E = b(t.targetRoute) ?? e;
     await r.push(Object.assign({ ...E }, { query: c($) }));
   }
-  return Jt(($) => i($)), await i(e), {
+  return Zt(($) => i($)), await i(e), {
     filters: s,
     buildQueryParams: c,
     submit: f,
-    clear: a
+    clear: o
   };
 }
 const Be = async ({ state: n = {}, methods: t = {}, name: e = "store" } = {}) => {
@@ -671,9 +671,9 @@ const Be = async ({ state: n = {}, methods: t = {}, name: e = "store" } = {}) =>
   const r = [], s = {
     name: e,
     state: n,
-    ...Object.keys(t).reduce(function(i, a) {
-      const c = t[a];
-      return i[a] = function() {
+    ...Object.keys(t).reduce(function(i, o) {
+      const c = t[o];
+      return i[o] = function() {
         return c(n, ...arguments);
       }, i;
     }, {}),
@@ -681,15 +681,15 @@ const Be = async ({ state: n = {}, methods: t = {}, name: e = "store" } = {}) =>
       return r.push(i), await i.install(this), this;
     },
     async reconciliate(i = !1) {
-      const a = r.filter(({ reconciliate: c }) => typeof c == "function");
+      const o = r.filter(({ reconciliate: c }) => typeof c == "function");
       if (i === !1)
-        return Promise.all(a.map((c) => c.reconciliate(this)));
-      for (const c of a)
+        return Promise.all(o.map((c) => c.reconciliate(this)));
+      for (const c of o)
         await c.reconciliate(this);
     }
   };
   return s.install = (i) => i.provide(e, { ...s, state: ht(n) }), s;
-}, At = (n = "store") => Mt(n);
+}, Ct = (n = "store") => Dt(n);
 class ae {
   constructor(t) {
     Object.keys(t).forEach((e) => {
@@ -736,14 +736,14 @@ class gt {
     return this.withQuery(new it(new et(t)).getParams());
   }
 }
-const Ge = (n, t) => At(t).state.endpoints[n];
-function ot(n) {
+const Ge = (n, t) => Ct(t).state.endpoints[n];
+function at(n) {
   return n = b(n), n == null ? !1 : Object.keys(n).includes("@id") && n["@id"] != null;
 }
 function U(n) {
   return n = b(n), n === null ? null : typeof n == "string" ? n : (pt(n), n["@id"]);
 }
-function ue(n) {
+function oe(n) {
   const t = U(n);
   return t.substring(t.lastIndexOf("/") + 1);
 }
@@ -751,7 +751,7 @@ function Ke(n) {
   return n.map(U);
 }
 function Xe(n) {
-  return n.map(ue);
+  return n.map(oe);
 }
 function pt(n, t = null) {
   if (typeof n != "object" || !("@id" in n))
@@ -766,11 +766,11 @@ function pt(n, t = null) {
 function rt(n, t) {
   return U(n) === U(t);
 }
-function ce(n, t) {
+function ue(n, t) {
   if (n = b(n), n = Array.from(n).map(b), t = b(t), Array.isArray(t)) {
     const e = t;
     for (const r of e)
-      if (ce(n, r))
+      if (ue(n, r))
         return !0;
     return !1;
   }
@@ -799,7 +799,7 @@ function nr(n) {
 function sr(n, t) {
   return n = b(n), pt(n), Object.assign({ "@id": n["@id"], "@type": n["@type"] }, t);
 }
-class Yt extends Error {
+class At extends Error {
   constructor() {
     super(...arguments);
     d(this, "statusCode");
@@ -811,16 +811,16 @@ class Yt extends Error {
     return this["hydra:description"];
   }
 }
-class he {
+class ce {
   constructor() {
     d(this, "id");
     d(this, "propertyPath");
     d(this, "message");
     d(this, "code");
-    this.id = Qt();
+    this.id = Jt();
   }
 }
-class zt extends Yt {
+class he extends At {
   constructor(e) {
     super();
     d(this, "_violations", []);
@@ -840,14 +840,14 @@ class zt extends Yt {
     return this._violations;
   }
   set violations(e) {
-    this._violations = e.map((r) => Object.assign(new he(), r));
+    this._violations = e.map((r) => Object.assign(new ce(), r));
   }
   getPropertyPaths() {
     return [...new Set(this.violations.map(({ propertyPath: e }) => e))];
   }
   getViolations(e) {
     const r = Array.from(arguments);
-    return r.length === 0 ? this.violations : V(r[0]) ? this.violations.filter((s) => V(s.propertyPath)) : this.violations.filter((s) => e === s.propertyPath);
+    return r.length === 0 ? this.violations : F(r[0]) ? this.violations.filter((s) => F(s.propertyPath)) : this.violations.filter((s) => e === s.propertyPath);
   }
 }
 class le {
@@ -892,48 +892,48 @@ function fe(n) {
     throw Error("Invalid object.");
   return Object.keys(n).forEach((t) => delete n[t]), n;
 }
-function Tt(n) {
-  return ot(n) ? U(n) : n;
+function zt(n) {
+  return at(n) ? U(n) : n;
 }
 function de(n) {
   const t = K(n), e = Object.keys(t);
   for (const r of e) {
     const s = t[r];
-    Array.isArray(s) ? t[r] = s.map((i) => Tt(i)) : typeof s == "object" && s != null && (t[r] = Tt(s));
+    Array.isArray(s) ? t[r] = s.map((i) => zt(i)) : typeof s == "object" && s != null && (t[r] = zt(s));
   }
   return t;
 }
-function Ot(n, t) {
+function Tt(n, t) {
   return n = fe(n), Object.assign(n, t);
 }
 function ir(n) {
-  const t = At(), e = W(b(n)), r = G(K(b(n))), s = lt(() => !ot(b(r))), i = W(!1), a = lt(() => JSON.stringify(b(r)) !== JSON.stringify(b(e)));
-  return { item: r, isUnsavedDraft: a, isCreationMode: s, isSubmitting: i, reset: ($) => Ot(r, K(b($ ?? n))), submit: async ($) => {
+  const t = Ct(), e = W(b(n)), r = G(K(b(n))), s = lt(() => !at(b(r))), i = W(!1), o = lt(() => JSON.stringify(b(r)) !== JSON.stringify(b(e)));
+  return { item: r, isUnsavedDraft: o, isCreationMode: s, isSubmitting: i, reset: ($) => Tt(r, K(b($ ?? n))), submit: async ($) => {
     st($) && ($ = b($));
     try {
       i.value = !0;
       const E = await t.upsertItem(de($ ?? r));
-      return e.value = E, Ot(r, K(E)), E;
+      return e.value = E, Tt(r, K(E)), E;
     } finally {
       i.value = !1;
     }
   } };
 }
-function or() {
+function ar() {
   const n = W([]), t = (i) => {
-    i = b(i), i.querySelectorAll("[name]").forEach(function(a) {
-      a.setCustomValidity("");
+    i = b(i), i.querySelectorAll("[name]").forEach(function(o) {
+      o.setCustomValidity("");
     }), n.value = [];
-  }, e = (i, a = !0) => {
+  }, e = (i, o = !0) => {
     i = b(i);
     const c = i.checkValidity();
-    return !c && a && i.reportValidity(), c;
-  }, r = (i, a) => {
-    t(i), Array.from(a).forEach((c) => s(i, c)), e(i);
-  }, s = (i, { propertyPath: a, message: c }) => {
+    return !c && o && i.reportValidity(), c;
+  }, r = (i, o) => {
+    t(i), Array.from(o).forEach((c) => s(i, c)), e(i);
+  }, s = (i, { propertyPath: o, message: c }) => {
     i = b(i);
-    const f = i.querySelector(`[name='${a}']`);
-    f == null || f.setCustomValidity(c), f || n.value.push({ propertyPath: a, message: c });
+    const f = i.querySelector(`[name='${o}']`);
+    f == null || f.setCustomValidity(c), f || n.value.push({ propertyPath: o, message: c });
   };
   return { resetValidity: t, bindViolations: r, unmappedViolations: n, validate: e };
 }
@@ -967,14 +967,14 @@ const pe = () => {
   return typeof process < "u" && ((n = process == null ? void 0 : process.env) == null ? void 0 : n.NODE_ENV) === "test" || ((e = (t = import.meta) == null ? void 0 : t.env) == null ? void 0 : e.NODE_ENV) === "test";
 };
 pe() ? dt = ge : dt = window.EventSource;
-const ve = dt, ar = (n, t) => {
+const ve = dt, or = (n, t) => {
   const e = new we(n, t);
   return Object.assign(e, {
     install(r) {
       r.provide("mercure", e);
     }
   });
-}, be = () => Mt("mercure");
+}, be = () => Dt("mercure");
 function $e(n, t) {
   return n.length === t.length && n.every((e) => t.includes(e));
 }
@@ -990,7 +990,7 @@ class we {
     Object.assign(this, { hub: t, options: G(e) }), this.lastEventId = W(), this.subscribedTopics = W([]), this.endpoint = lt(() => {
       const r = new URL(this.hub), s = b(this.subscribedTopics);
       return s.includes("*") ? r.searchParams.append("topic", "*") : s.forEach((i) => r.searchParams.append("topic", i)), b(this.lastEventId) && r.searchParams.append("Last-Event-ID", b(this.lastEventId)), r.toString();
-    }), this.emitter = Wt();
+    }), this.emitter = Qt();
   }
   subscribe(t = ["*"], e = !0) {
     Array.isArray(t) || (t = [t]);
@@ -1023,14 +1023,14 @@ class we {
     (t = this.connection) == null || t.close(), this.connection = void 0;
   }
 }
-const _t = (n, t) => Object.assign(t, n), Ut = () => {
+const Yt = (n, t) => Object.assign(t, n), _t = () => {
 };
-function Se(n, t, e = ["*"], r = _t, s = Ut) {
+function Se(n, t, e = ["*"], r = Yt, s = _t) {
   Array.isArray(t) || (t = [t]), Array.isArray(e) || (e = [e]);
-  const i = (a) => {
+  const i = (o) => {
     try {
-      const c = JSON.parse(a.data);
-      if (!ot(c))
+      const c = JSON.parse(o.data);
+      if (!at(c))
         return;
       if (Object.keys(c).length === 1) {
         s(U(c));
@@ -1050,8 +1050,8 @@ const ze = (n, t, e) => {
     let i;
     try {
       i = JSON.parse(s.data);
-    } catch (a) {
-      console.debug(a);
+    } catch (o) {
+      console.debug(o);
       return;
     }
     if (typeof i != "object") {
@@ -1059,39 +1059,38 @@ const ze = (n, t, e) => {
       return;
     }
     try {
-      for (const a of t)
-        if (typeof Bt(a).fromUri(U(i)) < "u") {
+      for (const o of t)
+        if (typeof Wt(o).fromUri(U(i)) < "u") {
           e(i);
           break;
         }
-    } catch (a) {
-      console.error(a);
+    } catch (o) {
+      console.error(o);
     }
   };
   return n.addListener(r), n.subscribe(t), r;
 }, ur = (n, t = { removeListenersOnUnmount: !0 }) => {
   n = n ?? be();
   const e = [];
-  return t.removeListenersOnUnmount && Vt(() => {
+  return t.removeListenersOnUnmount && kt(() => {
     for (const s of e)
       n.removeListener(s);
   }), {
-    synchronize: (s, i = ["*"], a = _t, c = Ut) => {
-      const f = Se(n, s, i, a, c);
+    synchronize: (s, i = ["*"], o = Yt, c = _t) => {
+      const f = Se(n, s, i, o, c);
       return e.push(f), f;
     },
     on(s, i) {
-      const a = ze(n, s, i);
-      return e.push(a), a;
+      const o = ze(n, s, i);
+      return e.push(o), o;
     }
   };
 }, Te = {
   "hydra:Collection": le,
-  "hydra:Error": Yt,
-  ConstraintViolation: zt,
-  ConstraintViolationList: zt
+  "hydra:Error": At,
+  ConstraintViolationList: he
 };
-class Dt {
+class Ot {
   constructor() {
     Object.assign(
       this,
@@ -1150,15 +1149,15 @@ class cr {
     delete t.items[r];
   }
   async clearItems({ state: t }) {
-    t.items = G(new Dt());
+    t.items = G(new Ot());
   }
   async handle(t, { errorHandler: e = this.errorHandler } = {}) {
-    var r, s, i, a;
+    var r, s, i, o;
     try {
       const { data: c } = await t();
       return this.factory(c);
     } catch (c) {
-      typeof ((r = c.response) == null ? void 0 : r.data) == "object" && ((s = c.response) == null ? void 0 : s.data) != null && (c = this.factory(c.response.data, (i = c.response) == null ? void 0 : i.status)), c.statusCode = c.statusCode ?? ((a = c.response) == null ? void 0 : a.status), e(c);
+      typeof ((r = c.response) == null ? void 0 : r.data) == "object" && ((s = c.response) == null ? void 0 : s.data) != null && (c = this.factory(c.response.data, (i = c.response) == null ? void 0 : i.status)), c.statusCode = c.statusCode ?? ((o = c.response) == null ? void 0 : o.status), e(c);
     }
   }
   async fetchItem({ state: t }, e, r) {
@@ -1178,11 +1177,11 @@ class cr {
     r != null && r.groups && (s = s.withQuery(`${new it(s.getQuery()).withParam("groups", r.groups)}`));
     const i = await this.handle(() => this.api.get(`${s}`, r), r);
     i["hydra:member"] = i["hydra:member"].map((f) => this.factory(f));
-    const a = this.factory(i);
-    if (a["hydra:member"] = a["hydra:member"].map((f) => this.factory(f)), (r == null ? void 0 : r.store) ?? !1)
-      for (const f of a["hydra:member"])
+    const o = this.factory(i);
+    if (o["hydra:member"] = o["hydra:member"].map((f) => this.factory(f)), (r == null ? void 0 : r.store) ?? !1)
+      for (const f of o["hydra:member"])
         this.storeItem({ state: t }, f);
-    return a;
+    return o;
   }
   async createItem({ state: t }, e, r) {
     const s = this.endpoints.for(e);
@@ -1192,7 +1191,7 @@ class cr {
     return pt(e), e = await this.handle(() => this.api.put(U(e), e, r), r), (r == null ? void 0 : r.store) ?? !0 ? this.storeItem({ state: t }, e) : e;
   }
   async upsertItem({ state: t }, e, r) {
-    return ot(e) ? this.updateItem({ state: t }, e, r) : this.createItem({ state: t }, e, r);
+    return at(e) ? this.updateItem({ state: t }, e, r) : this.createItem({ state: t }, e, r);
   }
   async deleteItem({ state: t }, e, r) {
     const s = U(e);
@@ -1224,10 +1223,10 @@ class cr {
     return Promise.all(e.map((s) => this.getRelation({ state: t }, s, r)));
   }
   async install(t) {
-    t.state.items = G(new Dt()), t.state.endpoints = ht(this.endpoints), t.state.classmap = ht(this.classmap), t.storeItem = (e) => this.storeItem(t, e), t.removeItem = (e) => this.removeItem(t, e), t.clearItems = () => this.clearItems(t), t.getItem = (e, r) => this.getItem(t, e, r), t.fetchItem = (e, r) => this.fetchItem(t, e, r), t.fetchCollection = (e, r) => this.fetchCollection(t, e, r), t.createItem = (e, r) => this.createItem(t, e, r), t.updateItem = (e, r) => this.updateItem(t, e, r), t.upsertItem = (e, r) => this.upsertItem(t, e, r), t.deleteItem = (e, r) => this.deleteItem(t, e, r), t.getRelation = (e, r) => this.getRelation(t, e, r), t.getRelations = (e, r) => this.getRelations(t, e, r), t.endpoint = (e) => t.state.endpoints[e], t.getItemsByType = (e) => t.state.items.filter((r) => e === r["@type"]), t.factory = (e, r) => (r = r ?? e, typeof e == "string" && (r["@type"] = e), this.factory(r));
+    t.state.items = G(new Ot()), t.state.endpoints = ht(this.endpoints), t.state.classmap = ht(this.classmap), t.storeItem = (e) => this.storeItem(t, e), t.removeItem = (e) => this.removeItem(t, e), t.clearItems = () => this.clearItems(t), t.getItem = (e, r) => this.getItem(t, e, r), t.fetchItem = (e, r) => this.fetchItem(t, e, r), t.fetchCollection = (e, r) => this.fetchCollection(t, e, r), t.createItem = (e, r) => this.createItem(t, e, r), t.updateItem = (e, r) => this.updateItem(t, e, r), t.upsertItem = (e, r) => this.upsertItem(t, e, r), t.deleteItem = (e, r) => this.deleteItem(t, e, r), t.getRelation = (e, r) => this.getRelation(t, e, r), t.getRelations = (e, r) => this.getRelations(t, e, r), t.endpoint = (e) => t.state.endpoints[e], t.getItemsByType = (e) => t.state.items.filter((r) => e === r["@type"]), t.factory = (e, r) => (r = r ?? e, typeof e == "string" && (r["@type"] = e), this.factory(r));
   }
 }
-function Rt(n) {
+function Ut(n) {
   if (typeof n == "string")
     return n;
   try {
@@ -1237,9 +1236,9 @@ function Rt(n) {
   }
 }
 function De(n) {
-  return n.map((t) => Rt(t));
+  return n.map((t) => Ut(t));
 }
-async function Ht(n, t) {
+async function Rt(n, t) {
   try {
     return await t.getItem(n);
   } catch {
@@ -1247,9 +1246,9 @@ async function Ht(n, t) {
   }
 }
 async function Me(n, t) {
-  return Promise.all(n.map((e) => Ht(e, t)));
+  return Promise.all(n.map((e) => Rt(e, t)));
 }
-class hr extends F {
+class hr extends V {
   constructor(e, { store: r, multiple: s = !1 }) {
     super();
     d(this, "items", []);
@@ -1264,21 +1263,21 @@ class hr extends F {
     this.items = [e], this.multiple = !1;
   }
   normalize() {
-    return this.multiple || this.items.length > 1 ? De(this.items) : Rt(this.item);
+    return this.multiple || this.items.length > 1 ? De(this.items) : Ut(this.item);
   }
   async denormalize(e) {
     if (Array.isArray(e)) {
       this.items = await Me(e, this.store);
       return;
     }
-    this.items = [await Ht(e, this.store)];
+    this.items = [await Rt(e, this.store)];
   }
 }
 const Ie = {
   asc: "desc",
   desc: "asc"
 };
-class lr extends F {
+class lr extends V {
   constructor(e = {}) {
     super();
     d(this, "order");
@@ -1299,7 +1298,7 @@ class lr extends F {
     this.order = {}, typeof e == "object" && e != null && (this.order = e);
   }
 }
-class fr extends F {
+class fr extends V {
   constructor(t, e, r = !0, s = !0) {
     super(), this.left = t, this.right = e, this.includeLeft = r, this.includeRight = s;
   }
@@ -1311,7 +1310,7 @@ class fr extends F {
     t == null || typeof t != "object" || (Object.keys(t).includes("gt") && (this.left = parseFloat(t.gt), this.includeLeft = !1), Object.keys(t).includes("gte") && (this.left = parseFloat(t.gte), this.includeLeft = !0), Object.keys(t).includes("lt") && (this.right = parseFloat(t.lt), this.includeRight = !1), Object.keys(t).includes("lte") && (this.right = parseFloat(t.lte), this.includeRight = !0));
   }
 }
-class dr extends F {
+class dr extends V {
   constructor(e = null) {
     super();
     d(this, "_value");
@@ -1335,7 +1334,7 @@ class dr extends F {
     this.value = e;
   }
 }
-class mr extends F {
+class mr extends V {
   constructor(e = null) {
     super();
     d(this, "value");
@@ -1433,19 +1432,19 @@ function gr({ fields: n, preload: t } = {}) {
   return Object.assign(new Ce(), { fields: n }, { preload: t }).headers;
 }
 export {
-  Kt as AbortError,
+  Gt as AbortError,
   qe as ApiClient,
   Je as ArrayFilter,
-  zt as ConstraintViolationList,
-  se as DateRangeFilter,
-  ie as DatetimeRangeFilter,
+  he as ConstraintViolationList,
+  ne as DateRangeFilter,
+  se as DatetimeRangeFilter,
   ge as FakeEventSource,
   Qe as FilterCollection,
-  Gt as HttpError,
+  Bt as HttpError,
   le as HydraCollection,
   gt as HydraEndpoint,
   ae as HydraEndpoints,
-  Yt as HydraError,
+  At as HydraError,
   cr as HydraPlugin,
   hr as ItemFilter,
   we as Mercure,
@@ -1453,22 +1452,22 @@ export {
   fr as RangeFilter,
   dr as TextFilter,
   mr as TruthyFilter,
-  he as Violation,
+  ce as Violation,
   rt as areSameIris,
   pt as checkValidItem,
   K as clone,
-  ce as containsIri,
-  ar as createMercure,
+  ue as containsIri,
+  or as createMercure,
   yr as createPager,
   Be as createStore,
-  ue as getId,
+  oe as getId,
   Xe as getIds,
   U as getIri,
   Ke as getIris,
   ct as getItemByIri,
   er as getItemIndexByIri,
   rr as getItemsByType,
-  ot as hasIri,
+  at as hasIri,
   Se as mercureSync,
   nr as normalizeIris,
   de as normalizeItemRelations,
@@ -1476,11 +1475,11 @@ export {
   sr as partialItem,
   Ge as useEndpoint,
   We as useFilters,
-  or as useFormValidation,
+  ar as useFormValidation,
   ir as useItemForm,
   be as useMercure,
   ur as useMercureSync,
-  At as useStore,
+  Ct as useStore,
   gr as vulcain,
   Ze as withoutDuplicates,
   tr as withoutIri
