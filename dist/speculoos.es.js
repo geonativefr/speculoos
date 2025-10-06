@@ -1088,7 +1088,7 @@ const ze = (n, t, e) => {
 }, Te = {
   "hydra:Collection": le,
   "hydra:Error": At,
-  ConstraintViolationList: he
+  ConstraintViolation: he
 };
 class Ot {
   constructor() {
