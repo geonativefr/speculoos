@@ -6,27 +6,27 @@ Speculoos is built with a modular, plugin-based architecture that leverages Vue 
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    Vue 3 Application                    │
+│                    Vue 3 Application                        │
 ├─────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐ │
-│  │   Store     │  │ API Client  │  │  Mercure    │ │
-│  │   Plugin    │  │             │  │   Client    │ │
-│  └─────────────┘  └─────────────┘  └─────────────┘ │
-│         │               │               │            │
-│         └───────────────┼───────────────┘            │
-│                         │                          │
-│  ┌─────────────────────────────────────────────┐      │
-│  │           Hydra Plugin                  │      │
-│  │  ┌─────────┐  ┌─────────┐  ┌───────┐ │      │
-│  │  │Forms    │  │Endpoints│  │IRI    │ │      │
-│  │  │Helper   │  │Manager  │  │Utils  │ │      │
-│  │  └─────────┘  └─────────┘  └───────┘ │      │
-│  └─────────────────────────────────────────────┘      │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐          │
+│  │   Store     │  │ API Client  │  │  Mercure    │          │
+│  │   Plugin    │  │             │  │   Client    │          │
+│  └─────────────┘  └─────────────┘  └─────────────┘          │
+│         │               │               │                   │
+│         └───────────────┼───────────────┘                   │
+│                         │                                   │
+│  ┌─────────────────────────────────────────────┐            │
+│  │           Hydra Plugin                      │            │
+│  │  ┌─────────┐  ┌─────────┐  ┌───────┐        │            │
+│  │  │Forms    │  │Endpoints│  │IRI    │        │            │
+│  │  │Helper   │  │Manager  │  │Utils  │        │            │
+│  │  └─────────┘  └─────────┘  └───────┘        │            │
+│  └─────────────────────────────────────────────┘            │
 ├─────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐ │
-│  │   Filters   │  │   Pager     │  │   Vulcain   │ │
-│  │   Module    │  │   Module    │  │   Module    │ │
-│  └─────────────┘  └─────────────┘  └─────────────┘ │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐          │
+│  │   Filters   │  │   Pager     │  │   Vulcain   │          │
+│  │   Module    │  │   Module    │  │   Module    │          │
+│  └─────────────┘  └─────────────┘  └─────────────┘          │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -84,14 +84,14 @@ class Store {
     this.plugins = [];            // Plugin registry
     this.name = name;            // Store identifier
   }
-  
+
   // Plugin management
   async use(plugin) {
     this.plugins.push(plugin);
     await plugin.install(this);
     return this;
   }
-  
+
   // Plugin coordination
   async reconciliate() {
     return Promise.all(
@@ -121,7 +121,7 @@ class ApiClient {
     this.options = options;
     this.fetch = fetcher;  // Custom fetch implementation
   }
-  
+
   // Request lifecycle
   async request(method, url, options) {
     // 1. Merge options
@@ -131,7 +131,7 @@ class ApiClient {
     // 5. Process response
     // 6. Handle errors
   }
-  
+
   // HTTP methods
   async get(uri, options) { /* ... */ }
   async post(uri, data, options) { /* ... */ }
@@ -160,14 +160,14 @@ class HydraPlugin {
     this.classmap = { /* type mappings */ };
     this.errorHandler = options.errorHandler;
   }
-  
+
   // Resource factory
   factory(item, statusCode) {
     // Create typed instances based on @type
     // Apply reactive wrappers
     // Handle error objects
   }
-  
+
   // Store integration
   async install(store) {
     // Add methods to store
@@ -198,15 +198,15 @@ class Mercure {
     this.subscribedTopics = ref([]);
     this.emitter = mitt();  // Event emitter
   }
-  
+
   // Topic management
   subscribe(topics) { /* ... */ }
   unsubscribe(topics) { /* ... */ }
-  
+
   // Connection management
   connect() { /* ... */ }
   stop() { /* ... */ }
-  
+
   // Event handling
   addListener(callback) { /* ... */ }
   removeListener(callback) { /* ... */ }
@@ -282,17 +282,17 @@ class BasePlugin {
   constructor(options = {}) {
     this.options = options;
   }
-  
+
   // Required: Install plugin into store
   async install(store) {
     throw new Error('install() method must be implemented');
   }
-  
+
   // Optional: Reconcile plugin state
   async reconciliate(store) {
     // Default implementation does nothing
   }
-  
+
   // Optional: Cleanup resources
   async destroy() {
     // Default implementation does nothing
@@ -470,16 +470,16 @@ expect(store.state.items).toContain(book);
 test('user can create and edit book', async () => {
   // 1. Load form
   await renderComponent(BookForm);
-  
+
   // 2. Fill form
   await fillForm({
     title: 'New Book',
     author: 'Author Name'
   });
-  
+
   // 3. Submit form
   await clickButton('Create Book');
-  
+
   // 4. Verify result
   expect(screen.getByText('Book created')).toBeInTheDocument();
 });
@@ -497,20 +497,20 @@ class CachePlugin {
     this.cache = new Map();
     this.ttl = ttl;
   }
-  
+
   async install(store) {
     // Wrap API methods with caching
     const originalGet = store.getItem;
     store.getItem = async (iri, options) => {
       const cached = this.get(iri);
       if (cached) return cached;
-      
+
       const result = await originalGet.call(store, iri, options);
       this.set(iri, result);
       return result;
     };
   }
-  
+
   get(key) { /* cache logic */ }
   set(key, value) { /* cache logic */ }
 }
@@ -525,11 +525,11 @@ class Book {
   constructor(data) {
     Object.assign(this, data);
   }
-  
+
   get displayTitle() {
     return this.title.toUpperCase();
   }
-  
+
   publish() {
     this.status = 'published';
   }
@@ -553,13 +553,13 @@ class AutocompleteFilter extends Filter {
     super(property);
     this.minChars = minChars;
   }
-  
+
   normalize() {
     const value = this.value;
     if (value.length < this.minChars) return null;
     return { [this.property]: value };
   }
-  
+
   async denormalize(value) {
     this.value = value;
     if (value.length >= this.minChars) {
