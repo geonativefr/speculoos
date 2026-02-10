@@ -205,7 +205,7 @@ export class HydraPlugin {
       }
     }
 
-    if ('object' === typeof itemOrIri && false === (options.force ?? false)) {
+    if ('object' === typeof itemOrIri && false === (options.force ?? false) && false !== (options.useExisting ?? true)) {
       const item = this.factory(itemOrIri);
       const shouldStore = options?.store ?? false;
       return shouldStore ? this.storeItem({state}, item) : item;
