@@ -238,8 +238,10 @@ it('doesn\'t reuse an existing relation when asked to', async () => {
   expect(item).toEqual({'@id': '/api/foos/1', name: 'foo'});
   expect(Array.from(store.state.items)).toHaveLength(1);
 
+  // useExisting: false with an embedded object should resolve by IRI from store,
+  // not use the potentially stale embedded object data
   item = await store.getRelation(bar.fooAsObject, {useExisting: false});
-  expect(item).toEqual({'@id': '/api/foos/1', name: 'temporary name'});
+  expect(item).toEqual({'@id': '/api/foos/1', name: 'foo'});
   expect(Array.from(store.state.items)[0]).toEqual({'@id': '/api/foos/1', name: 'foo'});
 });
 

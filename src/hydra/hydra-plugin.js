@@ -198,14 +198,16 @@ export class HydraPlugin {
       return synchronizedRelation;
     }
 
-    if (true === (options.useExisting ?? true)) {
+    const useExisting = false !== (options.useExisting ?? true);
+
+    if (useExisting) {
       const existingItem = getItemByIri(state.items, itemOrIri);
       if (null != existingItem) {
         return existingItem;
       }
     }
 
-    if ('object' === typeof itemOrIri && false === (options.force ?? false)) {
+    if ('object' === typeof itemOrIri && false === (options.force ?? false) && useExisting) {
       const item = this.factory(itemOrIri);
       const shouldStore = options?.store ?? false;
       return shouldStore ? this.storeItem({state}, item) : item;
