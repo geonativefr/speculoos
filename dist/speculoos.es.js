@@ -1287,17 +1287,18 @@ class hr {
     if (e === null)
       return null;
     if (typeof e == "function") {
-      const s = wt(() => this.getRelation({ state: t }, e(), r));
-      return await St(s).not.toBe(void 0), s;
+      const i = wt(() => this.getRelation({ state: t }, e(), r));
+      return await St(i).not.toBe(void 0), i;
     }
-    if ((r.useExisting ?? !0) === !0) {
-      const s = ht(t.items, e);
-      if (s != null)
-        return s;
+    const s = (r.useExisting ?? !0) !== !1;
+    if (s) {
+      const i = ht(t.items, e);
+      if (i != null)
+        return i;
     }
-    if (typeof e == "object" && (r.force ?? !1) === !1 && (r.useExisting ?? !0) !== !1) {
-      const s = this.factory(e);
-      return (r == null ? void 0 : r.store) ?? !1 ? this.storeItem({ state: t }, s) : s;
+    if (typeof e == "object" && (r.force ?? !1) === !1 && s) {
+      const i = this.factory(e);
+      return (r == null ? void 0 : r.store) ?? !1 ? this.storeItem({ state: t }, i) : i;
     }
     return await this.getItem({ state: t }, e, r);
   }
