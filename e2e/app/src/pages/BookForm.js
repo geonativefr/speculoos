@@ -7,6 +7,7 @@ import {
   useItemForm,
   useStore,
 } from 'speculoos';
+import { recordError, settledBookLoads } from '../App.js';
 
 // Composables need the component instance, which a setup() loses after its first await: the editor gets the book loaded.
 const BookEditor = {
@@ -68,11 +69,18 @@ export default {
   async setup() {
     const store = useStore();
     const route = useRoute();
-    const book = route.params.id
-      ? await store.getItem(`/api/books/${route.params.id}`)
-      : {'@type': 'Book', title: ''};
+    if (!route.params.id) {
+      return {book: {'@type': 'Book', title: ''}};
+    }
 
-    return {book};
+    try {
+      return {book: await store.getItem(`/api/books/${route.params.id}`)};
+    } catch (e) {
+      recordError(e);
+      return {book: undefined};
+    } finally {
+      settledBookLoads.value++;
+    }
   },
   template: `
     <BookEditor v-if="book" :book="book" />

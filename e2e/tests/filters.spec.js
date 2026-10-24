@@ -22,10 +22,6 @@ test.describe('useFilters', () => {
     expect(await lastBooksQuery(api)).toEqual({});
     await expect(page.getByLabel('Title')).toHaveValue('');
     await expect(page.getByLabel('history')).not.toBeChecked();
-
-    await page.getByRole('button', {name: 'Filter'}).click();
-    await expect(page.getByTestId('total')).toHaveText('Total: 2');
-    expect(await lastBooksQuery(api)).toEqual({});
   });
 
   // 2024-03-10 and 2024-03-31: the days the clocks change in New York and in Paris

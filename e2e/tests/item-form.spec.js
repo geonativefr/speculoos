@@ -43,6 +43,8 @@ test.describe('API errors', () => {
     await page.goto('/books/1');
 
     await expect(page.getByTestId('signed-out')).toBeVisible();
+    // The load of the book has settled, and any error it left is listed
+    await expect(page.getByTestId('settled-book-loads')).toHaveText('1');
     await expect(page.getByTestId('app-errors')).toHaveText('');
   });
 });

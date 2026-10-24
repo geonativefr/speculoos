@@ -2,7 +2,7 @@ import { createApp, reactive } from 'vue';
 import { createRouter, createWebHistory } from 'vue-router';
 import { QueryString } from 'psr7-js';
 import { ApiClient, createMercure, createStore, HydraPlugin } from 'speculoos';
-import { App, errors } from './App.js';
+import { App, recordError } from './App.js';
 import { Author, Book } from './models.js';
 import BookList from './pages/BookList.js';
 import BookForm from './pages/BookForm.js';
@@ -10,8 +10,6 @@ import LiveBook from './pages/LiveBook.js';
 import SignedOut from './pages/SignedOut.js';
 
 const apiUrl = import.meta.env.API_URL;
-
-const recordError = (error) => errors.push(`${error?.name}: ${error?.message}`);
 
 async function start() {
   const router = createRouter({
