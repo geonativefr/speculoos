@@ -35,6 +35,20 @@ test.describe('API Platform 4 payloads', () => {
         const [request] = await api.requests('POST', '/api/books');
         expect(request.settings).toEqual({hydraPrefix, violationType});
       });
+
+      test('a server error on save reaches the form', async ({page, api}) => {
+        await api.fail('POST', '/api/books', 500);
+        await page.goto('/books/new');
+        await page.getByLabel('Title').fill('Hyperion');
+        await page.getByTestId('save').click();
+
+        await expect(page.getByTestId('error')).toHaveText('HydraError 500 Internal Server Error');
+        await expect(page.getByTestId('mode')).toHaveText('creation');
+        await expect(page.getByLabel('Title')).toHaveValue('Hyperion');
+        await expect(page.getByTestId('app-errors')).toHaveText('');
+        const [request] = await api.requests('POST', '/api/books');
+        expect(request.settings).toEqual({hydraPrefix, violationType});
+      });
     });
   }
 });

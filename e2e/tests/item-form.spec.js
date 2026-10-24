@@ -38,26 +38,6 @@ test.describe('useItemForm', () => {
 });
 
 test.describe('API errors', () => {
-  for (const hydraPrefix of [true, false]) {
-    test.describe(hydraPrefix ? 'with the hydra: prefix' : 'without the hydra: prefix', () => {
-      test.use({hydraPrefix});
-
-      test('a server error on save reaches the form', async ({page, api}) => {
-        await api.fail('POST', '/api/books', 500);
-        await page.goto('/books/new');
-        await page.getByLabel('Title').fill('Hyperion');
-        await page.getByTestId('save').click();
-
-        await expect(page.getByTestId('error')).toHaveText('HydraError 500 Internal Server Error');
-        await expect(page.getByTestId('mode')).toHaveText('creation');
-        await expect(page.getByLabel('Title')).toHaveValue('Hyperion');
-        await expect(page.getByTestId('app-errors')).toHaveText('');
-        const [request] = await api.requests('POST', '/api/books');
-        expect(request.settings.hydraPrefix).toBe(hydraPrefix);
-      });
-    });
-  }
-
   test('an error the error handler takes care of leaves no error behind', async ({page, api}) => {
     await api.fail('GET', '/api/books/1', 401);
     await page.goto('/books/1');
