@@ -157,3 +157,78 @@ it('reads the response body once when duplicates are prevented', async () => {
   expect(data).toEqual({foo: 'bar'});
   expect(text).toHaveBeenCalledTimes(1);
 });
+
+// Like the native Headers, keeps its entries out of its own enumerable properties
+class NativeLikeHeaders extends Headers {
+  constructor(init = {}) {
+    super();
+    Object.defineProperty(this, 'entries', {value: {...init}});
+  }
+
+  keys() {
+    return Object.keys(this.entries);
+  }
+
+  get(key) {
+    return this.entries[key] ?? null;
+  }
+}
+
+const createDuplicatesFetcher = () => {
+  const fetcher = jest.fn(async () => ({status: 200, text: async () => '{}'}));
+  return [withoutDuplicates(fetcher), fetcher];
+};
+
+it('shares a pending request with an identical one', async () => {
+  const [fetch, fetcher] = createDuplicatesFetcher();
+  const isLoading = ref(false);
+  watch(isLoading, () => {});
+  await Promise.all([
+    fetch('https://example.com/api/foo', {method: 'GET', headers: new NativeLikeHeaders({Accept: 'application/json'}), isLoading}),
+    fetch('https://example.com/api/foo', {method: 'GET', headers: new NativeLikeHeaders({accept: 'application/json'}), isLoading}),
+  ]);
+  expect(fetcher).toHaveBeenCalledTimes(1);
+});
+
+it('does not share a pending request with one that has other headers', async () => {
+  const [fetch, fetcher] = createDuplicatesFetcher();
+  await Promise.all([
+    fetch('https://example.com/api/foo', {method: 'GET', headers: new NativeLikeHeaders({'Accept-Language': 'fr'})}),
+    fetch('https://example.com/api/foo', {method: 'GET', headers: new NativeLikeHeaders({'Accept-Language': 'en'})}),
+  ]);
+  expect(fetcher).toHaveBeenCalledTimes(2);
+});
+
+it('does not share a pending request with one that has another method or body', async () => {
+  const [fetch, fetcher] = createDuplicatesFetcher();
+  await Promise.all([
+    fetch('https://example.com/api/foo', {method: 'GET'}),
+    fetch('https://example.com/api/foo', {method: 'DELETE'}),
+    fetch('https://example.com/api/foo', {method: 'PUT', body: '{"foo":"foo"}'}),
+    fetch('https://example.com/api/foo', {method: 'PUT', body: '{"foo":"bar"}'}),
+  ]);
+  expect(fetcher).toHaveBeenCalledTimes(4);
+});
+
+it('does not share a request that carries a signal', async () => {
+  const [fetch, fetcher] = createDuplicatesFetcher();
+  await Promise.all([
+    fetch('https://example.com/api/foo', {method: 'GET', signal: new AbortController().signal}),
+    fetch('https://example.com/api/foo', {method: 'GET', signal: new AbortController().signal}),
+  ]);
+  expect(fetcher).toHaveBeenCalledTimes(2);
+});
+
+it('does not share a request whose body cannot be compared', async () => {
+  const [fetch, fetcher] = createDuplicatesFetcher();
+  const body = (value) => {
+    const formData = new FormData();
+    formData.append('foo', value);
+    return formData;
+  };
+  await Promise.all([
+    fetch('https://example.com/api/foo', {method: 'POST', body: body('foo')}),
+    fetch('https://example.com/api/foo', {method: 'POST', body: body('bar')}),
+  ]);
+  expect(fetcher).toHaveBeenCalledTimes(2);
+});

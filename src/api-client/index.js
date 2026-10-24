@@ -165,6 +165,18 @@ export class ApiClient {
   }
 }
 
+// A signal belongs to its caller, and a body other than a string cannot be compared
+const isShareable = (options) => null == options?.signal && (null == options?.body || 'string' === typeof options.body);
+
+const hashRequest = (url, options) => {
+  const headers = normalizeHeaders(options?.headers) ?? {};
+  const normalizedHeaders = Object.keys(headers)
+    .map(name => [name.toLowerCase(), `${headers[name]}`])
+    .sort(([a], [b]) => (a < b ? -1 : (a > b ? 1 : 0)));
+
+  return md5(JSON.stringify({method: options?.method, url: `${url}`, body: options?.body, headers: normalizedHeaders}));
+};
+
 class PreventDuplicates {
   fetch;
   pendingRequests = [];
@@ -179,27 +191,26 @@ class PreventDuplicates {
   constructor(fetcher = window.fetch?.bind(window)) {
     this.fetch = fetcher;
     return (url, options) => {
-      try {
-        const hash = md5(JSON.stringify({url, ...options}));
-        const index = this.pendingRequests.findIndex(pending => hash === pending.hash);
-        if (index >= 0) {
-          return this.pendingRequests[index].promise;
-        }
-        const promise = this.fetch(url, options).then(tapResponse);
-        this.pendingRequests.push({hash, promise});
-        return promise.then(
-          (result) => {
-            this.removePendingRequest(hash);
-            return result;
-          },
-          (error) => {
-            this.removePendingRequest(hash);
-            throw error;
-          }
-        );
-      } catch (e) {
-        return this.fetch(url, options);
+      if (!isShareable(options)) {
+        return this.fetch(url, options).then(tapResponse);
       }
+      const hash = hashRequest(url, options);
+      const index = this.pendingRequests.findIndex(pending => hash === pending.hash);
+      if (index >= 0) {
+        return this.pendingRequests[index].promise;
+      }
+      const promise = this.fetch(url, options).then(tapResponse);
+      this.pendingRequests.push({hash, promise});
+      return promise.then(
+        (result) => {
+          this.removePendingRequest(hash);
+          return result;
+        },
+        (error) => {
+          this.removePendingRequest(hash);
+          throw error;
+        }
+      );
     };
   }
 }
