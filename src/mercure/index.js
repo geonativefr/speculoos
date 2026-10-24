@@ -123,12 +123,13 @@ export class Mercure {
       this.lastEventId.value = event.lastEventId;
       return this.emitter.emit('message', event);
     };
+    // The reconnection is armed before the error is emitted, so that a listener can cancel it with stop().
     this.connection.onerror = error => {
-      this.emitter.emit('error', error);
       if ('number' === typeof this.options.reconnectInterval) {
         this.stop();
         this._reconnectTimer = setTimeout(() => this._reconnect(), this._reconnectDelay());
       }
+      this.emitter.emit('error', error);
     };
   }
 

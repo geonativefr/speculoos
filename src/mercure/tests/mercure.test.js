@@ -163,6 +163,15 @@ describe('reconnection', () => {
     expect(client.connection).toBeUndefined();
   });
 
+  it('does not reconnect once stopped by an error listener', () => {
+    const client = new Mercure(hub, {reconnectInterval: 1000});
+    client.subscribe('/api/foos/foo');
+    client.emitter.on('error', () => client.stop());
+    client.connection.triggerError(new Error());
+    jest.advanceTimersByTime(60000);
+    expect(client.connection).toBeUndefined();
+  });
+
   it('does not reconnect once the last topic is unsubscribed after an error', () => {
     const client = new Mercure(hub, {reconnectInterval: 1000});
     client.subscribe('/api/foos/foo');
