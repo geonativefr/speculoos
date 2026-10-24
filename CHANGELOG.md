@@ -3,10 +3,11 @@
 Notable changes for applications that install Speculoos from this repository. Versions are the git
 tags; see `RELEASING.md` for how a release is made.
 
-## Unreleased
+## 1.14.0
 
 - `vue` and `vue-router` are now peer dependencies (`vue ^3.2.25`, `vue-router ^4.0.12 || ^5.0.0`), so
-  applications can use vue-router 5 and no longer get a second copy of either package.
+  applications can use vue-router 5 and no longer get a second copy of either package. They are no
+  longer installed with Speculoos: applications must provide `vue` and `vue-router` themselves.
 - `yarn.lock` is committed: installs and builds are reproducible.
 - The CI runs lint, tests and build on Node 22 with a frozen lockfile, and fails when the committed
   `dist/` is not the build of `src/`.
@@ -66,7 +67,15 @@ tags; see `RELEASING.md` for how a release is made.
 - Collections, errors and validation errors of API Platform 4 are read with or without the `hydra:`
   prefix (`hydra_prefix: false`): `member`, `totalItems`, `view`, `search`, `title` and
   `description` are read under their `hydra:` names too, and a `ConstraintViolation` is a
-  `ConstraintViolationList`.
+  `ConstraintViolationList`:
+  - when a payload carries a key under its `hydra:` name, writing the unprefixed name (`member`,
+    `totalItems`, `view`, `search`, `title`, `description`) on the object is ignored: the `hydra:`
+    value is kept;
+  - a resource whose `@type` is `Collection` or `Error` is now built as a `HydraCollection` or a
+    `HydraError`, unless the application's `classmap` maps that type;
+  - a `classmap` that replaces the classes of `hydra:Collection`, `hydra:Error` or
+    `ConstraintViolationList` does not replace them for `Collection`, `Error` and
+    `ConstraintViolation`: map those too.
 
 ## 1.13.1
 
