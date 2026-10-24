@@ -2,7 +2,7 @@ var Gt = Object.defineProperty;
 var Xt = (r, t, e) => t in r ? Gt(r, t, { enumerable: !0, configurable: !0, writable: !0, value: e }) : r[t] = e;
 var d = (r, t, e) => (Xt(r, typeof t != "symbol" ? t + "" : t, e), e);
 import { whenever as Kt } from "@vueuse/core";
-import { unref as b, isRef as it, ref as J, reactive as rt, readonly as mt, inject as Yt, computed as yt, watch as te, onScopeDispose as ee, toRaw as gt, effectScope as re, watchEffect as ne } from "vue";
+import { unref as b, isRef as it, ref as B, reactive as rt, readonly as mt, inject as Yt, computed as yt, watch as te, onScopeDispose as ee, toRaw as gt, effectScope as re, watchEffect as ne } from "vue";
 import jt from "clone-deep";
 import se from "md5";
 import V from "is-empty";
@@ -207,7 +207,7 @@ function we(r) {
   const t = ve(r);
   return t == null ? Object.create(Object.getPrototypeOf(r)) : Object.setPrototypeOf(t, Object.getPrototypeOf(r));
 }
-const X = (r, t = !0, e = []) => {
+const Q = (r, t = !0, e = []) => {
   if (typeof r != "object" || r == null)
     return r;
   const n = e.find((a) => a.orig === r);
@@ -215,10 +215,10 @@ const X = (r, t = !0, e = []) => {
     return n.cloned;
   let s = Object.assign(we(r), r);
   Array.isArray(r) && (s = Object.values(s)), e.push({ orig: r, cloned: s });
-  const i = (a) => t ? X(a, t, e) : a;
+  const i = (a) => t ? Q(a, t, e) : a;
   if (et(r, Map) && r.forEach((a, o) => s.set(i(o), i(a))), et(r, Set) && r.forEach((a) => s.add(i(a))), t)
     for (const a in s)
-      typeof s[a] == "object" && s[a] != null && (s[a] = X(s[a], t, e));
+      typeof s[a] == "object" && s[a] != null && (s[a] = Q(s[a], t, e));
   return "__clone" in s && typeof s.__clone == "function" && s.__clone(), s;
 };
 class W {
@@ -347,11 +347,11 @@ var Rt = { exports: {} };
       }, f.valueOf = function() {
         return this.$d.getTime();
       }, f.startOf = function(u, m) {
-        var c = this, g = !!v.u(m) || m, p = v.p(u), D = function(G, k) {
-          var Q = v.w(c.$u ? Date.UTC(c.$y, k, G) : new Date(c.$y, k, G), c);
-          return g ? Q : Q.endOf($);
-        }, E = function(G, k) {
-          return v.w(c.toDate()[G].apply(c.toDate("s"), (g ? [0, 0, 0, 0] : [23, 59, 59, 999]).slice(k)), c);
+        var c = this, g = !!v.u(m) || m, p = v.p(u), D = function(X, k) {
+          var J = v.w(c.$u ? Date.UTC(c.$y, k, X) : new Date(c.$y, k, X), c);
+          return g ? J : J.endOf($);
+        }, E = function(X, k) {
+          return v.w(c.toDate()[X].apply(c.toDate("s"), (g ? [0, 0, 0, 0] : [23, 59, 59, 999]).slice(k)), c);
         }, _ = this.$W, R = this.$M, L = this.$D, tt = "set" + (this.$u ? "UTC" : "");
         switch (p) {
           case j:
@@ -359,7 +359,7 @@ var Rt = { exports: {} };
           case O:
             return g ? D(1, R) : D(0, R + 1);
           case T:
-            var B = this.$locale().weekStart || 0, nt = (_ < B ? _ + 7 : _) - B;
+            var G = this.$locale().weekStart || 0, nt = (_ < G ? _ + 7 : _) - G;
             return D(g ? L - nt : L + (6 - nt), R);
           case $:
           case w:
@@ -410,16 +410,16 @@ var Rt = { exports: {} };
         var m = this, c = this.$locale();
         if (!this.isValid())
           return c.invalidDate || h;
-        var g = u || "YYYY-MM-DDTHH:mm:ssZ", p = v.z(this), D = this.$H, E = this.$m, _ = this.$M, R = c.weekdays, L = c.months, tt = c.meridiem, B = function(k, Q, st, ct) {
-          return k && (k[Q] || k(m, g)) || st[Q].slice(0, ct);
+        var g = u || "YYYY-MM-DDTHH:mm:ssZ", p = v.z(this), D = this.$H, E = this.$m, _ = this.$M, R = c.weekdays, L = c.months, tt = c.meridiem, G = function(k, J, st, ct) {
+          return k && (k[J] || k(m, g)) || st[J].slice(0, ct);
         }, nt = function(k) {
           return v.s(D % 12 || 12, k, "0");
-        }, G = tt || function(k, Q, st) {
+        }, X = tt || function(k, J, st) {
           var ct = k < 12 ? "AM" : "PM";
           return st ? ct.toLowerCase() : ct;
         };
-        return g.replace(C, function(k, Q) {
-          return Q || function(st) {
+        return g.replace(C, function(k, J) {
+          return J || function(st) {
             switch (st) {
               case "YY":
                 return String(m.$y).slice(-2);
@@ -430,9 +430,9 @@ var Rt = { exports: {} };
               case "MM":
                 return v.s(_ + 1, 2, "0");
               case "MMM":
-                return B(c.monthsShort, _, L, 3);
+                return G(c.monthsShort, _, L, 3);
               case "MMMM":
-                return B(L, _);
+                return G(L, _);
               case "D":
                 return m.$D;
               case "DD":
@@ -440,9 +440,9 @@ var Rt = { exports: {} };
               case "d":
                 return String(m.$W);
               case "dd":
-                return B(c.weekdaysMin, m.$W, R, 2);
+                return G(c.weekdaysMin, m.$W, R, 2);
               case "ddd":
-                return B(c.weekdaysShort, m.$W, R, 3);
+                return G(c.weekdaysShort, m.$W, R, 3);
               case "dddd":
                 return R[m.$W];
               case "H":
@@ -454,9 +454,9 @@ var Rt = { exports: {} };
               case "hh":
                 return nt(2);
               case "a":
-                return G(D, E, !0);
+                return X(D, E, !0);
               case "A":
-                return G(D, E, !1);
+                return X(D, E, !1);
               case "m":
                 return String(E);
               case "mm":
@@ -818,12 +818,12 @@ async function br(r = {}, t = {
 }) {
   if (typeof r != "function")
     throw Error("initialState should be provided as a function.");
-  const e = ie(), n = ae(), s = J(r());
+  const e = ie(), n = ae(), s = B(r());
   async function i($) {
     Lt(b(s), r()._initialStates), Object.assign(b(s), await b(s).denormalize($.query));
   }
   function a() {
-    s.value = X(r());
+    s.value = Q(r());
   }
   function o($ = {}) {
     const T = {};
@@ -1070,7 +1070,7 @@ function Et(r) {
   return ot(r) ? Y(r) : r;
 }
 function Ye(r) {
-  const t = X(r), e = Object.keys(t);
+  const t = Q(r), e = Object.keys(t);
   for (const n of e) {
     const s = t[n];
     Array.isArray(s) ? t[n] = s.map((i) => Et(i)) : typeof s == "object" && s != null && (t[n] = Et(s));
@@ -1081,23 +1081,23 @@ function It(r, t) {
   return r = Ce(r), Object.assign(r, t);
 }
 function xr(r) {
-  const t = Vt(), e = J(b(r)), n = rt(X(b(r))), s = yt(() => !ot(b(n))), i = J(!1);
+  const t = Vt(), e = B(b(r)), n = rt(Q(b(r))), s = yt(() => !ot(b(n))), i = B(!1);
   let a;
   it(r) && te(r, () => a = void 0, { deep: !0, flush: "sync" });
   const o = yt(() => JSON.stringify(b(n)) !== JSON.stringify(b(e)));
-  return { item: n, isUnsavedDraft: o, isCreationMode: s, isSubmitting: i, reset: (T) => It(n, X(b(T ?? a ?? r))), submit: async (T) => {
+  return { item: n, isUnsavedDraft: o, isCreationMode: s, isSubmitting: i, reset: (T) => It(n, Q(b(T ?? a ?? r))), submit: async (T) => {
     it(T) && (T = b(T));
     try {
       i.value = !0;
       const O = await t.upsertItem(Ye(T ?? n));
-      return O === void 0 ? void 0 : (e.value = O, a = O, It(n, X(O)), O);
+      return O === void 0 ? void 0 : (e.value = O, a = O, It(n, Q(O)), O);
     } finally {
       i.value = !1;
     }
   } };
 }
 function Er() {
-  const r = J([]), t = (i) => {
+  const r = B([]), t = (i) => {
     i = b(i), i.querySelectorAll("[name]").forEach(function(a) {
       a.setCustomValidity("");
     }), r.value = [];
@@ -1170,7 +1170,7 @@ class Fe {
     d(this, "_reconnectTimer");
     d(this, "_connectedTopics");
     d(this, "_failedReconnections", 0);
-    Object.assign(this, { hub: t, options: rt(e) }), this.lastEventId = J(), this.subscribedTopics = J([]), this.endpoint = yt(() => {
+    Object.assign(this, { hub: t, options: rt(e) }), this.lastEventId = B(), this.subscribedTopics = B([]), this.endpoint = yt(() => {
       const n = new URL(this.hub), s = b(this.subscribedTopics);
       return s.includes("*") ? n.searchParams.append("topic", "*") : s.forEach((i) => n.searchParams.append("topic", i)), b(this.lastEventId) && n.searchParams.append("Last-Event-ID", b(this.lastEventId)), n.toString();
     }), this.emitter = ce();
@@ -1214,7 +1214,7 @@ class Fe {
     this.connection = t, this._connectedTopics = Array.from(b(this.subscribedTopics)), this.connection.onopen = () => {
       t === this.connection && (this._failedReconnections = 0), this.emitter.emit("open", { endpoint: b(this.endpoint) });
     }, this.connection.onmessage = (e) => (this.lastEventId.value = e.lastEventId, this.emitter.emit("message", e)), this.connection.onerror = (e) => {
-      this.emitter.emit("error", e), typeof this.options.reconnectInterval == "number" && (this.stop(), this._reconnectTimer = setTimeout(() => this._reconnect(), this._reconnectDelay()));
+      typeof this.options.reconnectInterval == "number" && (this.stop(), this._reconnectTimer = setTimeout(() => this._reconnect(), this._reconnectDelay())), this.emitter.emit("error", e);
     };
   }
   /*
@@ -1267,7 +1267,7 @@ function qe(r, t, e = ["*"], n = qt, s = Zt) {
       let l = b(t);
       Array.isArray(l) || (l = [l]);
       for (const $ of l)
-        ut(Y(o), $) && n(o, b($));
+        ut(Y(o), $) && n(Q(o), b($));
     } catch (o) {
       console.debug(o);
     }
@@ -1291,7 +1291,7 @@ const Ze = (r, t, e) => {
     try {
       for (const a of t)
         if (typeof fe(a).fromUri(Y(i)) < "u") {
-          e(i);
+          e(Q(i));
           break;
         }
     } catch (a) {
@@ -1371,7 +1371,7 @@ class At {
   }
 }
 const Qt = (r, t) => t in r && Object.prototype.hasOwnProperty.call(r, t), dt = (r, t) => Qt(r, t) ? r[t] : null, Ct = (r, t, e) => new Promise((n, s) => {
-  const i = re(), a = J();
+  const i = re(), a = B();
   let o = 0, l = !1;
   i.run(() => ne(async () => {
     const $ = ++o, T = r();
@@ -1408,7 +1408,7 @@ class _r {
   storeItem({ state: t }, e) {
     const n = Y(e);
     if (!Qt(t.items, n))
-      t.items[n] = J(e);
+      t.items[n] = B(e);
     else {
       const s = t.items[n], i = gt(s);
       for (const a of Object.keys(e))
@@ -1724,7 +1724,7 @@ export {
   Pe as Violation,
   ut as areSameIris,
   zt as checkValidItem,
-  X as clone,
+  Q as clone,
   Ie as containsIri,
   Ir as createMercure,
   kr as createPager,
