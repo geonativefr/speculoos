@@ -10,6 +10,10 @@ const DEFAULT_CLASSMAP = {
   'hydra:Collection': HydraCollection,
   'hydra:Error': HydraError,
   'ConstraintViolationList': ConstraintViolationList,
+  // The types API Platform 4 sends by default
+  'Collection': HydraCollection,
+  'Error': HydraError,
+  'ConstraintViolation': ConstraintViolationList,
 };
 
 function isSameValue(a, b, compared = new WeakMap()) {
