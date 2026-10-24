@@ -1,6 +1,6 @@
 import { createStore } from '../../store/index.js';
 import { createTestApp, useSetup } from '../../../vue-tests-setup.js';
-import { ref, unref } from 'vue';
+import { computed, ref, unref } from 'vue';
 import { ApiClient } from '../../api-client/index.js';
 import { HydraPlugin } from '../hydra-plugin.js';
 import { mockResponse } from '../../api-client/tests/setup.js';
@@ -135,6 +135,50 @@ it('resets the item to its last saved state', async () => {
   expect(form.isCreationModeAfterReset).toBe(false);
   expect(form.isUnsavedDraftAfterReset).toBe(false);
   expect(form.item).toEqual(initialState);
+});
+
+it('resets the item to the initial state ref once it changes after a save', async () => {
+  const storeFactory = await (await createStore()).use(plugin);
+  const initialState = ref({'@id': '/api/foos/1', '@type': 'Foo', name: 'foo'});
+  const savedState = {'@id': '/api/foos/1', '@type': 'Foo', name: 'bar'};
+  const changedState = {'@id': '/api/foos/1', '@type': 'Foo', name: 'qux'};
+  const form = await useSetup(createTestApp(storeFactory), async () => {
+    const {item, submit, reset} = useItemForm(initialState);
+    item.name = 'bar';
+    response.value = mockResponse({body: JSON.stringify(savedState)});
+    await submit();
+    item.name = 'baz';
+    reset();
+    const itemBeforeChange = {...item};
+    initialState.value = changedState;
+    item.name = 'baz';
+    reset();
+    return {item, itemBeforeChange};
+  });
+  expect(form.itemBeforeChange).toEqual(savedState);
+  expect(form.item).toEqual(changedState);
+});
+
+it('resets the item to the initial state computed once it changes after a save', async () => {
+  const storeFactory = await (await createStore()).use(plugin);
+  const name = ref('foo');
+  const initialState = computed(() => ({'@id': '/api/foos/1', '@type': 'Foo', name: name.value}));
+  const savedState = {'@id': '/api/foos/1', '@type': 'Foo', name: 'bar'};
+  const form = await useSetup(createTestApp(storeFactory), async () => {
+    const {item, submit, reset} = useItemForm(initialState);
+    item.name = 'bar';
+    response.value = mockResponse({body: JSON.stringify(savedState)});
+    await submit();
+    item.name = 'baz';
+    reset();
+    const itemBeforeChange = {...item};
+    name.value = 'qux';
+    item.name = 'baz';
+    reset();
+    return {item, itemBeforeChange};
+  });
+  expect(form.itemBeforeChange).toEqual(savedState);
+  expect(form.item).toEqual({'@id': '/api/foos/1', '@type': 'Foo', name: 'qux'});
 });
 
 test('initial item can get deep changes without impacting form state', async () => {

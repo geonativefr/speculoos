@@ -42,6 +42,10 @@ export function useItemForm(itemInitialState) {
   const isCreationMode = computed(() => !hasIri(unref(item)));
   const isSubmitting = ref(false);
   let savedItem;
+  if (isRef(itemInitialState)) {
+    // Once the caller's initial state changes, reset() follows it again instead of the last saved item.
+    watch(itemInitialState, () => savedItem = undefined, {deep: true, flush: 'sync'});
+  }
 
   const isUnsavedDraft = computed(() => JSON.stringify(unref(item)) !== JSON.stringify(unref(initialState)));
   const reset = (resetItem) => recreateState(item, clone(unref(resetItem ?? savedItem ?? itemInitialState)));
