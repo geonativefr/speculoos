@@ -63,6 +63,10 @@ tags; see `RELEASING.md` for how a release is made.
 - `mercureSync()` and `synchronize()` accept a ref of an item or of an array, read when each update
   arrives, and each Mercure update is parsed once for all the listeners.
 - The Mercure documentation no longer shows a `headers` option: `EventSource` cannot send headers.
+- Collections, errors and validation errors of API Platform 4 are read with or without the `hydra:`
+  prefix (`hydra_prefix: false`): `member`, `totalItems`, `view`, `search`, `title` and
+  `description` are read under their `hydra:` names too, and a `ConstraintViolation` is a
+  `ConstraintViolationList`.
 
 ## 1.13.1
 
