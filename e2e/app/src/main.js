@@ -11,9 +11,6 @@ import SignedOut from './pages/SignedOut.js';
 
 const apiUrl = import.meta.env.API_URL;
 
-// The tests choose the Hydra form the fake API answers with, before the application starts.
-const hydraPrefix = localStorage.getItem('hydraPrefix') ?? 'true';
-
 const recordError = (error) => errors.push(`${error?.name}: ${error?.message}`);
 
 async function start() {
@@ -37,7 +34,6 @@ async function start() {
     options: reactive({
       headers: {
         'Accept-Language': 'fr',
-        'X-Hydra-Prefix': hydraPrefix,
       },
     }),
   });

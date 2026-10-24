@@ -5,11 +5,12 @@ const { API_PORT } = require('../ports.js');
 /*
  * A fake API Platform serving books and authors in JSON-LD, and a fake Mercure hub on /.well-known/mercure.
  *
- * Each request picks its Hydra form with the X-Hydra-Prefix header: `false` answers as API Platform 4 does by
- * default (hydra_prefix: false, ConstraintViolation), anything else with the `hydra:` prefix.
+ * The tests set the form of the payloads with /_e2e/settings, two independent settings: hydraPrefix, false to
+ * answer without the `hydra:` prefix as API Platform 4 does by default (hydra_prefix: false), and violationType,
+ * the @type of a validation error: ConstraintViolationList, or ConstraintViolation as API Platform 4 sends it.
  *
- * The /_e2e/ endpoints drive the server from the tests: reset the data, read the requests received, make the next
- * matching request fail, publish an update on the hub, list and drop its open streams.
+ * The /_e2e/ endpoints drive the server from the tests: reset the data and the settings, set the settings, read the
+ * requests received, make the next matching request fail, publish an update on the hub, list and drop its open streams.
  */
 
 const fixtures = () => ({
@@ -38,7 +39,10 @@ const fixtures = () => ({
   nextBookId: 3,
 });
 
+const defaultSettings = () => ({hydraPrefix: true, violationType: 'ConstraintViolationList'});
+
 let data = fixtures();
+let settings = defaultSettings();
 let requests = [];
 let failures = [];
 const streams = new Set();
@@ -85,24 +89,19 @@ function error(status, title, detail, prefixed) {
     : {...body, '@type': 'Error', title, description: detail};
 }
 
-function constraintViolations(violations, prefixed) {
+function constraintViolations(violations, prefixed, type) {
   const detail = violations.map(({propertyPath, message}) => `${propertyPath}: ${message}`).join('\n');
-  const body = {'@id': `/api/validation_errors/${randomUUID()}`, status: 422, detail, violations};
+  const body = {
+    '@context': `/api/contexts/${type}`,
+    '@id': `/api/validation_errors/${randomUUID()}`,
+    '@type': type,
+    status: 422,
+    detail,
+    violations,
+  };
   return prefixed
-    ? {
-      ...body,
-      '@context': '/api/contexts/ConstraintViolationList',
-      '@type': 'ConstraintViolationList',
-      'hydra:title': 'An error occurred',
-      'hydra:description': detail,
-    }
-    : {
-      ...body,
-      '@context': '/api/contexts/ConstraintViolation',
-      '@type': 'ConstraintViolation',
-      title: 'An error occurred',
-      description: detail,
-    };
+    ? {...body, 'hydra:title': 'An error occurred', 'hydra:description': detail}
+    : {...body, title: 'An error occurred', description: detail};
 }
 
 function validateBook(book) {
@@ -126,8 +125,9 @@ function filterBooks(books, searchParams) {
     .filter(book => null == before || book.publishedAt <= before);
 }
 
-async function handleApi(req, res, url, body, prefixed) {
+async function handleApi(req, res, url, body) {
   const path = url.pathname;
+  const {hydraPrefix: prefixed, violationType} = settings;
   const payload = parseJson(body) ?? {};
 
   if ('/api/books' === path && 'GET' === req.method) {
@@ -137,7 +137,7 @@ async function handleApi(req, res, url, body, prefixed) {
   if ('/api/books' === path && 'POST' === req.method) {
     const violations = validateBook(payload);
     if (violations.length > 0) {
-      return send(res, 422, constraintViolations(violations, prefixed));
+      return send(res, 422, constraintViolations(violations, prefixed, violationType));
     }
     const iri = `/api/books/${data.nextBookId++}`;
     data.books[iri] = {tags: [], publishedAt: null, author: null, ...payload, '@id': iri, '@type': 'Book'};
@@ -151,7 +151,7 @@ async function handleApi(req, res, url, body, prefixed) {
   if (path in data.books && 'PUT' === req.method) {
     const violations = validateBook(payload);
     if (violations.length > 0) {
-      return send(res, 422, constraintViolations(violations, prefixed));
+      return send(res, 422, constraintViolations(violations, prefixed, violationType));
     }
     data.books[path] = {...data.books[path], ...payload, '@id': path, '@type': 'Book'};
     return send(res, 200, data.books[path]);
@@ -212,10 +212,14 @@ async function handleControl(req, res, url, body) {
       return send(res, 200, {ok: true});
     case 'POST /_e2e/reset':
       data = fixtures();
+      settings = defaultSettings();
       requests = [];
       failures = [];
       dropStreams();
       return send(res, 200, {ok: true});
+    case 'POST /_e2e/settings':
+      settings = {...settings, ...payload};
+      return send(res, 200, settings);
     case 'GET /_e2e/requests':
       return send(res, 200, requests);
     case 'POST /_e2e/fail':
@@ -254,6 +258,8 @@ const server = http.createServer(async (req, res) => {
       topics: url.searchParams.getAll('topic'),
       headers: req.headers,
       body,
+      // The form of the payload it was answered with
+      settings: {...settings},
     });
 
     if ('/.well-known/mercure' === url.pathname && 'GET' === req.method) {
@@ -261,15 +267,14 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    const prefixed = 'false' !== req.headers['x-hydra-prefix'];
     const failure = failures.find(({method, path}) => method === req.method && path === url.pathname);
     if (failure) {
       failures.splice(failures.indexOf(failure), 1);
-      send(res, failure.status, error(failure.status, http.STATUS_CODES[failure.status], 'The server failed on purpose.', prefixed));
+      send(res, failure.status, error(failure.status, http.STATUS_CODES[failure.status], 'The server failed on purpose.', settings.hydraPrefix));
       return;
     }
 
-    await handleApi(req, res, url, body, prefixed);
+    await handleApi(req, res, url, body);
   } catch (e) {
     console.error(e);
     send(res, 500, {error: e.message});

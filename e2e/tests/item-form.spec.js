@@ -1,4 +1,4 @@
-import { answeredWithPrefix, expect, test } from './fixtures.js';
+import { expect, test } from './fixtures.js';
 
 test.describe('useItemForm', () => {
   test('after a creation, reset() keeps the created book and the next save updates it', async ({page, api}) => {
@@ -53,7 +53,7 @@ test.describe('API errors', () => {
         await expect(page.getByLabel('Title')).toHaveValue('Hyperion');
         await expect(page.getByTestId('app-errors')).toHaveText('');
         const [request] = await api.requests('POST', '/api/books');
-        expect(answeredWithPrefix(request)).toBe(hydraPrefix);
+        expect(request.settings.hydraPrefix).toBe(hydraPrefix);
       });
     });
   }
