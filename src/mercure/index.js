@@ -9,6 +9,10 @@ function areSameTopicSets(a, b) {
     && a.every(topic => b.includes(topic));
 }
 
+function getEffectiveTopics(topics) {
+  return topics.includes('*') ? ['*'] : topics;
+}
+
 export class Mercure {
   hub;
   options;
@@ -18,6 +22,7 @@ export class Mercure {
   emitter;
   lastEventId;
   _reconnectTimer;
+  _connectedTopics;
   _failedReconnections = 0;
 
   constructor(hub, options = {}) {
@@ -47,7 +52,12 @@ export class Mercure {
     const formerTopicSet = Array.from(unref(this.subscribedTopics));
     const newTopicSet = [...new Set([...unref(this.subscribedTopics), ...topics])];
     this.subscribedTopics.value = newTopicSet;
-    if (listen && !areSameTopicSets(formerTopicSet, newTopicSet)) {
+    if (areSameTopicSets(formerTopicSet, newTopicSet)) {
+      return;
+    }
+    if (this.connection) {
+      this._updateConnectionTopics();
+    } else if (listen) {
       this.listen();
     }
   }
@@ -59,7 +69,24 @@ export class Mercure {
     this.subscribedTopics.value = this.subscribedTopics.value.filter(subscribedTopic => !topics.includes(subscribedTopic));
     if (this.connection) {
       this.listen();
+      this._updateConnectionTopics();
     }
+  }
+
+  /*
+   * The topic changes of one synchronous run reconnect once, at the end of the run, and only if the
+   * effective topics differ from those of the open connection.
+   */
+  _updateConnectionTopics() {
+    Promise.resolve().then(() => {
+      if (!this.connection) {
+        return;
+      }
+      const connectedTopics = getEffectiveTopics(this._connectedTopics);
+      if (!areSameTopicSets(connectedTopics, getEffectiveTopics(unref(this.subscribedTopics)))) {
+        this.connect();
+      }
+    });
   }
 
   addListener(callback) {
@@ -85,6 +112,7 @@ export class Mercure {
     this.stop();
     const connection = new EventSource(unref(this.endpoint), this.options);
     this.connection = connection;
+    this._connectedTopics = Array.from(unref(this.subscribedTopics));
     this.connection.onopen = () => {
       if (connection === this.connection) {
         this._failedReconnections = 0;

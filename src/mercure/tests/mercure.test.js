@@ -209,3 +209,75 @@ describe('reconnection', () => {
     expect(client.connection).toBe(connection);
   });
 });
+
+describe('topic changes while connected', () => {
+  const hub = 'https://example.org/.well-known/mercure';
+  const topicsOf = (connection) => new URL(connection.url).searchParams.getAll('topic');
+  const flushMicrotasks = () => Promise.resolve();
+
+  it('reconnects to the topics subscribed while connected', async () => {
+    const client = new Mercure(hub);
+    client.subscribe('/api/foos/1');
+    client.subscribe('/api/bars/2');
+    await flushMicrotasks();
+    expect(topicsOf(client.connection)).toEqual(['/api/foos/1', '/api/bars/2']);
+  });
+
+  it('reconnects without the topics unsubscribed while connected', async () => {
+    const client = new Mercure(hub);
+    client.subscribe(['/api/foos/1', '/api/bars/2']);
+    client.unsubscribe('/api/foos/1');
+    await flushMicrotasks();
+    expect(topicsOf(client.connection)).toEqual(['/api/bars/2']);
+  });
+
+  it('reconnects once for the changes of one synchronous run', async () => {
+    const client = new Mercure(hub);
+    client.subscribe('/api/foos/1');
+    const connect = jest.spyOn(client, 'connect');
+    client.subscribe('/api/bars/2');
+    client.subscribe('/api/bazs/3');
+    client.unsubscribe('/api/foos/1');
+    await flushMicrotasks();
+    expect(connect).toHaveBeenCalledTimes(1);
+    expect(topicsOf(client.connection)).toEqual(['/api/bars/2', '/api/bazs/3']);
+  });
+
+  it('reconnects to the topics subscribed without listening while connected', async () => {
+    const client = new Mercure(hub);
+    client.subscribe('/api/foos/1');
+    client.subscribe('/api/bars/2', false);
+    await flushMicrotasks();
+    expect(topicsOf(client.connection)).toEqual(['/api/foos/1', '/api/bars/2']);
+  });
+
+  it('does not reconnect when the topics come back to those of the connection', async () => {
+    const client = new Mercure(hub);
+    client.subscribe('/api/foos/1');
+    const connection = client.connection;
+    connection.triggerEvent({lastEventId: 'foo', data: '{}'});
+    client.subscribe('/api/bars/2');
+    client.unsubscribe('/api/bars/2');
+    await flushMicrotasks();
+    expect(client.connection).toBe(connection);
+  });
+
+  it('does not reconnect when the wildcard topic is subscribed', async () => {
+    const client = new Mercure(hub);
+    client.subscribe('*');
+    const connection = client.connection;
+    client.subscribe('/api/foos/1');
+    await flushMicrotasks();
+    expect(client.connection).toBe(connection);
+    expect(topicsOf(client.connection)).toEqual(['*']);
+  });
+
+  it('does not reconnect once stopped', async () => {
+    const client = new Mercure(hub);
+    client.subscribe('/api/foos/1');
+    client.subscribe('/api/bars/2');
+    client.stop();
+    await flushMicrotasks();
+    expect(client.connection).toBeUndefined();
+  });
+});
