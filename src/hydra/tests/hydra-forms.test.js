@@ -173,6 +173,52 @@ it('resets the item to its initial state after a failed submit', async () => {
   expect(form.isUnsavedDraft).toBe(false);
 });
 
+it('keeps the item when the error handler takes care of a failed creation', async () => {
+  const errors = [];
+  const handlingPlugin = new HydraPlugin(api, {endpoints: {Foo: '/api/foos'}, errorHandler: error => errors.push(error)});
+  const storeFactory = await (await createStore()).use(handlingPlugin);
+  const initialState = {'@type': 'Foo', name: ''};
+  const form = await useSetup(createTestApp(storeFactory), async () => {
+    const {item, submit, isCreationMode, isSubmitting} = useItemForm(initialState);
+    item.name = 'bar';
+    response.value = mockResponse({status: 400, body: JSON.stringify({'@type': 'hydra:Error'})});
+    const result = await submit();
+    return {item, result, isCreationMode: unref(isCreationMode), isSubmitting: unref(isSubmitting)};
+  });
+  expect(errors).toHaveLength(1);
+  expect(form.result).toBeUndefined();
+  expect(form.item).toEqual({'@type': 'Foo', name: 'bar'});
+  expect(form.isCreationMode).toBe(true);
+  expect(form.isSubmitting).toBe(false);
+});
+
+it('keeps the item and its last saved state when the error handler takes care of a failed update', async () => {
+  const errors = [];
+  const handlingPlugin = new HydraPlugin(api, {endpoints: {Foo: '/api/foos'}, errorHandler: error => errors.push(error)});
+  const storeFactory = await (await createStore()).use(handlingPlugin);
+  const initialState = {'@type': 'Foo', name: ''};
+  const savedState = {'@id': '/api/foos/1', '@type': 'Foo', name: 'bar'};
+  const form = await useSetup(createTestApp(storeFactory), async () => {
+    const {item, submit, reset, isCreationMode, isUnsavedDraft} = useItemForm(initialState);
+    item.name = 'bar';
+    response.value = mockResponse({body: JSON.stringify(savedState)});
+    await submit();
+    item.name = 'baz';
+    response.value = mockResponse({status: 400, body: JSON.stringify({'@type': 'hydra:Error'})});
+    const result = await submit();
+    const itemAfterSubmit = {...item};
+    const isCreationModeAfterSubmit = unref(isCreationMode);
+    reset();
+    return {item, result, itemAfterSubmit, isCreationModeAfterSubmit, isUnsavedDraft: unref(isUnsavedDraft)};
+  });
+  expect(errors).toHaveLength(1);
+  expect(form.result).toBeUndefined();
+  expect(form.itemAfterSubmit).toEqual({...savedState, name: 'baz'});
+  expect(form.isCreationModeAfterSubmit).toBe(false);
+  expect(form.item).toEqual(savedState);
+  expect(form.isUnsavedDraft).toBe(false);
+});
+
 it('resets the item to the initial state ref once it changes after a save', async () => {
   const storeFactory = await (await createStore()).use(plugin);
   const initialState = ref({'@id': '/api/foos/1', '@type': 'Foo', name: 'foo'});

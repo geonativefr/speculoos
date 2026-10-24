@@ -57,6 +57,10 @@ export function useItemForm(itemInitialState) {
     try {
       isSubmitting.value = true;
       const updatedItem = await store.upsertItem(normalizeItemRelations(submittedItem ?? item));
+      // The error handler took care of a failed request without throwing: the form keeps what was typed
+      if (undefined === updatedItem) {
+        return undefined;
+      }
       initialState.value = updatedItem;
       savedItem = updatedItem;
       recreateState(item, clone(updatedItem));
