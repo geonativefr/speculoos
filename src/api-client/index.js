@@ -39,7 +39,7 @@ const defaultHeaders = {
   Accept: 'application/ld+json, application/json',
 };
 
-const tapResponse = async (response) => {
+const readResponse = async (response) => {
   try {
     const body = await response.text();
     try {
@@ -54,6 +54,17 @@ const tapResponse = async (response) => {
   }
 
   return response;
+};
+
+// A response shared between duplicate requests is tapped by each of them: its body can only be read once
+const tappedResponses = new WeakMap();
+
+const tapResponse = (response) => {
+  if (!tappedResponses.has(response)) {
+    tappedResponses.set(response, readResponse(response));
+  }
+
+  return tappedResponses.get(response);
 };
 
 export class ApiClient {

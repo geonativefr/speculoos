@@ -1,4 +1,4 @@
-import { AbortError, ApiClient } from '../index.js';
+import { AbortError, ApiClient, withoutDuplicates } from '../index.js';
 import { HttpError } from '../errors/HttpError.js';
 import { fetch } from './setup.js';
 import { computed, nextTick, reactive, ref, watch } from 'vue';
@@ -145,4 +145,15 @@ it('stops watching the aborted ref once a request is over', async () => {
   aborted.value = true;
   await nextTick();
   expect(request.options.signal.aborted).toBe(false);
+});
+
+it('reads the response body once when duplicates are prevented', async () => {
+  const text = jest.fn(async () => JSON.stringify({foo: 'bar'}));
+  const client = new ApiClient({
+    baseUri: 'https://example.com/',
+    fetcher: withoutDuplicates(async () => ({status: 200, text})),
+  });
+  const {data} = await client.get('/api/foo');
+  expect(data).toEqual({foo: 'bar'});
+  expect(text).toHaveBeenCalledTimes(1);
 });
