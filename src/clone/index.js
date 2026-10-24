@@ -1,16 +1,36 @@
+const readsSlots = {
+  Date: Date.prototype.getTime,
+  RegExp: Object.getOwnPropertyDescriptor(RegExp.prototype, 'source').get,
+  Map: Map.prototype.has,
+  Set: Set.prototype.has,
+};
+
+// An object can inherit from a native type without holding its internal slots, as Object.create(Date.prototype) does.
+function isNative(orig, Native) {
+  if (!(orig instanceof Native)) {
+    return false;
+  }
+  try {
+    readsSlots[Native.name].call(orig);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 function createNative(orig) {
-  if (orig instanceof Date) {
+  if (isNative(orig, Date)) {
     return new Date(orig.getTime());
   }
-  if (orig instanceof RegExp) {
+  if (isNative(orig, RegExp)) {
     const cloned = new RegExp(orig.source, orig.flags);
     cloned.lastIndex = orig.lastIndex;
     return cloned;
   }
-  if (orig instanceof Map) {
+  if (isNative(orig, Map)) {
     return new Map();
   }
-  if (orig instanceof Set) {
+  if (isNative(orig, Set)) {
     return new Set();
   }
 
@@ -44,10 +64,10 @@ export const clone = (orig, deep = true, duplicates = []) => {
   duplicates.push({orig, cloned});
 
   const cloneEntry = (value) => deep ? clone(value, deep, duplicates) : value;
-  if (orig instanceof Map) {
+  if (isNative(orig, Map)) {
     orig.forEach((value, key) => cloned.set(cloneEntry(key), cloneEntry(value)));
   }
-  if (orig instanceof Set) {
+  if (isNative(orig, Set)) {
     orig.forEach(value => cloned.add(cloneEntry(value)));
   }
 

@@ -122,3 +122,15 @@ it('clones dates, maps, sets and regular expressions', () => {
   expect(shallow).not.toBe(orig.authors);
   expect(shallow.get('alice')).toBe(author);
 });
+
+it('clones objects that inherit from dates, maps, sets and regular expressions without being ones', () => {
+  [Date, Map, Set, RegExp].forEach(Native => {
+    const orig = Object.create(Native.prototype);
+    orig.name = 'foo';
+    const cloned = clone(orig);
+
+    expect(cloned).not.toBe(orig);
+    expect(Object.getPrototypeOf(cloned)).toBe(Native.prototype);
+    expect(cloned.name).toBe('foo');
+  });
+});
