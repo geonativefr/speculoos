@@ -38,6 +38,9 @@ tags; see `RELEASING.md` for how a release is made.
 - `useItemForm().reset()` without argument goes back to the last saved item instead of the initial
   one: after a creation, the form stays in edition mode and the next `submit()` no longer creates a
   duplicate.
+- When the `errorHandler` takes care of a failed save without throwing, `useItemForm().submit()`
+  resolves to `undefined` and the form keeps what was typed and its last saved state, instead of
+  being emptied and switching to creation mode.
 - `clone()` copies `Date`, `RegExp`, `Map` and `Set` instances with their data, so a form whose item
   holds a `Date` can be submitted. Private fields (`#field`) are still not supported.
 - `FilterCollection.denormalize()` puts the filters missing from the query back to their initial
