@@ -140,3 +140,72 @@ it('emits messages', () => {
   expect(received).toEqual(event);
   expect(error?.message).toBe('Something wrong occured');
 });
+
+describe('reconnection', () => {
+  const hub = 'https://example.com/.well-known/mercure';
+
+  const failAndWait = (client, delay) => {
+    client.connection.triggerError(new Error());
+    jest.advanceTimersByTime(delay - 1);
+    expect(client.connection).toBeUndefined();
+    jest.advanceTimersByTime(1);
+    expect(client.connection).toBeInstanceOf(FakeEventSource);
+  };
+
+  beforeEach(() => jest.useFakeTimers());
+
+  it('does not reconnect once stopped after an error', () => {
+    const client = new Mercure(hub, {reconnectInterval: 1000});
+    client.subscribe('/api/foos/foo');
+    client.connection.triggerError(new Error());
+    client.stop();
+    jest.advanceTimersByTime(60000);
+    expect(client.connection).toBeUndefined();
+  });
+
+  it('does not reconnect once the last topic is unsubscribed after an error', () => {
+    const client = new Mercure(hub, {reconnectInterval: 1000});
+    client.subscribe('/api/foos/foo');
+    client.connection.triggerError(new Error());
+    client.unsubscribe('/api/foos/foo');
+    jest.advanceTimersByTime(60000);
+    expect(client.connection).toBeUndefined();
+  });
+
+  it('waits twice as long after each consecutive failure', () => {
+    const client = new Mercure(hub, {reconnectInterval: 1000});
+    client.subscribe('/api/foos/foo');
+    failAndWait(client, 1000);
+    failAndWait(client, 2000);
+    failAndWait(client, 4000);
+  });
+
+  it('caps the delay at 30 seconds, or at the reconnection interval if it is longer', () => {
+    const client = new Mercure(hub, {reconnectInterval: 20000});
+    client.subscribe('/api/foos/foo');
+    failAndWait(client, 20000);
+    failAndWait(client, 30000);
+    failAndWait(client, 30000);
+    client.options.reconnectInterval = 40000;
+    failAndWait(client, 40000);
+    failAndWait(client, 40000);
+  });
+
+  it('waits the reconnection interval again once the connection is open', () => {
+    const client = new Mercure(hub, {reconnectInterval: 1000});
+    client.subscribe('/api/foos/foo');
+    failAndWait(client, 1000);
+    failAndWait(client, 2000);
+    jest.advanceTimersByTime(10); // The connection opens
+    failAndWait(client, 1000);
+  });
+
+  it('does not reconnect without a reconnection interval', () => {
+    const client = new Mercure(hub);
+    client.subscribe('/api/foos/foo');
+    const connection = client.connection;
+    client.connection.triggerError(new Error());
+    jest.advanceTimersByTime(60000);
+    expect(client.connection).toBe(connection);
+  });
+});

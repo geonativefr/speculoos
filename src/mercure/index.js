@@ -2,6 +2,8 @@ import { computed, reactive, ref, unref } from 'vue';
 import EventSource from './event-source.js';
 import mitt from 'mitt';
 
+const MAX_RECONNECT_INTERVAL = 30000;
+
 function areSameTopicSets(a, b) {
   return a.length === b.length
     && a.every(topic => b.includes(topic));
@@ -15,6 +17,8 @@ export class Mercure {
   endpoint;
   emitter;
   lastEventId;
+  _reconnectTimer;
+  _failedReconnections = 0;
 
   constructor(hub, options = {}) {
     Object.assign(this, {hub, options: reactive(options)});
@@ -79,8 +83,14 @@ export class Mercure {
 
   connect() {
     this.stop();
-    this.connection = new EventSource(unref(this.endpoint), this.options);
-    this.connection.onopen = () => this.emitter.emit('open', {endpoint: unref(this.endpoint)});
+    const connection = new EventSource(unref(this.endpoint), this.options);
+    this.connection = connection;
+    this.connection.onopen = () => {
+      if (connection === this.connection) {
+        this._failedReconnections = 0;
+      }
+      this.emitter.emit('open', {endpoint: unref(this.endpoint)});
+    };
     this.connection.onmessage = event => {
       this.lastEventId.value = event.lastEventId;
       return this.emitter.emit('message', event);
@@ -89,12 +99,35 @@ export class Mercure {
       this.emitter.emit('error', error);
       if ('number' === typeof this.options.reconnectInterval) {
         this.stop();
-        setTimeout(() => this.connect(), this.options.reconnectInterval);
+        this._reconnectTimer = setTimeout(() => this._reconnect(), this._reconnectDelay());
       }
     };
   }
 
+  /*
+   * The first retry waits the reconnection interval, and each consecutive failure doubles it, up to
+   * 30 seconds (or the reconnection interval if it is longer).
+   */
+  _reconnectDelay() {
+    const {reconnectInterval} = this.options;
+    const delay = Math.min(
+      reconnectInterval * 2 ** this._failedReconnections,
+      Math.max(MAX_RECONNECT_INTERVAL, reconnectInterval),
+    );
+    this._failedReconnections++;
+    return delay;
+  }
+
+  _reconnect() {
+    this._reconnectTimer = undefined;
+    if (0 < unref(this.subscribedTopics).length) {
+      this.connect();
+    }
+  }
+
   stop() {
+    clearTimeout(this._reconnectTimer);
+    this._reconnectTimer = undefined;
     this.connection?.close();
     this.connection = undefined;
   }
