@@ -27,16 +27,25 @@ export class DateRangeFilter extends Filter {
   normalize() {
     this.constructor.ensureTimezoneIsSet();
     const timezone = this.useUserTimezone ? this.constructor.userTimezone : 'UTC';
-    // Without time, the query carries the picked dates as they are, with no timezone conversion.
-    const queryTimezone = this.withTime ? 'UTC' : timezone;
     let after = null;
     let before = null;
+    if (!this.withTime) {
+      // Without time, the query carries the picked dates as they are, with no hour added nor timezone conversion.
+      if (!empty(this.after)) {
+        after = dayjs.tz(this.after, timezone).format(this.normalizedFormat);
+      }
+      if (!empty(this.before)) {
+        before = dayjs.tz(this.before, timezone).format(this.normalizedFormat);
+      }
+
+      return {after, before};
+    }
     if (!empty(this.after)) {
       after = dayjs.tz(this.after, timezone)
         .hour(0)
         .minute(0)
         .second(0)
-        .tz(queryTimezone)
+        .tz('UTC')
         .format(this.normalizedFormat);
     }
     if (!empty(this.before)) {
@@ -46,7 +55,7 @@ export class DateRangeFilter extends Filter {
         .second(0)
         .add(1, 'day')
         .subtract(1, 'second')
-        .tz(queryTimezone)
+        .tz('UTC')
         .format(this.normalizedFormat);
     }
 

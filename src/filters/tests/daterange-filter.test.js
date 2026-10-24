@@ -113,3 +113,20 @@ it('keeps the query dates when denormalizing without time', async () => {
   expect(filter.after).toBe('2024-01-15');
   expect(filter.before).toBe('2024-01-16');
 });
+
+it('keeps the picked dates without time on a daylight saving time change', () => {
+  // The process timezone can't be changed from a test: each user timezone differs from it on its own change day.
+  const changeDays = {'Europe/Paris': '2024-03-31', 'America/New_York': '2024-03-10'};
+  try {
+    Object.entries(changeDays).forEach(([userTimezone, day]) => {
+      DateRangeFilter.userTimezone = userTimezone;
+      const filter = new DateRangeFilter({after: day, before: day}, {withTime: false});
+      expect(filter.normalize()).toStrictEqual({
+        after: day,
+        before: day,
+      });
+    });
+  } finally {
+    DateRangeFilter.userTimezone = 'Europe/Tallinn';
+  }
+});
