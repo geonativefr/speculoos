@@ -62,7 +62,7 @@ export class HttpError extends Error {
   }
 
   isServerError() {
-    return this.statusCode > 500;
+    return this.statusCode >= 500;
   }
 
   static guard(response) {
