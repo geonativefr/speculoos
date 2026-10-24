@@ -1,5 +1,5 @@
 import { createTestApp, getInjectedStore, useSetup } from '../../../vue-tests-setup.js';
-import { useMercureSync } from '../hydra-mercure.js';
+import { mercureSync, on, useMercureSync } from '../hydra-mercure.js';
 import { Mercure, createMercure, useMercure } from '../../mercure/index.js';
 import { effectScope, reactive, ref, unref } from 'vue';
 import { createStore, useStore } from '../../store/index.js';
@@ -102,5 +102,47 @@ describe('listeners cleanup', () => {
     expect(countListeners(mercure)).toBe(1);
     scope.stop();
     expect(countListeners(mercure)).toBe(0);
+  });
+});
+
+describe('items synchronization', () => {
+  const hub = 'https://example.org/.well-known/mercure';
+  const update = (mercure, data) => mercure.connection.triggerEvent({data: JSON.stringify(data)});
+
+  it('follows a ref of an array replaced after the call', () => {
+    const mercure = new Mercure(hub);
+    const items = ref([reactive({'@id': '/api/foos/1', name: 'old'})]);
+    mercureSync(mercure, items);
+    items.value = [reactive({'@id': '/api/foos/2', name: 'old'})];
+    update(mercure, {'@id': '/api/foos/2', name: 'new'});
+    expect(unref(items)[0].name).toBe('new');
+  });
+
+  it('follows a ref of an item', () => {
+    const mercure = new Mercure(hub);
+    const item = ref(reactive({'@id': '/api/foos/1', name: 'old'}));
+    mercureSync(mercure, item);
+    update(mercure, {'@id': '/api/foos/1', name: 'new'});
+    expect(unref(item).name).toBe('new');
+  });
+
+  it('parses each message once for all the listeners', () => {
+    const mercure = new Mercure(hub);
+    const item = reactive({'@id': '/api/foos/1', name: 'old'});
+    const received = [];
+    mercureSync(mercure, item);
+    on(mercure, '/api/foos/{id}', (update) => received.push(update));
+    mercure.addListener((event) => received.push(event));
+    const event = {data: JSON.stringify({'@id': '/api/foos/1', name: 'new'})};
+    const parse = jest.spyOn(JSON, 'parse');
+    try {
+      mercure.connection.triggerEvent(event);
+      expect(parse).toHaveBeenCalledTimes(1);
+    } finally {
+      parse.mockRestore();
+    }
+    expect(item.name).toBe('new');
+    expect(received).toEqual([{'@id': '/api/foos/1', name: 'new'}, event]);
+    expect(received[1]).toBe(event);
   });
 });
