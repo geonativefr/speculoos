@@ -46,7 +46,8 @@ tags; see `RELEASING.md` for how a release is made.
 - A filter whose initial value is not empty and that the user empties is dropped from the query, so
   it gets its initial value back after `submit()`.
 - `DateRangeFilter` with `withTime: false` puts the picked dates in the query as they are, and reads
-  them back as they are, whatever the user's timezone (east of UTC, `after` was a day early).
+  them back as they are, whatever the user's timezone: east of UTC, `after` was one day early; west
+  of UTC, `before` was one day late and reading the query back gave the previous day.
 
 ## 1.13.1
 
