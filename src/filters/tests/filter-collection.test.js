@@ -199,6 +199,22 @@ it('denormalizes filters without initial state', async () => {
   expect(unref(filters).name.value).toBe('Johnson');
 });
 
+it('doesnt list the initial states among the filters', async () => {
+  const {filters, clear} = await useSetup(createTestApp(), async () => {
+    const initialState = () => new FilterCollection({
+      name: new TextFilter(),
+    });
+    return useFilters(initialState);
+  });
+  expect(Object.keys(new FilterCollection({name: new TextFilter()}))).not.toContain('_initialStates');
+  expect(Object.keys(unref(filters))).not.toContain('_initialStates');
+
+  clear();
+  const onRouteUpdate = onBeforeRouteUpdate.mock.calls.at(-1)[0];
+  await onRouteUpdate({query: {}});
+  expect(Object.keys(unref(filters))).not.toContain('_initialStates');
+});
+
 it('dismisses the current query string by default', async () => {
   mockRoute.query.foo = 'bar';
   const {buildQueryParams} = await useSetup(createTestApp(), async () => {

@@ -81,13 +81,23 @@ function copyState(filter) {
   return state;
 }
 
+// Not enumerable, so that cloning or serializing the collection leaves the initial states out.
+function setInitialStates(collection, initialStates) {
+  Object.defineProperty(collection, '_initialStates', {
+    value: initialStates,
+    writable: true,
+    configurable: true,
+    enumerable: false,
+  });
+}
+
 export class FilterCollection {
   _filters = [];
-  _initialStates = {};
   constructor(filters = {}) {
     if (!(filters instanceof Object)) {
       throw Error('A FilterCollection expects an object.');
     }
+    setInitialStates(this, {});
     Object.keys(filters).forEach(key => {
       if (!(filters[key] instanceof Filter)) {
         throw Error(`Filter ${key} doesn't extend the Filter class.`);
@@ -144,7 +154,7 @@ export async function useFilters(initialState = {}, options = {
 
   async function hydrateFiltersFromRoute(route) {
     // Filters missing from the route go back to the initial state as it is now, not as it was on setup.
-    unref(filters)._initialStates = initialState()._initialStates;
+    setInitialStates(unref(filters), initialState()._initialStates);
     Object.assign(unref(filters), await unref(filters).denormalize(route.query));
   }
 
