@@ -3,7 +3,7 @@ import { API_PORT, APP_PORT } from './e2e/ports.js';
 
 /*
  * End-to-end tests: a small Vue application built on the committed dist/, run in Chromium against a fake API Platform
- * and a fake Mercure hub (e2e/server). See RELEASING.md to run them.
+ * and a fake Mercure hub (e2e/server). See README.md to run them.
  */
 export default defineConfig({
   testDir: './e2e/tests',
