@@ -145,4 +145,30 @@ describe('items synchronization', () => {
     expect(received).toEqual([{'@id': '/api/foos/1', name: 'new'}, event]);
     expect(received[1]).toBe(event);
   });
+
+  it('gives each synchronized item its own copy of the update', () => {
+    const mercure = new Mercure(hub);
+    const first = reactive({'@id': '/api/foos/1', name: 'old'});
+    const second = reactive({'@id': '/api/foos/1', name: 'old'});
+    mercureSync(mercure, first);
+    mercureSync(mercure, second);
+    update(mercure, {'@id': '/api/foos/1', address: {city: 'Paris'}});
+    first.address.city = 'Lyon';
+    expect(second.address.city).toBe('Paris');
+  });
+
+  it('keeps the update intact for the next listeners when one changes it', () => {
+    const mercure = new Mercure(hub);
+    const received = [];
+    const deleted = [];
+    on(mercure, '/api/foos/{id}', (update) => {
+      delete update.address;
+      delete update.name;
+    });
+    mercureSync(mercure, [], undefined, undefined, (iri) => deleted.push(iri));
+    on(mercure, '/api/foos/{id}', (update) => received.push(update));
+    update(mercure, {'@id': '/api/foos/1', name: 'new', address: {city: 'Paris'}});
+    expect(received).toEqual([{'@id': '/api/foos/1', name: 'new', address: {city: 'Paris'}}]);
+    expect(deleted).toEqual([]);
+  });
 });

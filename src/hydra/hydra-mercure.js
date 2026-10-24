@@ -1,4 +1,5 @@
 import { areSameIris, getIri, hasIri } from './iri-functions.js';
+import { clone } from '../clone/index.js';
 import { onScopeDispose, unref } from 'vue';
 import { useMercure } from '../mercure/index.js';
 import uriTemplate from 'uri-templates';
@@ -8,7 +9,7 @@ const defaultRemover = () => {};
 
 /*
  * Every listener receives the same event: its data is parsed once, and the parsed data (or the parse
- * error) is shared by all of them.
+ * error) is shared by all of them. Each callback is given its own copy of it.
  */
 const parsedEvents = new WeakMap();
 
@@ -49,7 +50,7 @@ export function mercureSync(mercure, items, topics = ['*'], onUpdate = defaultUp
       }
       for (const item of currentItems) {
         if (areSameIris(getIri(data), item)) {
-          onUpdate(data, unref(item));
+          onUpdate(clone(data), unref(item));
         }
       }
     } catch (e) {
@@ -83,7 +84,7 @@ export const on = (mercure, topics, callback) => {
     try {
       for (const topic of topics) {
         if ('undefined' !== typeof uriTemplate(topic).fromUri(getIri(item))) {
-          callback(item);
+          callback(clone(item));
           break;
         }
       }

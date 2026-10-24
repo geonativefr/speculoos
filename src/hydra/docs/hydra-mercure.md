@@ -37,8 +37,8 @@ mercureSync(mercure, item);
 `synchronize()` and `mercureSync()` take an item, an array of items, or a ref of either. A ref is
 read when each update arrives, so replacing its value is followed.
 
-Each update is parsed once for all the listeners: the object given to `onUpdate` and to `on()`
-callbacks is shared by them, so copy it before changing it.
+Each update is parsed once for all the listeners, and each `onUpdate` and `on()` callback call is
+given its own copy of it: changing it affects neither the other listeners nor the other items.
 
 ## Topic reactivity
 
