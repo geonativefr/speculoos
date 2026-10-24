@@ -1,5 +1,5 @@
 import flushPromises from 'flush-promises';
-import { computed, effect, isRef, reactive, ref, unref, watch } from 'vue';
+import { computed, effect, isRef, nextTick, reactive, ref, unref, watch, watchEffect } from 'vue';
 import { createTestApp, getInjectedStore, ShouldNotHappen, useSetup } from '../../../vue-tests-setup.js';
 import { ApiClient } from '../../api-client/index.js';
 import { mockResponse } from '../../api-client/tests/setup.js';
@@ -240,6 +240,34 @@ it('gets an item', async () => {
   currentResponse.value = mockResponse({body: JSON.stringify(body)});
   await store.getItem('/api/foos/1', {store: false});
   expect(Array.from(store.state.items)).toHaveLength(0);
+});
+
+it('looks an item up by its IRI, without depending on the other items', async () => {
+  const store = await createStore();
+  await store.use(plugin);
+  store.storeItem({'@id': '/api/foos/1', name: 'foo'});
+  let lookups = 0;
+  const stop = watchEffect(() => {
+    lookups++;
+    store.getItem('/api/foos/1');
+    store.getRelation('/api/foos/1');
+  });
+  expect(lookups).toBe(1);
+
+  store.storeItem({'@id': '/api/foos/2', name: 'bar'});
+  await nextTick();
+  expect(lookups).toBe(1);
+  stop();
+});
+
+it('gets an embedded relation without an IRI, whatever the cache holds', async () => {
+  const store = await createStore();
+  await store.use(plugin);
+  const embedded = {name: 'embedded'};
+  expect(await store.getRelation(embedded)).toEqual(embedded);
+
+  store.storeItem({'@id': '/api/foos/1', name: 'foo'});
+  expect(await store.getRelation(embedded)).toEqual(embedded);
 });
 
 it('gets an item only by its IRI, even on an already constructed object', async () => {

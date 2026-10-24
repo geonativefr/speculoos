@@ -1,5 +1,5 @@
-import { checkValidItem, getIri, getItemByIri, hasIri } from './iri-functions.js';
-import { reactive, readonly, ref, toRaw, watch } from 'vue';
+import { checkValidItem, getIri, hasIri } from './iri-functions.js';
+import { reactive, readonly, ref, toRaw, unref, watch } from 'vue';
 import { HydraCollection } from './factories/hydra-collection.js';
 import { HydraError } from './factories/hydra-error.js';
 import { ConstraintViolationList } from './factories/constraint-violation-list.js';
@@ -85,6 +85,14 @@ class Items {
   }
 }
 
+/*
+ * The cache is keyed by IRI, so an item is looked up by its key instead of scanning every item. `in` makes a
+ * reactive effect depend on that key only; the own property check leaves out the names Items inherits.
+ */
+const hasItem = (items, iri) => iri in items && Object.prototype.hasOwnProperty.call(items, iri);
+
+const findItem = (items, iri) => (hasItem(items, iri) ? items[iri] : null);
+
 const DEFAULT_ERROR_HANDLER = function (error) {
   throw error;
 };
@@ -123,7 +131,7 @@ export class HydraPlugin {
 
   storeItem({state}, item) {
     const iri = getIri(item);
-    if (!Object.keys(state.items).includes(iri)) {
+    if (!hasItem(state.items, iri)) {
       state.items[iri] = ref(item);
     } else {
       const stored = state.items[iri];
@@ -176,7 +184,7 @@ export class HydraPlugin {
       return null;
     }
     const iri = getIri(itemOrIri);
-    const existingItem = getItemByIri(state.items, iri);
+    const existingItem = findItem(state.items, iri);
     if (null != existingItem) {
       return existingItem;
     }
@@ -222,7 +230,7 @@ export class HydraPlugin {
   async deleteItem({state}, item, options) {
     const iri = getIri(item);
     await this.handle(() => this.api.delete(iri, options), options);
-    item = getItemByIri(state.items, iri);
+    item = findItem(state.items, iri);
     if (null !== item) {
       this.removeItem({state}, item);
     }
@@ -241,8 +249,9 @@ export class HydraPlugin {
 
     const useExisting = false !== (options.useExisting ?? true);
 
-    if (useExisting) {
-      const existingItem = getItemByIri(state.items, itemOrIri);
+    // An embedded object without an IRI cannot be in the cache
+    if (useExisting && ('string' === typeof unref(itemOrIri) || hasIri(itemOrIri))) {
+      const existingItem = findItem(state.items, getIri(itemOrIri));
       if (null != existingItem) {
         return existingItem;
       }
