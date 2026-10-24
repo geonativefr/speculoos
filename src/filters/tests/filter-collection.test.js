@@ -8,7 +8,8 @@ import { createTestApp, useSetup } from '../../../vue-tests-setup.js';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc.js';
 import timezone from 'dayjs/plugin/timezone.js';
-import { reactive, unref } from 'vue';
+import { reactive, ref, unref } from 'vue';
+import { onBeforeRouteUpdate } from 'vue-router';
 import { ArrayFilter } from '../array-filter.js';
 import { getItemByIri } from '../../hydra/index.js';
 
@@ -84,6 +85,77 @@ it('should work', async () => {
     },
     account: '/api/accounts/1',
   });
+});
+
+it('resets the filters missing from the input to their initial state', async () => {
+  const filters = new FilterCollection({
+    name: new TextFilter(),
+    defaultName: new TextFilter('bar'),
+    tags: new ArrayFilter(['foo']),
+    price: new RangeFilter(),
+  });
+
+  await filters.denormalize({
+    name: 'foo',
+    defaultName: 'baz',
+    tags: ['bar'],
+    price: {gte: '10', lte: '20'},
+  });
+  filters.tags.values.push('baz');
+  await filters.denormalize({price: {gte: '15', lte: '20'}});
+
+  expect(filters.name.value).toBe(null);
+  expect(filters.defaultName.value).toBe('bar');
+  expect(filters.tags.values).toEqual(['foo']);
+  expect(filters.normalize()).toEqual({
+    defaultName: 'bar',
+    tags: ['foo'],
+    price: {gte: '15', lte: '20'},
+  });
+
+  filters.tags.values.push('qux');
+  await filters.denormalize({});
+  expect(filters.normalize()).toEqual({
+    defaultName: 'bar',
+    tags: ['foo'],
+  });
+});
+
+it('resets the filters missing from the new route', async () => {
+  mockRoute.query.name = 'Johnson';
+  const {filters} = await useSetup(createTestApp(), async () => {
+    const initialState = () => new FilterCollection({
+      name: new TextFilter(),
+      country: new TextFilter('UK'),
+    });
+    return useFilters(initialState);
+  });
+  expect(unref(filters).name.value).toBe('Johnson');
+  unref(filters).country.value = 'GB';
+
+  const onRouteUpdate = onBeforeRouteUpdate.mock.calls.at(-1)[0];
+  await onRouteUpdate({query: {}});
+
+  expect(unref(filters).name.value).toBe(null);
+  expect(unref(filters).country.value).toBe('UK');
+});
+
+it('resets the filters missing from the new route to the current initial state', async () => {
+  const hiddenDays = ref(['sat', 'sun']);
+  const {filters} = await useSetup(createTestApp(), async () => {
+    const initialState = () => new FilterCollection({
+      hiddenDays: new ArrayFilter([...hiddenDays.value]),
+    });
+    return useFilters(initialState);
+  });
+  expect(unref(filters).hiddenDays.values).toEqual(['sat', 'sun']);
+
+  hiddenDays.value = [];
+  unref(filters).hiddenDays.values = [];
+  const onRouteUpdate = onBeforeRouteUpdate.mock.calls.at(-1)[0];
+  await onRouteUpdate({query: unref(filters).normalize()});
+
+  expect(unref(filters).hiddenDays.values).toEqual([]);
 });
 
 it('dismisses the current query string by default', async () => {
