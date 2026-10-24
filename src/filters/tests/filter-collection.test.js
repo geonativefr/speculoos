@@ -121,6 +121,17 @@ it('resets the filters missing from the input to their initial state', async () 
   });
 });
 
+it('keeps the initial state of a filter changed in place before the first denormalization', async () => {
+  const filters = new FilterCollection({
+    tags: new ArrayFilter(['foo']),
+  });
+
+  filters.tags.values.push('bar');
+  await filters.denormalize({});
+
+  expect(filters.tags.values).toEqual(['foo']);
+});
+
 it('resets the filters missing from the new route', async () => {
   mockRoute.query.name = 'Johnson';
   const {filters} = await useSetup(createTestApp(), async () => {
