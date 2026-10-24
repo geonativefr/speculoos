@@ -649,6 +649,29 @@ it('returns a typed error', async () => {
   throw ShouldNotHappen;
 });
 
+it('resolves to undefined when the error handler does not throw', async () => {
+  const errorHandler = jest.fn();
+  const plugin = new HydraPlugin(api, {endpoints: {Foo: '/api/foos'}, errorHandler});
+  const store = await createStore();
+  await store.use(plugin);
+  const unauthorized = () => mockResponse({status: 401, body: JSON.stringify({'@type': 'hydra:Error'})});
+
+  currentResponse.value = unauthorized();
+  expect(await store.fetchItem('/api/foos/1')).toBeUndefined();
+  currentResponse.value = unauthorized();
+  expect(await store.getItem('/api/foos/1')).toBeUndefined();
+  currentResponse.value = unauthorized();
+  expect(await store.fetchCollection('/api/foos', {store: true})).toBeUndefined();
+  currentResponse.value = unauthorized();
+  expect(await store.createItem({'@type': 'Foo', name: 'foo'})).toBeUndefined();
+  currentResponse.value = unauthorized();
+  expect(await store.updateItem({'@type': 'Foo', '@id': '/api/foos/1', name: 'foo'})).toBeUndefined();
+
+  expect(errorHandler).toHaveBeenCalledTimes(5);
+  expect(errorHandler.mock.calls[0][0].statusCode).toBe(401);
+  expect(Array.from(store.state.items)).toHaveLength(0);
+});
+
 it('filters items by type', async () => {
   const storeFactory = await (await createStore()).use(plugin);
   const store = await getInjectedStore(storeFactory);

@@ -174,6 +174,10 @@ export class HydraPlugin {
       uri = uri.withQuery(`${new QueryString(uri.getQuery()).withParam('groups', options.groups)}`);
     }
     let item = await this.handle(() => this.api.get(`${uri}`, options), options);
+    // The error handler took care of a failed request without throwing
+    if (undefined === item) {
+      return undefined;
+    }
     item = this.factory(item);
     const shouldStore = options?.store ?? true;
     return shouldStore ? this.storeItem({state}, item) : item;
@@ -197,6 +201,10 @@ export class HydraPlugin {
       uri = uri.withQuery(`${new QueryString(uri.getQuery()).withParam('groups', options.groups)}`);
     }
     const data = await this.handle(() => this.api.get(`${uri}`, options), options);
+    // The error handler took care of a failed request without throwing
+    if (undefined === data) {
+      return undefined;
+    }
     data['hydra:member'] = data['hydra:member'].map(item => this.factory(item));
     const collection = this.factory(data);
     const shouldStore = options?.store ?? false;
@@ -211,6 +219,10 @@ export class HydraPlugin {
   async createItem({state}, item, options) {
     const endpoint = this.endpoints.for(item);
     item = await this.handle(() => this.api.post(endpoint, item, options), options);
+    // The error handler took care of a failed request without throwing
+    if (undefined === item) {
+      return undefined;
+    }
     const shouldStore = options?.store ?? true;
     return shouldStore ? this.storeItem({state}, item) : item;
   }
@@ -218,6 +230,10 @@ export class HydraPlugin {
   async updateItem({state}, item, options) {
     checkValidItem(item);
     item = await this.handle(() => this.api.put(getIri(item), item, options), options);
+    // The error handler took care of a failed request without throwing
+    if (undefined === item) {
+      return undefined;
+    }
     const shouldStore = options?.store ?? true;
     return shouldStore ? this.storeItem({state}, item) : item;
   }
