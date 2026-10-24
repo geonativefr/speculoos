@@ -137,6 +137,42 @@ it('resets the item to its last saved state', async () => {
   expect(form.item).toEqual(initialState);
 });
 
+it('resets the item to its last updated state', async () => {
+  const storeFactory = await (await createStore()).use(plugin);
+  const initialState = {'@id': '/api/foos/1', '@type': 'Foo', name: 'foo'};
+  const updatedState = {'@id': '/api/foos/1', '@type': 'Foo', name: 'bar'};
+  const form = await useSetup(createTestApp(storeFactory), async () => {
+    const {item, submit, reset, isCreationMode, isUnsavedDraft} = useItemForm(initialState);
+    item.name = 'bar';
+    response.value = mockResponse({body: JSON.stringify(updatedState)});
+    await submit();
+    item.name = 'baz';
+    reset();
+    return {item, isCreationMode: unref(isCreationMode), isUnsavedDraft: unref(isUnsavedDraft)};
+  });
+  expect(form.item).toEqual(updatedState);
+  expect(form.isCreationMode).toBe(false);
+  expect(form.isUnsavedDraft).toBe(false);
+});
+
+it('resets the item to its initial state after a failed submit', async () => {
+  const storeFactory = await (await createStore()).use(plugin);
+  const initialState = {'@id': '/api/foos/1', '@type': 'Foo', name: 'foo'};
+  const form = await useSetup(createTestApp(storeFactory), async () => {
+    const {item, submit, reset, isUnsavedDraft} = useItemForm(initialState);
+    item.name = 'bar';
+    response.value = mockResponse({status: 400, body: JSON.stringify({'@type': 'hydra:Error'})});
+    const error = await submit().catch(error => error);
+    const itemAfterSubmit = {...item};
+    reset();
+    return {item, error, itemAfterSubmit, isUnsavedDraft: unref(isUnsavedDraft)};
+  });
+  expect(form.error).toHaveProperty('statusCode', 400);
+  expect(form.itemAfterSubmit).toEqual({...initialState, name: 'bar'});
+  expect(form.item).toEqual(initialState);
+  expect(form.isUnsavedDraft).toBe(false);
+});
+
 it('resets the item to the initial state ref once it changes after a save', async () => {
   const storeFactory = await (await createStore()).use(plugin);
   const initialState = ref({'@id': '/api/foos/1', '@type': 'Foo', name: 'foo'});
