@@ -1,5 +1,4 @@
 require('dotenv').config();
-const {fetch, Headers} = require(__dirname + '/src/api-client/tests/setup.js');
 
 module.exports = {
   'modulePaths': ['src'],
@@ -9,8 +8,5 @@ module.exports = {
   },
   verbose: true,
   testEnvironment: 'jsdom',
-  globals: {
-    fetch,
-    Headers,
-  }
+  setupFiles: ['<rootDir>/src/api-client/tests/globals.js'],
 };
