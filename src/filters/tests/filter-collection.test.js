@@ -179,6 +179,26 @@ it('resets the filters missing from the new route to the current initial state',
   expect(unref(filters).hiddenDays.values).toEqual([]);
 });
 
+it('denormalizes filters without initial state', async () => {
+  mockRoute.query.name = 'Johnson';
+  const {filters} = await useSetup(createTestApp(), async () => {
+    const initialState = () => {
+      const filters = new FilterCollection({
+        name: new TextFilter(),
+      });
+      delete filters._initialStates;
+      return filters;
+    };
+    return useFilters(initialState);
+  });
+  expect(unref(filters).name.value).toBe('Johnson');
+
+  const onRouteUpdate = onBeforeRouteUpdate.mock.calls.at(-1)[0];
+  await onRouteUpdate({query: {}});
+
+  expect(unref(filters).name.value).toBe('Johnson');
+});
+
 it('dismisses the current query string by default', async () => {
   mockRoute.query.foo = 'bar';
   const {buildQueryParams} = await useSetup(createTestApp(), async () => {

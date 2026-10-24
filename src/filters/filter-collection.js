@@ -118,7 +118,7 @@ export class FilterCollection {
       }
       if ('undefined' !== typeof input[key]) {
         promises.push(filter.denormalize(input[key]));
-      } else if (null != this._initialStates[key]) {
+      } else if (null != this._initialStates?.[key]) {
         Object.assign(filter, copyState(this._initialStates[key]));
       }
     }
