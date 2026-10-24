@@ -18,6 +18,17 @@
 yarn test
 ```
 
+### End-to-end tests
+
+They run a small Vue application on the committed `dist/` (so run `yarn build` first) in Chromium, against the
+fake API Platform and Mercure hub of `e2e/server`, on ports 4270 and 4271 (`E2E_APP_PORT`, `E2E_API_PORT`).
+`SPECULOOS_BUILD=<path to a speculoos.es.js> yarn e2e` runs them on another build.
+
+```bash
+npx playwright install chromium # once
+yarn e2e
+```
+
 ## Lint
 
 ```bash
