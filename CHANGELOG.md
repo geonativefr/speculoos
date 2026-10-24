@@ -35,6 +35,18 @@ tags; see `RELEASING.md` for how a release is made.
   headers, never shares a request that carries a signal or a body other than a string, and no longer
   turns itself off when the options hold a watched ref such as `isLoading`.
 - With `withoutDuplicates()`, a response body is read once.
+- `useItemForm().reset()` without argument goes back to the last saved item instead of the initial
+  one: after a creation, the form stays in edition mode and the next `submit()` no longer creates a
+  duplicate.
+- `clone()` copies `Date`, `RegExp`, `Map` and `Set` instances with their data, so a form whose item
+  holds a `Date` can be submitted. Private fields (`#field`) are still not supported.
+- `FilterCollection.denormalize()` puts the filters missing from the query back to their initial
+  state, so navigating to a list without query empties its filter fields. `useFilters()` takes that
+  initial state from its `initialState()` function, called again on each route change.
+- A filter whose initial value is not empty and that the user empties is dropped from the query, so
+  it gets its initial value back after `submit()`.
+- `DateRangeFilter` with `withTime: false` puts the picked dates in the query as they are, and reads
+  them back as they are, whatever the user's timezone (east of UTC, `after` was a day early).
 
 ## 1.13.1
 
