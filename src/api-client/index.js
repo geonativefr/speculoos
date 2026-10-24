@@ -93,6 +93,7 @@ export class ApiClient {
     if (Object.keys(options).includes('headers')) {
       options.headers = new Headers(mergeHeaders(defaultHeaders, options.headers));
     }
+    let stopWatchingAborted = () => {};
     try {
       if (isRef(options?.isLoading)) {
         options.isLoading.value = true;
@@ -101,7 +102,7 @@ export class ApiClient {
         const controller = new AbortController();
         const { signal } = controller;
         options.signal = signal;
-        whenever(options.aborted, () => controller.abort(), {immediate: true});
+        stopWatchingAborted = whenever(options.aborted, () => controller.abort(), {immediate: true});
       }
       try {
         const response = await this.fetch(url, options);
@@ -113,6 +114,7 @@ export class ApiClient {
         throw e;
       }
     } finally {
+      stopWatchingAborted();
       if (isRef(options?.isLoading)) {
         options.isLoading.value = false;
       }

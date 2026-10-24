@@ -1,7 +1,7 @@
 import { AbortError, ApiClient } from '../index.js';
 import { HttpError } from '../errors/HttpError.js';
 import { fetch } from './setup.js';
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, nextTick, reactive, ref, watch } from 'vue';
 
 const client = new ApiClient({baseUri: 'https://example.com/', fetcher: fetch});
 
@@ -135,4 +135,14 @@ it('lets a request\'s header replace the client\'s header of the same name, what
   expect(request.options.headers['Accept-Language']).toBe('en');
   expect(request.options.headers['authorization']).toBe('Bearer token');
   expect(request.options.headers['content-type']).toBe('application/merge-patch+json');
+});
+
+it('stops watching the aborted ref once a request is over', async () => {
+  const aborted = ref(false);
+  const {request} = await client.get('/api/foo', {response: {}, aborted});
+  expect(request.options.signal.aborted).toBe(false);
+
+  aborted.value = true;
+  await nextTick();
+  expect(request.options.signal.aborted).toBe(false);
 });
