@@ -20,7 +20,7 @@ jobs:
       - name: Install NodeJS
         uses: actions/setup-node@v4
         with:
-          node-version-file: '.nvmrc'
+          node-version: '22'
           cache: 'yarn'
 
       - name: Install dependencies
@@ -40,7 +40,7 @@ jobs:
       - name: Install NodeJS
         uses: actions/setup-node@v4
         with:
-          node-version-file: '.nvmrc'
+          node-version: '22'
           cache: 'yarn'
 
       - name: Install dependencies
@@ -60,7 +60,7 @@ jobs:
       - name: Install NodeJS
         uses: actions/setup-node@v4
         with:
-          node-version-file: '.nvmrc'
+          node-version: '22'
           cache: 'yarn'
 
       - name: Install dependencies

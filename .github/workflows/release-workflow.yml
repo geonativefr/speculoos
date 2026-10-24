@@ -26,7 +26,7 @@ jobs:
       - name: Install NodeJS
         uses: actions/setup-node@v4
         with:
-          node-version-file: '.nvmrc'
+          node-version: '22'
 
       - name: Tag the version
         run: bash .github/scripts/tag-version.sh
