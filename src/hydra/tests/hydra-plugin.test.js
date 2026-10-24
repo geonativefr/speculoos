@@ -463,6 +463,21 @@ it('fetches a collection', async () => {
   expect(Array.from(store.state.items)).toHaveLength(1);
 });
 
+it('types each member of a collection once', async () => {
+  const plugin = new HydraPlugin(api);
+  const store = await createStore();
+  await store.use(plugin);
+  const members = [
+    {'@id': '/api/foos/1', name: 'foo'},
+    {'@id': '/api/foos/2', name: 'bar'},
+  ];
+  const factory = jest.spyOn(plugin, 'factory');
+  currentResponse.value = mockResponse({body: JSON.stringify({'@type': 'hydra:Collection', 'hydra:member': members})});
+  await store.fetchCollection('/api/foos');
+  const memberCalls = factory.mock.calls.filter(([item]) => members.some(member => member['@id'] === item['@id']));
+  expect(memberCalls).toHaveLength(members.length);
+});
+
 it('appends a `groups` parameter to the query', async () => {
   const storeFactory = await (await createStore()).use(plugin);
   const body = {

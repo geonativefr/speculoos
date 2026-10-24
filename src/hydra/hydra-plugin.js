@@ -199,7 +199,6 @@ export class HydraPlugin {
     const data = await this.handle(() => this.api.get(`${uri}`, options), options);
     data['hydra:member'] = data['hydra:member'].map(item => this.factory(item));
     const collection = this.factory(data);
-    collection['hydra:member'] = collection['hydra:member'].map(item => this.factory(item));
     const shouldStore = options?.store ?? false;
     if (shouldStore) {
       for (const item of collection['hydra:member']) {
