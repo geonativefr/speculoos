@@ -17,6 +17,24 @@ const normalizeHeaders = (headers) => {
   return output;
 };
 
+const mergeHeaders = (...sources) => {
+  const output = {};
+  for (const headers of sources) {
+    const normalized = normalizeHeaders(headers) ?? {};
+    for (const name of Object.keys(normalized)) {
+      // Header names are case-insensitive: the latest source wins, with its own spelling
+      for (const existingName of Object.keys(output)) {
+        if (existingName.toLowerCase() === name.toLowerCase()) {
+          delete output[existingName];
+        }
+      }
+      output[name] = normalized[name];
+    }
+  }
+
+  return output;
+};
+
 const defaultHeaders = {
   Accept: 'application/ld+json, application/json',
 };
@@ -61,7 +79,7 @@ export class ApiClient {
     for (let argument of arguments) {
       let options = {...argument};
       if (Object.keys(options).includes('headers')) {
-        options.headers = {...normalizeHeaders(options.headers)};
+        options.headers = mergeHeaders(output.headers, options.headers);
       }
       output = {...clone(output), ...clone(options)};
     }
@@ -73,7 +91,7 @@ export class ApiClient {
     url = `${unref(url)}`; // Ensure string
     options = this.mergeOptions({method}, options);
     if (Object.keys(options).includes('headers')) {
-      options.headers = new Headers({...defaultHeaders, ...normalizeHeaders(options.headers)});
+      options.headers = new Headers(mergeHeaders(defaultHeaders, options.headers));
     }
     try {
       if (isRef(options?.isLoading)) {

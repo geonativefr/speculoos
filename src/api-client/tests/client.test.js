@@ -1,7 +1,7 @@
 import { AbortError, ApiClient } from '../index.js';
 import { HttpError } from '../errors/HttpError.js';
 import { fetch } from './setup.js';
-import { ref, watch } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 
 const client = new ApiClient({baseUri: 'https://example.com/', fetcher: fetch});
 
@@ -85,4 +85,54 @@ it('cancels a request', async () => {
     error = e;
   }
   expect(error).toBeInstanceOf(AbortError);
+});
+
+it('keeps the client\'s headers when a request has its own', async () => {
+  const locale = ref('fr');
+  const client = new ApiClient({
+    baseUri: 'https://example.com/',
+    fetcher: fetch,
+    options: reactive({
+      headers: {
+        'Accept-Language': computed(() => locale.value),
+        Authorization: 'Bearer token',
+      },
+    }),
+  });
+  const item = {foo: 'bar'};
+  const response = {body: JSON.stringify(item)};
+
+  let {request} = await client.post('/api/foos', item, {response, headers: {'X-Foo': 'foo'}});
+  expect(request.options.headers['Accept']).toBe('application/ld+json, application/json');
+  expect(request.options.headers['Accept-Language']).toBe('fr');
+  expect(request.options.headers['Authorization']).toBe('Bearer token');
+  expect(request.options.headers['Content-Type']).toBe('application/json');
+  expect(request.options.headers['X-Foo']).toBe('foo');
+
+  locale.value = 'en';
+  ({request} = await client.put('/api/foos/1', item, {response}));
+  expect(request.options.headers['Accept-Language']).toBe('en');
+  expect(request.options.headers['Authorization']).toBe('Bearer token');
+  expect(request.options.headers['Content-Type']).toBe('application/json');
+
+  ({request} = await client.get('/api/foos/1', {response, headers: {Preload: '/foo'}}));
+  expect(request.options.headers['Accept-Language']).toBe('en');
+  expect(request.options.headers['Authorization']).toBe('Bearer token');
+  expect(request.options.headers['Preload']).toBe('/foo');
+});
+
+it('lets a request\'s header replace the client\'s header of the same name, whatever its case', async () => {
+  const client = new ApiClient({
+    baseUri: 'https://example.com/',
+    fetcher: fetch,
+    options: {headers: new Headers({'accept-language': 'fr', authorization: 'Bearer token'})},
+  });
+  const {request} = await client.post('/api/foos', {}, {
+    response: {body: '{}'},
+    headers: {'Accept-Language': 'en', 'content-type': 'application/merge-patch+json'},
+  });
+  expect(request.options.headers.keys().sort()).toEqual(['Accept', 'Accept-Language', 'authorization', 'content-type']);
+  expect(request.options.headers['Accept-Language']).toBe('en');
+  expect(request.options.headers['authorization']).toBe('Bearer token');
+  expect(request.options.headers['content-type']).toBe('application/merge-patch+json');
 });
