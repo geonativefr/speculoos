@@ -13,7 +13,7 @@ const DEFAULT_CLASSMAP = {
   'ConstraintViolationList': ConstraintViolationList,
 };
 
-function isSameValue(a, b) {
+function isSameValue(a, b, compared = new WeakMap()) {
   a = toRaw(a);
   b = toRaw(b);
   if (Object.is(a, b)) {
@@ -22,9 +22,16 @@ function isSameValue(a, b) {
   if ('object' !== typeof a || 'object' !== typeof b || null === a || null === b) {
     return false;
   }
+  if (compared.get(a)?.has(b)) {
+    return true;
+  }
+  if (!compared.has(a)) {
+    compared.set(a, new Set());
+  }
+  compared.get(a).add(b);
   if (Array.isArray(a) || Array.isArray(b)) {
     return Array.isArray(a) && Array.isArray(b) && a.length === b.length
-      && a.every((value, index) => isSameValue(value, b[index]));
+      && a.every((value, index) => isSameValue(value, b[index], compared));
   }
   const tag = Object.prototype.toString.call(a);
   if (tag !== Object.prototype.toString.call(b) || Object.getPrototypeOf(a) !== Object.getPrototypeOf(b)) {
@@ -38,7 +45,7 @@ function isSameValue(a, b) {
   }
   const keys = Object.keys(a);
   return keys.length === Object.keys(b).length
-    && keys.every((key) => Object.prototype.hasOwnProperty.call(b, key) && isSameValue(a[key], b[key]));
+    && keys.every((key) => Object.prototype.hasOwnProperty.call(b, key) && isSameValue(a[key], b[key], compared));
 }
 
 class Items {
@@ -120,8 +127,9 @@ export class HydraPlugin {
       state.items[iri] = ref(item);
     } else {
       const stored = state.items[iri];
+      const rawStored = toRaw(stored);
       for (const key of Object.keys(item)) {
-        if (!isSameValue(stored[key], item[key])) {
+        if (!(key in rawStored) || !isSameValue(rawStored[key], item[key])) {
           stored[key] = item[key];
         }
       }
