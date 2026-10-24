@@ -83,3 +83,33 @@ it('partially normalizes the filter', () => {
     before: null,
   });
 });
+
+it('keeps the picked dates when normalizing without time', () => {
+  const filter = new DateRangeFilter({after: '2024-01-15', before: '2024-01-15'}, {withTime: false});
+  expect(filter.normalize()).toStrictEqual({
+    after: '2024-01-15',
+    before: '2024-01-15',
+  });
+
+  DateRangeFilter.userTimezone = 'America/New_York';
+  try {
+    expect(filter.normalize()).toStrictEqual({
+      after: '2024-01-15',
+      before: '2024-01-15',
+    });
+  } finally {
+    DateRangeFilter.userTimezone = 'Europe/Tallinn';
+  }
+});
+
+it('keeps the query dates when denormalizing without time', async () => {
+  const filter = new DateRangeFilter({}, {withTime: false});
+  DateRangeFilter.userTimezone = 'America/New_York';
+  try {
+    await filter.denormalize({after: '2024-01-15', before: '2024-01-16'});
+  } finally {
+    DateRangeFilter.userTimezone = 'Europe/Tallinn';
+  }
+  expect(filter.after).toBe('2024-01-15');
+  expect(filter.before).toBe('2024-01-16');
+});

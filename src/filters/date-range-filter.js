@@ -13,6 +13,7 @@ export class DateRangeFilter extends Filter {
   before;
   normalizedFormat;
   useUserTimezone;
+  withTime;
 
   constructor({after = null, before = null} = {}, {withTime = true, useUserTimezone = true} = {}) {
     super();
@@ -20,11 +21,14 @@ export class DateRangeFilter extends Filter {
     this.before = before;
     this.normalizedFormat = withTime ? 'YYYY-MM-DD[T]HH:mm:ss[Z]' : 'YYYY-MM-DD';
     this.useUserTimezone = useUserTimezone;
+    this.withTime = withTime;
   }
 
   normalize() {
     this.constructor.ensureTimezoneIsSet();
     const timezone = this.useUserTimezone ? this.constructor.userTimezone : 'UTC';
+    // Without time, the query carries the picked dates as they are, with no timezone conversion.
+    const queryTimezone = this.withTime ? 'UTC' : timezone;
     let after = null;
     let before = null;
     if (!empty(this.after)) {
@@ -32,7 +36,7 @@ export class DateRangeFilter extends Filter {
         .hour(0)
         .minute(0)
         .second(0)
-        .tz('UTC')
+        .tz(queryTimezone)
         .format(this.normalizedFormat);
     }
     if (!empty(this.before)) {
@@ -42,7 +46,7 @@ export class DateRangeFilter extends Filter {
         .second(0)
         .add(1, 'day')
         .subtract(1, 'second')
-        .tz('UTC')
+        .tz(queryTimezone)
         .format(this.normalizedFormat);
     }
 
@@ -51,10 +55,11 @@ export class DateRangeFilter extends Filter {
 
   async denormalize(input) {
     this.constructor.ensureTimezoneIsSet();
+    const useUserTimezone = this.useUserTimezone && this.withTime;
     this.after = null;
     this.before = null;
     if (!empty(input.after)) {
-      this.after = this.useUserTimezone
+      this.after = useUserTimezone
         ? dayjs.tz(input.after, 'UTC').tz(this.constructor.userTimezone)
         : dayjs.tz(input.after, 'UTC');
       this.after = this.after
@@ -64,7 +69,7 @@ export class DateRangeFilter extends Filter {
         .format('YYYY-MM-DD');
     }
     if (!empty(input.before)) {
-      this.before = this.useUserTimezone
+      this.before = useUserTimezone
         ? dayjs.tz(input.before, 'UTC').tz(this.constructor.userTimezone)
         : dayjs.tz(input.before, 'UTC');
       this.before = this.before
