@@ -1,9 +1,8 @@
 import { checkValidItem, getIri, hasIri } from './iri-functions.js';
-import { effectScope, reactive, readonly, ref, toRaw, unref, watch } from 'vue';
+import { effectScope, reactive, readonly, ref, toRaw, unref, watch, watchEffect } from 'vue';
 import { HydraCollection } from './factories/hydra-collection.js';
 import { HydraError } from './factories/hydra-error.js';
 import { ConstraintViolationList } from './factories/constraint-violation-list.js';
-import { asyncComputed, until } from '@vueuse/core';
 import { HydraEndpoints } from './hydra-endpoints.js';
 import { URI, QueryString } from 'psr7-js';
 
@@ -94,37 +93,40 @@ const hasItem = (items, iri) => iri in items && Object.prototype.hasOwnProperty.
 const findItem = (items, iri) => (hasItem(items, iri) ? items[iri] : null);
 
 /*
- * Evaluates a relation again whenever its source changes. Settles with the first evaluation: resolves to the
- * synchronized ref, or rejects with the evaluation's error and stops synchronizing.
+ * Evaluates a relation again whenever its source changes, keeping the result of the latest evaluation only. A pending
+ * source is not evaluated. Settles with the first evaluation: resolves to the synchronized ref, or rejects with the
+ * evaluation's error and stops synchronizing.
  */
-const synchronize = async (evaluate) => {
+const synchronize = (source, isPending, evaluate) => new Promise((resolve, reject) => {
   const scope = effectScope();
-  const evaluating = ref(false);
-  let failed = false;
-  let failure;
-  const synchronized = scope.run(() => asyncComputed(
-    async () => {
-      failed = false;
-      return evaluate();
-    },
-    undefined,
-    {
-      evaluating,
-      onError: (error) => {
-        failed = true;
-        failure = error;
-      },
-    },
-  ));
-  await until(evaluating).toBe(true);
-  await until(evaluating).toBe(false);
-  if (failed) {
-    scope.stop();
-    throw failure;
-  }
-
-  return synchronized;
-};
+  const synchronized = ref();
+  let evaluations = 0;
+  let settled = false;
+  scope.run(() => watchEffect(async () => {
+    const evaluation = ++evaluations;
+    const value = source();
+    if (isPending(value)) {
+      return;
+    }
+    try {
+      const result = await evaluate(value);
+      if (evaluation !== evaluations) {
+        return;
+      }
+      synchronized.value = result;
+      if (!settled) {
+        settled = true;
+        resolve(synchronized);
+      }
+    } catch (error) {
+      if (!settled) {
+        settled = true;
+        scope.stop();
+        reject(error);
+      }
+    }
+  }));
+});
 
 const DEFAULT_ERROR_HANDLER = function (error) {
   throw error;
@@ -290,7 +292,7 @@ export class HydraPlugin {
     }
 
     if ('function' === typeof itemOrIri) {
-      return synchronize(() => this.getRelation({state}, itemOrIri(), options));
+      return synchronize(itemOrIri, (source) => undefined === source, (source) => this.getRelation({state}, source, options));
     }
 
     const useExisting = false !== (options.useExisting ?? true);
@@ -314,7 +316,7 @@ export class HydraPlugin {
 
   async getRelations({state}, itemsOrIris, options) {
     if ('function' === typeof itemsOrIris) {
-      return synchronize(() => this.getRelations({state}, itemsOrIris(), options));
+      return synchronize(itemsOrIris, (source) => null == source, (source) => this.getRelations({state}, source, options));
     }
     return Promise.all(itemsOrIris.map(itemOrIri => this.getRelation({state}, itemOrIri, options)));
   }
