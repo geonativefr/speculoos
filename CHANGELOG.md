@@ -27,7 +27,8 @@ tags; see `RELEASING.md` for how a release is made.
   instead of never settling, and stop synchronizing it.
 - Cached items are looked up by IRI: storing and getting items no longer slows down as the cache
   grows, and an effect that gets an item no longer runs again when another item is stored.
-  `getRelation()` on an embedded object without `@id` returns it whatever the cache holds.
+- `getRelation()` on an embedded object without `@id` returns the object, instead of throwing
+  `Invalid item.` when the cache holds any item.
 - `fetchCollection()` types each member once instead of twice.
 - A request made with an `aborted` ref stops watching it once the request is over.
 - `withoutDuplicates()` shares a pending request only with one of the same method, URL, body and
