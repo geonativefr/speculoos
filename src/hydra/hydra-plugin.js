@@ -1,5 +1,5 @@
 import { checkValidItem, getIri, hasIri } from './iri-functions.js';
-import { reactive, readonly, ref, toRaw, unref, watch } from 'vue';
+import { effectScope, reactive, readonly, ref, toRaw, unref, watch } from 'vue';
 import { HydraCollection } from './factories/hydra-collection.js';
 import { HydraError } from './factories/hydra-error.js';
 import { ConstraintViolationList } from './factories/constraint-violation-list.js';
@@ -92,6 +92,39 @@ class Items {
 const hasItem = (items, iri) => iri in items && Object.prototype.hasOwnProperty.call(items, iri);
 
 const findItem = (items, iri) => (hasItem(items, iri) ? items[iri] : null);
+
+/*
+ * Evaluates a relation again whenever its source changes. Settles with the first evaluation: resolves to the
+ * synchronized ref, or rejects with the evaluation's error and stops synchronizing.
+ */
+const synchronize = async (evaluate) => {
+  const scope = effectScope();
+  const evaluating = ref(false);
+  let failed = false;
+  let failure;
+  const synchronized = scope.run(() => asyncComputed(
+    async () => {
+      failed = false;
+      return evaluate();
+    },
+    undefined,
+    {
+      evaluating,
+      onError: (error) => {
+        failed = true;
+        failure = error;
+      },
+    },
+  ));
+  await until(evaluating).toBe(true);
+  await until(evaluating).toBe(false);
+  if (failed) {
+    scope.stop();
+    throw failure;
+  }
+
+  return synchronized;
+};
 
 const DEFAULT_ERROR_HANDLER = function (error) {
   throw error;
@@ -257,9 +290,7 @@ export class HydraPlugin {
     }
 
     if ('function' === typeof itemOrIri) {
-      const synchronizedRelation = asyncComputed(() => this.getRelation({state}, itemOrIri(), options));
-      await until(synchronizedRelation).not.toBe(undefined);
-      return synchronizedRelation;
+      return synchronize(() => this.getRelation({state}, itemOrIri(), options));
     }
 
     const useExisting = false !== (options.useExisting ?? true);
@@ -283,9 +314,7 @@ export class HydraPlugin {
 
   async getRelations({state}, itemsOrIris, options) {
     if ('function' === typeof itemsOrIris) {
-      const synchronizedRelations = asyncComputed(() => this.getRelations({state}, itemsOrIris(), options));
-      await until(synchronizedRelations).not.toBe(undefined);
-      return synchronizedRelations;
+      return synchronize(() => this.getRelations({state}, itemsOrIris(), options));
     }
     return Promise.all(itemsOrIris.map(itemOrIri => this.getRelation({state}, itemOrIri, options)));
   }
