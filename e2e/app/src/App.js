@@ -7,9 +7,12 @@ export const recordError = (error) => errors.push(`${error?.name}: ${error?.mess
 // The loads of a book by the book form that settled, kept when the page is left: the errors they left are listed then.
 export const settledBookLoads = ref(0);
 
+// The notice the error handler leaves on the page for a failure it takes care of without leaving the page.
+export const notice = ref('');
+
 export const App = {
   setup() {
-    return {errors, settledBookLoads};
+    return {errors, settledBookLoads, notice};
   },
   template: `
     <nav>
@@ -24,6 +27,7 @@ export const App = {
         </Suspense>
       </router-view>
     </main>
+    <p v-if="notice" data-test="notice">{{ notice }}</p>
     <p data-test="settled-book-loads">{{ settledBookLoads }}</p>
     <ul data-test="app-errors">
       <li v-for="(error, index) in errors" :key="index">{{ error }}</li>

@@ -47,4 +47,35 @@ test.describe('API errors', () => {
     await expect(page.getByTestId('settled-book-loads')).toHaveText('1');
     await expect(page.getByTestId('app-errors')).toHaveText('');
   });
+
+  test('a failed save the error handler takes care of keeps what was typed and the mode of the form', async ({page, api}) => {
+    await api.fail('POST', '/api/books', 503);
+    await page.goto('/books/new');
+    await page.getByLabel('Title').fill('Hyperion');
+    await page.getByTestId('save').click();
+
+    // The save has settled and the error handler took care of it
+    await expect(page.getByTestId('attempts')).toHaveText('1');
+    await expect(page.getByTestId('notice')).toBeVisible();
+    await expect(page.getByLabel('Title')).toHaveValue('Hyperion');
+    await expect(page.getByTestId('mode')).toHaveText('creation');
+
+    await api.fail('PUT', '/api/books/1', 503);
+    await page.goto('/books/1');
+    await expect(page.getByLabel('Title')).toHaveValue('Dune');
+    await page.getByLabel('Title').fill('Dune Messiah');
+    await page.getByTestId('save').click();
+
+    await expect(page.getByTestId('attempts')).toHaveText('1');
+    await expect(page.getByTestId('notice')).toBeVisible();
+    await expect(page.getByLabel('Title')).toHaveValue('Dune Messiah');
+    await expect(page.getByTestId('mode')).toHaveText('edition');
+    await expect(page.getByTestId('iri')).toHaveText('/api/books/1');
+
+    // reset() goes back to the last saved state, the book as loaded
+    await page.getByTestId('reset').click();
+    await expect(page.getByLabel('Title')).toHaveValue('Dune');
+    await expect(page.getByTestId('mode')).toHaveText('edition');
+    await expect(page.getByTestId('app-errors')).toHaveText('');
+  });
 });

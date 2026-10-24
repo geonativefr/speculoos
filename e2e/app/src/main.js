@@ -2,7 +2,7 @@ import { createApp, reactive } from 'vue';
 import { createRouter, createWebHistory } from 'vue-router';
 import { QueryString } from 'psr7-js';
 import { ApiClient, createMercure, createStore, HydraPlugin } from 'speculoos';
-import { App, recordError } from './App.js';
+import { App, notice, recordError } from './App.js';
 import { Author, Book } from './models.js';
 import BookList from './pages/BookList.js';
 import BookForm from './pages/BookForm.js';
@@ -43,10 +43,15 @@ async function start() {
       Author: '/api/authors',
     },
     classmap: {Book, Author},
-    // An expired session leaves the page without throwing; any other error goes to the caller.
+    // An expired session leaves the page without throwing, an unavailable service is reported on the page without
+    // throwing; any other error goes to the caller.
     errorHandler(error) {
       if (401 === error.statusCode) {
         router.push('/signed-out');
+        return;
+      }
+      if (503 === error.statusCode) {
+        notice.value = 'The service is unavailable, try again later.';
         return;
       }
       throw error;
