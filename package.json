@@ -17,7 +17,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "lint": "NODE_ENV=test eslint .",
-    "test": "jest"
+    "test": "jest",
+    "e2e": "playwright test"
   },
   "dependencies": {
     "@vueuse/core": "^9.7.0",

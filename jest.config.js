@@ -9,4 +9,6 @@ module.exports = {
   verbose: true,
   testEnvironment: 'jsdom',
   setupFiles: ['<rootDir>/src/api-client/tests/globals.js'],
+  // The end-to-end tests run with Playwright (yarn e2e)
+  testPathIgnorePatterns: ['/node_modules/', '<rootDir>/e2e/'],
 };
