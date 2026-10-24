@@ -18,6 +18,13 @@ synchronize(item); // Item will be populated through Mercure updates
 </script>
 ```
 
+The listeners added by `useMercureSync()` are removed when the component is unmounted, or when the
+effect scope it runs in is disposed. Pass `{removeListenersOnUnmount: false}` as its second argument
+to keep them.
+
+The topics stay subscribed: they are shared by every listener of the Mercure instance. Call
+`mercure.unsubscribe(topics)` once nothing listens to them anymore.
+
 ### Other
 
 ```js

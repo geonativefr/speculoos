@@ -1,5 +1,5 @@
 import { areSameIris, getIri, hasIri } from './iri-functions.js';
-import { onUnmounted, unref } from 'vue';
+import { onScopeDispose, unref } from 'vue';
 import { useMercure } from '../mercure/index.js';
 import uriTemplate from 'uri-templates';
 
@@ -73,12 +73,12 @@ export const on = (mercure, topics, callback) => {
   return wrapper;
 };
 
-export const useMercureSync = (mercure, options = {removeListenersOnUnmount: true}) => {
+export const useMercureSync = (mercure, {removeListenersOnUnmount = true} = {}) => {
   mercure = mercure ?? useMercure();
   const listeners = [];
 
-  if (options.removeListenersOnUnmount) {
-    onUnmounted(() => {
+  if (removeListenersOnUnmount) {
+    onScopeDispose(() => {
       for (const listener of listeners) {
         mercure.removeListener(listener);
       }

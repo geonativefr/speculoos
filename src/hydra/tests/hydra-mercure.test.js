@@ -1,7 +1,7 @@
 import { createTestApp, getInjectedStore, useSetup } from '../../../vue-tests-setup.js';
 import { useMercureSync } from '../hydra-mercure.js';
-import { createMercure, useMercure } from '../../mercure/index.js';
-import { reactive, ref, unref } from 'vue';
+import { Mercure, createMercure, useMercure } from '../../mercure/index.js';
+import { effectScope, reactive, ref, unref } from 'vue';
 import { createStore, useStore } from '../../store/index.js';
 import { HydraPlugin } from '../hydra-plugin.js';
 
@@ -54,4 +54,53 @@ it('listens to collection updates', async () => {
     return item;
   });
   expect(unref(item)).toEqual({'@id': '/api/foos/1'});
+});
+
+describe('listeners cleanup', () => {
+  const hub = 'https://example.org/.well-known/mercure';
+  const countListeners = (mercure) => (mercure.emitter.all.get('message') ?? []).length;
+  const mountWith = (app, setupFn) => {
+    app.setup(setupFn);
+    app.mount(document.createElement('div'));
+    return app;
+  };
+  const synchronizeInComponent = (options) => {
+    const mercure = createMercure(hub);
+    const app = mountWith(createTestApp(mercure), () => {
+      const {synchronize, on} = useMercureSync(undefined, options);
+      synchronize(reactive({'@id': '/api/foos/1', name: 'foo'}), '/api/foos/1');
+      on('/api/bars/{id}', () => {});
+    });
+    expect(countListeners(mercure)).toBe(2);
+    app.unmount();
+    return mercure;
+  };
+
+  it('removes the listeners on unmount by default', () => {
+    expect(countListeners(synchronizeInComponent())).toBe(0);
+  });
+
+  it('removes the listeners on unmount when the options leave the key out', () => {
+    expect(countListeners(synchronizeInComponent({}))).toBe(0);
+  });
+
+  it('keeps the listeners on unmount when asked to', () => {
+    expect(countListeners(synchronizeInComponent({removeListenersOnUnmount: false}))).toBe(2);
+  });
+
+  it('keeps the topics subscribed on unmount', () => {
+    expect(unref(synchronizeInComponent().subscribedTopics)).toEqual(['/api/foos/1', '/api/bars/{id}']);
+  });
+
+  it('removes the listeners when the effect scope is disposed', () => {
+    const mercure = new Mercure(hub);
+    const scope = effectScope();
+    scope.run(() => {
+      const {synchronize} = useMercureSync(mercure);
+      synchronize(reactive({'@id': '/api/foos/1', name: 'foo'}), '/api/foos/1');
+    });
+    expect(countListeners(mercure)).toBe(1);
+    scope.stop();
+    expect(countListeners(mercure)).toBe(0);
+  });
 });
