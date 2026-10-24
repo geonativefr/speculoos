@@ -174,7 +174,16 @@ const hashRequest = (url, options) => {
     .map(name => [name.toLowerCase(), `${headers[name]}`])
     .sort(([a], [b]) => (a < b ? -1 : (a > b ? 1 : 0)));
 
-  return md5(JSON.stringify({method: options?.method, url: `${url}`, body: options?.body, headers: normalizedHeaders}));
+  return md5(JSON.stringify({
+    method: options?.method,
+    url: `${url}`,
+    body: options?.body,
+    headers: normalizedHeaders,
+    credentials: options?.credentials,
+    mode: options?.mode,
+    cache: options?.cache,
+    redirect: options?.redirect,
+  }));
 };
 
 class PreventDuplicates {

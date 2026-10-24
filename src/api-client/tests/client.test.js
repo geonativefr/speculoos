@@ -210,6 +210,18 @@ it('does not share a pending request with one that has another method or body', 
   expect(fetcher).toHaveBeenCalledTimes(4);
 });
 
+it('does not share a pending request with one that has other credentials, mode, cache or redirect', async () => {
+  const [fetch, fetcher] = createDuplicatesFetcher();
+  await Promise.all([
+    fetch('https://example.com/api/foo', {method: 'GET', credentials: 'include'}),
+    fetch('https://example.com/api/foo', {method: 'GET', credentials: 'omit'}),
+    fetch('https://example.com/api/foo', {method: 'GET', mode: 'no-cors'}),
+    fetch('https://example.com/api/foo', {method: 'GET', cache: 'no-store'}),
+    fetch('https://example.com/api/foo', {method: 'GET', redirect: 'manual'}),
+  ]);
+  expect(fetcher).toHaveBeenCalledTimes(5);
+});
+
 it('does not share a request that carries a signal', async () => {
   const [fetch, fetcher] = createDuplicatesFetcher();
   await Promise.all([
