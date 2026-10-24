@@ -132,6 +132,16 @@ it('keeps the initial state of a filter changed in place before the first denorm
   expect(filters.tags.values).toEqual(['foo']);
 });
 
+it('keeps the store of an item filter when resetting it', async () => {
+  const filters = new FilterCollection({
+    account: new ItemFilter(undefined, {store}),
+  });
+
+  await filters.denormalize({});
+
+  expect(filters.account.store).toBe(store);
+});
+
 it('resets the filters missing from the new route', async () => {
   mockRoute.query.name = 'Johnson';
   const {filters} = await useSetup(createTestApp(), async () => {

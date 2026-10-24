@@ -59,6 +59,11 @@ function isPlainObject(value) {
   return null == prototype || Object.prototype === prototype;
 }
 
+// A plain object that holds a function, such as a store, is a reference the filter uses, not filter data.
+function isData(value) {
+  return isPlainObject(value) && Object.values(value).every(entry => 'function' !== typeof entry);
+}
+
 // Copies the arrays and plain objects a filter holds, so that changing them in place doesn't alter the copy.
 function copyState(filter) {
   const state = {};
@@ -66,7 +71,7 @@ function copyState(filter) {
     const value = filter[key];
     if (Array.isArray(value)) {
       state[key] = [...value];
-    } else if (isPlainObject(value)) {
+    } else if (isData(value)) {
       state[key] = {...value};
     } else {
       state[key] = value;
