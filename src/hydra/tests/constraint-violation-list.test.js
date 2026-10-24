@@ -50,3 +50,36 @@ it('returns violations', () => {
   expect(list.getViolations(null)).toEqual([violations[3], violations[4]]);
   expect(list.getViolations('')).toEqual([violations[3], violations[4]]);
 });
+
+it('reads violations sent without the hydra prefix', () => {
+  const input = {
+    '@context': '/api/contexts/ConstraintViolation',
+    '@id': '/api/validation_errors/c1051bb4-d103-4f74-8988-acbcafc7fdc3',
+    '@type': 'ConstraintViolation',
+    'status': 422,
+    'violations': [
+      {
+        'propertyPath': 'name',
+        'message': 'This value should not be blank.',
+        'code': 'c1051bb4-d103-4f74-8988-acbcafc7fdc3',
+      },
+      {
+        'propertyPath': 'password',
+        'message': 'This password is too weak',
+        'code': '3b3c33d3-d203-4a85-bf2d-925439764060',
+      },
+    ],
+    'detail': 'name: This value should not be blank.\npassword: This password is too weak',
+    'description': 'name: This value should not be blank.\npassword: This password is too weak',
+    'type': '/validation_errors/c1051bb4-d103-4f74-8988-acbcafc7fdc3',
+    'title': 'An error occurred',
+  };
+  const list = new ConstraintViolationList(input);
+  expect(list.title).toBe('An error occurred');
+  expect(list.description).toBe('name: This value should not be blank.\npassword: This password is too weak');
+  expect(list.getPropertyPaths()).toEqual(['name', 'password']);
+  expect(list.getViolations()).toHaveLength(2);
+  expect(list.getViolations('name')[0]).toBeInstanceOf(Violation);
+  expect(list.getViolations('name')[0].message).toBe('This value should not be blank.');
+  expect(list.getViolations('password')[0].code).toBe('3b3c33d3-d203-4a85-bf2d-925439764060');
+});
