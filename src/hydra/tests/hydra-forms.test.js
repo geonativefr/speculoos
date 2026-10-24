@@ -114,6 +114,29 @@ it('resets the item', async () => {
   expect(form.isUnsavedDraftAfter).toBe(false);
 });
 
+it('resets the item to its last saved state', async () => {
+  const storeFactory = await (await createStore()).use(plugin);
+  const initialState = {'@type': 'Foo', name: ''};
+  const savedState = {'@id': '/api/foos/1', '@type': 'Foo', name: 'bar'};
+  const form = await useSetup(createTestApp(storeFactory), async () => {
+    const {item, submit, reset, isCreationMode, isUnsavedDraft} = useItemForm(initialState);
+    item.name = 'bar';
+    response.value = mockResponse({body: JSON.stringify(savedState)});
+    await submit();
+    item.name = 'baz';
+    reset();
+    const isCreationModeAfterReset = unref(isCreationMode);
+    const isUnsavedDraftAfterReset = unref(isUnsavedDraft);
+    const itemAfterReset = {...item};
+    reset(initialState);
+    return {item, itemAfterReset, isCreationModeAfterReset, isUnsavedDraftAfterReset};
+  });
+  expect(form.itemAfterReset).toEqual(savedState);
+  expect(form.isCreationModeAfterReset).toBe(false);
+  expect(form.isUnsavedDraftAfterReset).toBe(false);
+  expect(form.item).toEqual(initialState);
+});
+
 test('initial item can get deep changes without impacting form state', async () => {
   const storeFactory = await (await createStore()).use(plugin);
   const initialState = {

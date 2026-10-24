@@ -41,9 +41,10 @@ export function useItemForm(itemInitialState) {
   const item = reactive(clone(unref(itemInitialState)));
   const isCreationMode = computed(() => !hasIri(unref(item)));
   const isSubmitting = ref(false);
+  let savedItem;
 
   const isUnsavedDraft = computed(() => JSON.stringify(unref(item)) !== JSON.stringify(unref(initialState)));
-  const reset = (resetItem) => recreateState(item, clone(unref(resetItem ?? itemInitialState)));
+  const reset = (resetItem) => recreateState(item, clone(unref(resetItem ?? savedItem ?? itemInitialState)));
 
   const submit = async (submittedItem) => {
     if (isRef(submittedItem)) {
@@ -53,6 +54,7 @@ export function useItemForm(itemInitialState) {
       isSubmitting.value = true;
       const updatedItem = await store.upsertItem(normalizeItemRelations(submittedItem ?? item));
       initialState.value = updatedItem;
+      savedItem = updatedItem;
       recreateState(item, clone(updatedItem));
       return updatedItem;
     } finally {
