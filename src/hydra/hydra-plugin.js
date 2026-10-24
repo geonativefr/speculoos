@@ -93,7 +93,7 @@ const hasItem = (items, iri) => iri in items && Object.prototype.hasOwnProperty.
 const findItem = (items, iri) => (hasItem(items, iri) ? items[iri] : null);
 
 /*
- * Evaluates a relation again whenever its source changes, keeping the result of the latest evaluation only. A pending
+ * Evaluates a relation again whenever its source changes, keeping the outcome of the latest evaluation only. A pending
  * source is not evaluated. Settles with the first evaluation: resolves to the synchronized ref, or rejects with the
  * evaluation's error and stops synchronizing.
  */
@@ -119,7 +119,7 @@ const synchronize = (source, isPending, evaluate) => new Promise((resolve, rejec
         resolve(synchronized);
       }
     } catch (error) {
-      if (!settled) {
+      if (evaluation === evaluations && !settled) {
         settled = true;
         scope.stop();
         reject(error);

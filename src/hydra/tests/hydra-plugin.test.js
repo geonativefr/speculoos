@@ -508,6 +508,35 @@ it('rejects a synchronized relation whose source, defined later, cannot be fetch
   await expect(relations).rejects.toHaveProperty('statusCode', 404);
 });
 
+it('ignores the error of a superseded evaluation of a synchronized relation', async () => {
+  const fetcher = jest.fn(async (url) => {
+    const iri = new URL(url).pathname;
+    // The superseded request fails before the latest one succeeds
+    await flushPromises();
+    if (iri.endsWith('/missing')) {
+      return mockResponse({status: 404, body: JSON.stringify({'@type': 'hydra:Error'})});
+    }
+    await flushPromises();
+    return mockResponse({body: JSON.stringify({'@id': iri})});
+  });
+  const store = await createStore();
+  await store.use(new HydraPlugin(new ApiClient({fetcher, baseUri: 'https://example.org'})));
+  const bar = reactive({associatedFoo: '/api/foos/missing', associatedFoos: ['/api/foos/missing']});
+  const relation = store.getRelation(() => bar.associatedFoo);
+  const relations = store.getRelations(() => bar.associatedFoos);
+  bar.associatedFoo = '/api/foos/1';
+  bar.associatedFoos = ['/api/foos/2'];
+
+  expect(unref(await relation)).toEqual({'@id': '/api/foos/1'});
+  expect(unref(await relations)).toEqual([{'@id': '/api/foos/2'}]);
+  // The synchronization goes on
+  bar.associatedFoo = '/api/foos/3';
+  await flushPromises();
+  await flushPromises();
+  await flushPromises();
+  expect(unref(await relation)).toEqual({'@id': '/api/foos/3'});
+});
+
 it('resolves synchronized relations to undefined when the error handler does not throw', async () => {
   const fetcher = async () => mockResponse({status: 404, body: JSON.stringify({'@type': 'hydra:Error'})});
   const store = await createStore();
