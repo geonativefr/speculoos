@@ -20,16 +20,9 @@ const mercure = new Mercure('https://example.org/.well-known/mercure');
 const mercure = new Mercure('https://example.org/.well-known/mercure', {withCredentials: true});
 ```
 
-#### Token-based
-
-```js
-const token = computed(() => store.state.accessToken);
-const mercure = new Mercure('https://example.org/.well-known/mercure', {
-  headers: {
-    Authorization: computed(() => `Bearer ${token}`),
-  },
-});
-```
+The options are passed to the browser's `EventSource`, which only supports `withCredentials`: it
+cannot send headers, so a `headers` option is ignored. To authorize a subscriber with a token, have
+the server set it in the `mercureAuthorization` cookie, and connect with `withCredentials: true`.
 
 ### Subscribe to topics
 
