@@ -18,6 +18,13 @@ synchronize(item); // Item will be populated through Mercure updates
 </script>
 ```
 
+The listeners added by `useMercureSync()` are removed when the component is unmounted, or when the
+effect scope it runs in is disposed. Pass `{removeListenersOnUnmount: false}` as its second argument
+to keep them.
+
+The topics stay subscribed: they are shared by every listener of the Mercure instance. Call
+`mercure.unsubscribe(topics)` once nothing listens to them anymore.
+
 ### Other
 
 ```js
@@ -26,6 +33,12 @@ import { mercureSync } from 'speculoos';
 // mercure is a Mercure instance
 mercureSync(mercure, item);
 ```
+
+`synchronize()` and `mercureSync()` take an item, an array of items, or a ref of either. A ref is
+read when each update arrives, so replacing its value is followed.
+
+Each update is parsed once for all the listeners, and each `onUpdate` and `on()` callback call is
+given its own copy of it: changing it affects neither the other listeners nor the other items.
 
 ## Topic reactivity
 

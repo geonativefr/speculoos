@@ -51,6 +51,18 @@ tags; see `RELEASING.md` for how a release is made.
 - `DateRangeFilter` with `withTime: false` puts the picked dates in the query as they are, and reads
   them back as they are, whatever the user's timezone: east of UTC, `after` was one day early; west
   of UTC, `before` was one day late and reading the query back gave the previous day.
+- With `reconnectInterval`, a Mercure connection stopped, or left without topics, after an error is
+  no longer reopened. Each consecutive failure doubles the delay before the next attempt, up to
+  30 seconds (or `reconnectInterval` if it is longer); an open connection resets it.
+- Subscribing to or unsubscribing from a topic while the Mercure connection is open reconnects it
+  with the new topics, once for all the changes made in the same tick. Nothing changes while `*` is
+  subscribed.
+- `useMercureSync(mercure, {...})` removes its listeners on unmount unless the options say
+  `removeListenersOnUnmount: false`, and also removes them when its effect scope is disposed. Topics
+  stay subscribed.
+- `mercureSync()` and `synchronize()` accept a ref of an item or of an array, read when each update
+  arrives, and each Mercure update is parsed once for all the listeners.
+- The Mercure documentation no longer shows a `headers` option: `EventSource` cannot send headers.
 
 ## 1.13.1
 

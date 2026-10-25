@@ -1,21 +1,42 @@
 import { areSameIris, getIri, hasIri } from './iri-functions.js';
-import { onUnmounted, unref } from 'vue';
+import { clone } from '../clone/index.js';
+import { onScopeDispose, unref } from 'vue';
 import { useMercure } from '../mercure/index.js';
 import uriTemplate from 'uri-templates';
 
 const defaultUpdater = (update, item) => Object.assign(item, update);
 const defaultRemover = () => {};
 
-export function mercureSync(mercure, items, topics = ['*'], onUpdate = defaultUpdater, onDelete = defaultRemover) {
-  if (!Array.isArray(items)) {
-    items = [items];
+/*
+ * Every listener receives the same event: its data is parsed once, and the parsed data (or the parse
+ * error) is shared by all of them. Each callback is given its own copy of it.
+ */
+const parsedEvents = new WeakMap();
+
+function parseEventData(event) {
+  if (!parsedEvents.has(event)) {
+    let parsed;
+    try {
+      parsed = {data: JSON.parse(event.data)};
+    } catch (error) {
+      parsed = {error};
+    }
+    parsedEvents.set(event, parsed);
   }
+  const parsed = parsedEvents.get(event);
+  if ('error' in parsed) {
+    throw parsed.error;
+  }
+  return parsed.data;
+}
+
+export function mercureSync(mercure, items, topics = ['*'], onUpdate = defaultUpdater, onDelete = defaultRemover) {
   if (!Array.isArray(topics)) {
     topics = [topics];
   }
   const listener = (event) => {
     try {
-      const data = JSON.parse(event.data);
+      const data = parseEventData(event);
       if (!hasIri(data)) {
         return;
       }
@@ -23,9 +44,13 @@ export function mercureSync(mercure, items, topics = ['*'], onUpdate = defaultUp
         onDelete(getIri(data));
         return;
       }
-      for (const item of items) {
+      let currentItems = unref(items);
+      if (!Array.isArray(currentItems)) {
+        currentItems = [currentItems];
+      }
+      for (const item of currentItems) {
         if (areSameIris(getIri(data), item)) {
-          onUpdate(data, unref(item));
+          onUpdate(clone(data), unref(item));
         }
       }
     } catch (e) {
@@ -45,7 +70,7 @@ export const on = (mercure, topics, callback) => {
   const wrapper = (event) => {
     let item;
     try {
-      item = JSON.parse(event.data);
+      item = parseEventData(event);
     } catch (e) {
       console.debug(e);
       return;
@@ -59,7 +84,7 @@ export const on = (mercure, topics, callback) => {
     try {
       for (const topic of topics) {
         if ('undefined' !== typeof uriTemplate(topic).fromUri(getIri(item))) {
-          callback(item);
+          callback(clone(item));
           break;
         }
       }
@@ -73,12 +98,12 @@ export const on = (mercure, topics, callback) => {
   return wrapper;
 };
 
-export const useMercureSync = (mercure, options = {removeListenersOnUnmount: true}) => {
+export const useMercureSync = (mercure, {removeListenersOnUnmount = true} = {}) => {
   mercure = mercure ?? useMercure();
   const listeners = [];
 
-  if (options.removeListenersOnUnmount) {
-    onUnmounted(() => {
+  if (removeListenersOnUnmount) {
+    onScopeDispose(() => {
       for (const listener of listeners) {
         mercure.removeListener(listener);
       }
