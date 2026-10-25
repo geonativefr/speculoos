@@ -891,6 +891,48 @@ it('resolves to undefined when the error handler does not throw', async () => {
   expect(Array.from(store.state.items)).toHaveLength(0);
 });
 
+it('passes the HTTP status of an error response without @type to the error handler', async () => {
+  const errorHandler = jest.fn();
+  const store = await createStore();
+  await store.use(new HydraPlugin(api, {errorHandler}));
+  currentResponse.value = mockResponse({status: 401, body: JSON.stringify({code: 401, message: 'JWT Token not found'})});
+  expect(await store.fetchItem('/api/foos/1')).toBeUndefined();
+
+  expect(errorHandler).toHaveBeenCalledTimes(1);
+  const [error] = errorHandler.mock.calls[0];
+  expect(error.statusCode).toBe(401);
+  expect(error.message).toBe('JWT Token not found');
+});
+
+it('passes the HTTP status of a Hydra error response to the error handler', async () => {
+  const errorHandler = jest.fn();
+  const store = await createStore();
+  await store.use(new HydraPlugin(api, {errorHandler}));
+  currentResponse.value = mockResponse({status: 422, body: JSON.stringify({
+    '@type': 'Error',
+    'title': 'An error occurred',
+    'description': 'Unprocessable Entity',
+  })});
+  expect(await store.fetchItem('/api/foos/1')).toBeUndefined();
+
+  expect(errorHandler).toHaveBeenCalledTimes(1);
+  const [error] = errorHandler.mock.calls[0];
+  expect(error).toBeInstanceOf(HydraError);
+  expect(error.statusCode).toBe(422);
+});
+
+it('passes the HTTP status of an error response without body to the error handler', async () => {
+  const errorHandler = jest.fn();
+  const store = await createStore();
+  await store.use(new HydraPlugin(api, {errorHandler}));
+  currentResponse.value = mockResponse({status: 503, statusText: 'Service Unavailable'});
+  expect(await store.fetchItem('/api/foos/1')).toBeUndefined();
+
+  expect(errorHandler).toHaveBeenCalledTimes(1);
+  const [error] = errorHandler.mock.calls[0];
+  expect(error.statusCode).toBe(503);
+});
+
 it('filters items by type', async () => {
   const storeFactory = await (await createStore()).use(plugin);
   const store = await getInjectedStore(storeFactory);
