@@ -6,6 +6,7 @@ import { mockResponse } from '../../api-client/tests/setup.js';
 import { createStore, useStore } from '../../store/index.js';
 import { ConstraintViolationList, Violation } from '../factories/constraint-violation-list.js';
 import { HydraCollection } from '../factories/hydra-collection.js';
+import { HydraError } from '../factories/hydra-error.js';
 import { HydraPlugin } from '../hydra-plugin.js';
 
 const currentResponse = ref();
@@ -758,6 +759,113 @@ it('returns a typed error', async () => {
   }
 
   throw ShouldNotHappen;
+});
+
+it('types the collections, errors and violations sent without the hydra prefix', () => {
+  const plugin = new HydraPlugin(api);
+  const members = [{'@id': '/api/foos/1', name: 'foo'}, {'@id': '/api/foos/2', name: 'bar'}];
+  const collection = plugin.factory({
+    '@context': '/api/contexts/Foo',
+    '@id': '/api/foos',
+    '@type': 'Collection',
+    'totalItems': 1000,
+    'member': members,
+    'view': {'@id': '/api/foos?page=1', '@type': 'PartialCollectionView', 'next': '/api/foos?page=2'},
+  });
+  expect(collection).toBeInstanceOf(HydraCollection);
+  expect(Array.from(collection)).toEqual(members);
+  expect(collection.items).toEqual(members);
+  expect(collection['hydra:member']).toEqual(members);
+  expect(collection.totalItems).toBe(1000);
+  expect(collection['hydra:view'].next).toBe('/api/foos?page=2');
+
+  const error = plugin.factory({'@type': 'Error', 'title': 'An error occurred', 'description': 'Not Found'}, 404);
+  expect(error).toBeInstanceOf(HydraError);
+  expect(error.title).toBe('An error occurred');
+  expect(error.description).toBe('Not Found');
+  expect(error.statusCode).toBe(404);
+
+  const violations = plugin.factory({
+    '@type': 'ConstraintViolation',
+    'title': 'An error occurred',
+    'description': 'name: This value should not be blank.',
+    'violations': [
+      {'propertyPath': 'name', 'message': 'This value should not be blank.', 'code': 'c1051bb4-d103-4f74-8988-acbcafc7fdc3'},
+    ],
+  });
+  expect(violations).toBeInstanceOf(ConstraintViolationList);
+  expect(violations.title).toBe('An error occurred');
+  expect(violations.getPropertyPaths()).toEqual(['name']);
+  expect(violations.getViolations('name')).toHaveLength(1);
+  expect(violations.getViolations('name')[0]).toBeInstanceOf(Violation);
+});
+
+it('fetches a collection sent without the hydra prefix, typing its members', async () => {
+  class Foo {
+    name;
+  }
+  const plugin = new HydraPlugin(
+    new ApiClient({fetcher, baseUri: 'https://example.org'}),
+    {
+      endpoints: {Foo: '/api/foos'},
+      classmap: {Foo},
+    },
+  );
+  const store = await createStore();
+  await store.use(plugin);
+  currentResponse.value = mockResponse({body: JSON.stringify({
+    '@type': 'Collection',
+    'totalItems': 2,
+    'member': [
+      {'@id': '/api/foos/1', '@type': 'Foo', name: 'foo'},
+      {'@id': '/api/foos/2', '@type': 'Foo', name: 'bar'},
+    ],
+  })});
+  const collection = await store.fetchCollection('/api/foos', {store: true});
+  expect(collection).toBeInstanceOf(HydraCollection);
+  expect(collection.totalItems).toBe(2);
+  const items = Array.from(collection);
+  expect(items).toHaveLength(2);
+  expect(items[0]).toBeInstanceOf(Foo);
+  expect(items[0].name).toBe('foo');
+  expect(items[1]).toBeInstanceOf(Foo);
+  expect(Array.from(store.state.items)).toHaveLength(2);
+  expect(Array.from(store.state.items)[1]).toBeInstanceOf(Foo);
+});
+
+it('returns a typed error sent without the hydra prefix', async () => {
+  const store = await createStore();
+  await store.use(new HydraPlugin(api));
+  currentResponse.value = mockResponse({status: 404, body: JSON.stringify({
+    '@type': 'Error',
+    'title': 'An error occurred',
+    'detail': 'Not Found',
+    'description': 'Not Found',
+    'status': 404,
+  })});
+  await expect(store.fetchItem('/api/foos/1')).rejects.toMatchObject({
+    title: 'An error occurred',
+    description: 'Not Found',
+    statusCode: 404,
+  });
+
+  currentResponse.value = mockResponse({status: 422, body: JSON.stringify({
+    '@type': 'ConstraintViolation',
+    'title': 'An error occurred',
+    'description': 'name: This value should not be blank.',
+    'violations': [
+      {'propertyPath': 'name', 'message': 'This value should not be blank.', 'code': 'c1051bb4-d103-4f74-8988-acbcafc7fdc3'},
+    ],
+  })});
+  let error;
+  try {
+    await store.updateItem({'@type': 'Foo', '@id': '/api/foos/1', name: ''});
+  } catch (e) {
+    error = e;
+  }
+  expect(error).toBeInstanceOf(ConstraintViolationList);
+  expect(error.statusCode).toBe(422);
+  expect(error.getViolations('name')[0].message).toBe('This value should not be blank.');
 });
 
 it('resolves to undefined when the error handler does not throw', async () => {

@@ -1,3 +1,5 @@
+import { setPrefixed } from './hydra-prefix.js';
+
 export class HydraCollection {
   constructor(data = {}) {
     Object.assign(
@@ -17,6 +19,34 @@ export class HydraCollection {
 
   get totalItems() {
     return this['hydra:totalItems'] || 0;
+  }
+
+  set totalItems(totalItems) {
+    setPrefixed(this, 'totalItems', totalItems);
+  }
+
+  get member() {
+    return this['hydra:member'];
+  }
+
+  set member(member) {
+    setPrefixed(this, 'member', member);
+  }
+
+  get view() {
+    return this['hydra:view'];
+  }
+
+  set view(view) {
+    setPrefixed(this, 'view', view);
+  }
+
+  get search() {
+    return this['hydra:search'];
+  }
+
+  set search(search) {
+    setPrefixed(this, 'search', search);
   }
 
   get items() {
