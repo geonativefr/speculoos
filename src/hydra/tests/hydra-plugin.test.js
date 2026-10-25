@@ -1,5 +1,5 @@
 import flushPromises from 'flush-promises';
-import { computed, isRef, reactive, ref, unref } from 'vue';
+import { computed, effect, isRef, reactive, ref, unref, watch } from 'vue';
 import { createTestApp, getInjectedStore, ShouldNotHappen, useSetup } from '../../../vue-tests-setup.js';
 import { ApiClient } from '../../api-client/index.js';
 import { mockResponse } from '../../api-client/tests/setup.js';
@@ -44,6 +44,129 @@ it('stores an item', async () => {
   // Update state
   store.storeItem({'@id': '/api/foos/1', name: 'foo', number: 2});
   expect(Array.from(store.state.items)[0]).toEqual({'@id': '/api/foos/1', name: 'foo', number: 2});
+});
+
+const makeStoredItem = () => ({'@id': '/api/foos/1', name: 'foo', bar: {'@id': '/api/bars/1', tags: ['a', 'b'], deep: {x: 1}}});
+
+async function setupStoredItem() {
+  const store = await getInjectedStore(await (await createStore()).use(plugin));
+  const stored = store.storeItem(makeStoredItem());
+  const bar = stored.bar;
+  const tags = stored.bar.tags;
+  const deep = stored.bar.deep;
+  let runs = 0;
+  const stop = effect(() => {
+    JSON.stringify(stored);
+    runs++;
+  });
+  let watched = 0;
+  const stopWatch = watch(() => stored.bar, () => watched++, {deep: true});
+  return {store, stored, bar, tags, deep, runs: () => runs, watched: () => watched, stop: () => { stop(); stopWatch(); }};
+}
+
+it('keeps identities and triggers nothing when an item is stored again unchanged', async () => {
+  const ctx = await setupStoredItem();
+  const result = ctx.store.storeItem(makeStoredItem());
+  await flushPromises();
+  expect(result).toBe(ctx.stored);
+  expect(ctx.stored.bar).toBe(ctx.bar);
+  expect(ctx.stored.bar.tags).toBe(ctx.tags);
+  expect(ctx.stored.bar.deep).toBe(ctx.deep);
+  expect(ctx.runs()).toBe(1);
+  expect(ctx.watched()).toBe(0);
+  ctx.stop();
+});
+
+it('writes a changed nested value and triggers effects', async () => {
+  const ctx = await setupStoredItem();
+  const changed = makeStoredItem();
+  changed.bar.deep.x = 2;
+  ctx.store.storeItem(changed);
+  await flushPromises();
+  expect(ctx.stored.bar.deep.x).toBe(2);
+  expect(ctx.runs()).toBeGreaterThan(1);
+  expect(ctx.watched()).toBe(1);
+  ctx.stop();
+});
+
+it('writes a changed array', async () => {
+  const ctx = await setupStoredItem();
+  const changed = makeStoredItem();
+  changed.bar.tags = ['a', 'c'];
+  ctx.store.storeItem(changed);
+  expect(Array.from(ctx.stored.bar.tags)).toEqual(['a', 'c']);
+  ctx.stop();
+});
+
+it('keeps the identity of a nested class instance holding the same values', async () => {
+  class Box {
+    constructor(width) {
+      this.width = width;
+    }
+  }
+  const store = await getInjectedStore(await (await createStore()).use(plugin));
+  const stored = store.storeItem({'@id': '/api/foos/1', box: new Box(1), at: new Date(0)});
+  const box = stored.box;
+  const at = stored.at;
+  store.storeItem({'@id': '/api/foos/1', box: new Box(1), at: new Date(0)});
+  expect(stored.box).toBe(box);
+  expect(stored.at).toBe(at);
+  store.storeItem({'@id': '/api/foos/1', box: new Box(2), at: new Date(1)});
+  expect(stored.box.width).toBe(2);
+  expect(stored.at.getTime()).toBe(1);
+});
+
+it('writes a new key when storing an item already stored', async () => {
+  const ctx = await setupStoredItem();
+  ctx.store.storeItem({...makeStoredItem(), number: 2});
+  await flushPromises();
+  expect(ctx.stored.number).toBe(2);
+  expect(ctx.runs()).toBeGreaterThan(1);
+  ctx.stop();
+});
+
+it('writes a new key even when its value is undefined', async () => {
+  const ctx = await setupStoredItem();
+  ctx.store.storeItem({...makeStoredItem(), extra: undefined});
+  expect('extra' in ctx.stored).toBe(true);
+  ctx.stop();
+});
+
+it('keeps keys absent from the item stored again', async () => {
+  const ctx = await setupStoredItem();
+  ctx.store.storeItem({'@id': '/api/foos/1', other: 1});
+  expect(ctx.stored.name).toBe('foo');
+  expect(ctx.stored.other).toBe(1);
+  ctx.stop();
+});
+
+it('stores a cyclic item twice without throwing nor rewriting it', async () => {
+  const makeCyclic = () => {
+    const item = {'@id': '/api/foos/1', name: 'foo'};
+    item.self = {p: item};
+    return item;
+  };
+  const store = await getInjectedStore(await (await createStore()).use(plugin));
+  const stored = store.storeItem(makeCyclic());
+  const self = stored.self;
+  expect(() => store.storeItem(makeCyclic())).not.toThrow();
+  expect(stored.self).toBe(self);
+});
+
+it('does not subscribe an effect storing an item to the keys of that item', async () => {
+  const store = await getInjectedStore(await (await createStore()).use(plugin));
+  const stored = store.storeItem(makeStoredItem());
+  let runs = 0;
+  const stop = effect(() => {
+    store.storeItem(makeStoredItem());
+    runs++;
+  });
+  expect(runs).toBe(1);
+  stored.name = 'changed';
+  stored.bar.deep.x = 5;
+  await flushPromises();
+  expect(runs).toBe(1);
+  stop();
 });
 
 it('removes an item', async () => {

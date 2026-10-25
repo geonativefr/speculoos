@@ -1,5 +1,5 @@
 import { checkValidItem, getIri, getItemByIri, hasIri } from './iri-functions.js';
-import { reactive, readonly, ref, watch } from 'vue';
+import { reactive, readonly, ref, toRaw, watch } from 'vue';
 import { HydraCollection } from './factories/hydra-collection.js';
 import { HydraError } from './factories/hydra-error.js';
 import { ConstraintViolationList } from './factories/constraint-violation-list.js';
@@ -12,6 +12,41 @@ const DEFAULT_CLASSMAP = {
   'hydra:Error': HydraError,
   'ConstraintViolationList': ConstraintViolationList,
 };
+
+function isSameValue(a, b, compared = new WeakMap()) {
+  a = toRaw(a);
+  b = toRaw(b);
+  if (Object.is(a, b)) {
+    return true;
+  }
+  if ('object' !== typeof a || 'object' !== typeof b || null === a || null === b) {
+    return false;
+  }
+  if (compared.get(a)?.has(b)) {
+    return true;
+  }
+  if (!compared.has(a)) {
+    compared.set(a, new Set());
+  }
+  compared.get(a).add(b);
+  if (Array.isArray(a) || Array.isArray(b)) {
+    return Array.isArray(a) && Array.isArray(b) && a.length === b.length
+      && a.every((value, index) => isSameValue(value, b[index], compared));
+  }
+  const tag = Object.prototype.toString.call(a);
+  if (tag !== Object.prototype.toString.call(b) || Object.getPrototypeOf(a) !== Object.getPrototypeOf(b)) {
+    return false;
+  }
+  if ('[object Date]' === tag) {
+    return a.getTime() === b.getTime();
+  }
+  if ('[object Object]' !== tag) {
+    return false;
+  }
+  const keys = Object.keys(a);
+  return keys.length === Object.keys(b).length
+    && keys.every((key) => Object.prototype.hasOwnProperty.call(b, key) && isSameValue(a[key], b[key], compared));
+}
 
 class Items {
   constructor() {
@@ -91,7 +126,13 @@ export class HydraPlugin {
     if (!Object.keys(state.items).includes(iri)) {
       state.items[iri] = ref(item);
     } else {
-      Object.assign(state.items[iri], item);
+      const stored = state.items[iri];
+      const rawStored = toRaw(stored);
+      for (const key of Object.keys(item)) {
+        if (!(key in rawStored) || !isSameValue(rawStored[key], item[key])) {
+          stored[key] = item[key];
+        }
+      }
     }
     return state.items[iri];
   }
