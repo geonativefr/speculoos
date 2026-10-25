@@ -17,11 +17,29 @@ const normalizeHeaders = (headers) => {
   return output;
 };
 
+const mergeHeaders = (...sources) => {
+  const output = {};
+  for (const headers of sources) {
+    const normalized = normalizeHeaders(headers) ?? {};
+    for (const name of Object.keys(normalized)) {
+      // Header names are case-insensitive: the latest source wins, with its own spelling
+      for (const existingName of Object.keys(output)) {
+        if (existingName.toLowerCase() === name.toLowerCase()) {
+          delete output[existingName];
+        }
+      }
+      output[name] = normalized[name];
+    }
+  }
+
+  return output;
+};
+
 const defaultHeaders = {
   Accept: 'application/ld+json, application/json',
 };
 
-const tapResponse = async (response) => {
+const readResponse = async (response) => {
   try {
     const body = await response.text();
     try {
@@ -36,6 +54,17 @@ const tapResponse = async (response) => {
   }
 
   return response;
+};
+
+// A response shared between duplicate requests is tapped by each of them: its body can only be read once
+const tappedResponses = new WeakMap();
+
+const tapResponse = (response) => {
+  if (!tappedResponses.has(response)) {
+    tappedResponses.set(response, readResponse(response));
+  }
+
+  return tappedResponses.get(response);
 };
 
 export class ApiClient {
@@ -61,7 +90,7 @@ export class ApiClient {
     for (let argument of arguments) {
       let options = {...argument};
       if (Object.keys(options).includes('headers')) {
-        options.headers = {...normalizeHeaders(options.headers)};
+        options.headers = mergeHeaders(output.headers, options.headers);
       }
       output = {...clone(output), ...clone(options)};
     }
@@ -73,8 +102,9 @@ export class ApiClient {
     url = `${unref(url)}`; // Ensure string
     options = this.mergeOptions({method}, options);
     if (Object.keys(options).includes('headers')) {
-      options.headers = new Headers({...defaultHeaders, ...normalizeHeaders(options.headers)});
+      options.headers = new Headers(mergeHeaders(defaultHeaders, options.headers));
     }
+    let stopWatchingAborted = () => {};
     try {
       if (isRef(options?.isLoading)) {
         options.isLoading.value = true;
@@ -83,7 +113,7 @@ export class ApiClient {
         const controller = new AbortController();
         const { signal } = controller;
         options.signal = signal;
-        whenever(options.aborted, () => controller.abort(), {immediate: true});
+        stopWatchingAborted = whenever(options.aborted, () => controller.abort(), {immediate: true});
       }
       try {
         const response = await this.fetch(url, options);
@@ -95,6 +125,7 @@ export class ApiClient {
         throw e;
       }
     } finally {
+      stopWatchingAborted();
       if (isRef(options?.isLoading)) {
         options.isLoading.value = false;
       }
@@ -134,6 +165,27 @@ export class ApiClient {
   }
 }
 
+// A signal belongs to its caller, and a body other than a string cannot be compared
+const isShareable = (options) => null == options?.signal && (null == options?.body || 'string' === typeof options.body);
+
+const hashRequest = (url, options) => {
+  const headers = normalizeHeaders(options?.headers) ?? {};
+  const normalizedHeaders = Object.keys(headers)
+    .map(name => [name.toLowerCase(), `${headers[name]}`])
+    .sort(([a], [b]) => (a < b ? -1 : (a > b ? 1 : 0)));
+
+  return md5(JSON.stringify({
+    method: options?.method,
+    url: `${url}`,
+    body: options?.body,
+    headers: normalizedHeaders,
+    credentials: options?.credentials,
+    mode: options?.mode,
+    cache: options?.cache,
+    redirect: options?.redirect,
+  }));
+};
+
 class PreventDuplicates {
   fetch;
   pendingRequests = [];
@@ -148,27 +200,26 @@ class PreventDuplicates {
   constructor(fetcher = window.fetch?.bind(window)) {
     this.fetch = fetcher;
     return (url, options) => {
-      try {
-        const hash = md5(JSON.stringify({url, ...options}));
-        const index = this.pendingRequests.findIndex(pending => hash === pending.hash);
-        if (index >= 0) {
-          return this.pendingRequests[index].promise;
-        }
-        const promise = this.fetch(url, options).then(tapResponse);
-        this.pendingRequests.push({hash, promise});
-        return promise.then(
-          (result) => {
-            this.removePendingRequest(hash);
-            return result;
-          },
-          (error) => {
-            this.removePendingRequest(hash);
-            throw error;
-          }
-        );
-      } catch (e) {
-        return this.fetch(url, options);
+      if (!isShareable(options)) {
+        return this.fetch(url, options).then(tapResponse);
       }
+      const hash = hashRequest(url, options);
+      const index = this.pendingRequests.findIndex(pending => hash === pending.hash);
+      if (index >= 0) {
+        return this.pendingRequests[index].promise;
+      }
+      const promise = this.fetch(url, options).then(tapResponse);
+      this.pendingRequests.push({hash, promise});
+      return promise.then(
+        (result) => {
+          this.removePendingRequest(hash);
+          return result;
+        },
+        (error) => {
+          this.removePendingRequest(hash);
+          throw error;
+        }
+      );
     };
   }
 }

@@ -1,5 +1,5 @@
 import flushPromises from 'flush-promises';
-import { computed, effect, isRef, reactive, ref, unref, watch } from 'vue';
+import { computed, effect, isRef, nextTick, reactive, ref, unref, watch, watchEffect } from 'vue';
 import { createTestApp, getInjectedStore, ShouldNotHappen, useSetup } from '../../../vue-tests-setup.js';
 import { ApiClient } from '../../api-client/index.js';
 import { mockResponse } from '../../api-client/tests/setup.js';
@@ -242,6 +242,34 @@ it('gets an item', async () => {
   expect(Array.from(store.state.items)).toHaveLength(0);
 });
 
+it('looks an item up by its IRI, without depending on the other items', async () => {
+  const store = await createStore();
+  await store.use(plugin);
+  store.storeItem({'@id': '/api/foos/1', name: 'foo'});
+  let lookups = 0;
+  const stop = watchEffect(() => {
+    lookups++;
+    store.getItem('/api/foos/1');
+    store.getRelation('/api/foos/1');
+  });
+  expect(lookups).toBe(1);
+
+  store.storeItem({'@id': '/api/foos/2', name: 'bar'});
+  await nextTick();
+  expect(lookups).toBe(1);
+  stop();
+});
+
+it('gets an embedded relation without an IRI, whatever the cache holds', async () => {
+  const store = await createStore();
+  await store.use(plugin);
+  const embedded = {name: 'embedded'};
+  expect(await store.getRelation(embedded)).toEqual(embedded);
+
+  store.storeItem({'@id': '/api/foos/1', name: 'foo'});
+  expect(await store.getRelation(embedded)).toEqual(embedded);
+});
+
 it('gets an item only by its IRI, even on an already constructed object', async () => {
   let item;
   const store = await createStore();
@@ -408,6 +436,117 @@ it('synchronizes OneToMany relations', async () => {
   expect(unref(items)).toEqual([{'@id': '/api/foos/2', name: 'foo2'}]);
 });
 
+it('rejects synchronized relations that cannot be fetched, and stops synchronizing them', async () => {
+  const fetcher = jest.fn(async () => mockResponse({status: 404, body: JSON.stringify({'@type': 'hydra:Error'})}));
+  const store = await createStore();
+  await store.use(new HydraPlugin(new ApiClient({fetcher, baseUri: 'https://example.org'})));
+  const bar = reactive({
+    '@id': '/api/bars/1',
+    associatedFoo: '/api/foos/1',
+    associatedFoos: ['/api/foos/1'],
+  });
+
+  await expect(store.getRelation(() => bar.associatedFoo)).rejects.toHaveProperty('statusCode', 404);
+  await expect(store.getRelations(() => bar.associatedFoos)).rejects.toHaveProperty('statusCode', 404);
+  expect(fetcher).toHaveBeenCalledTimes(2);
+
+  bar.associatedFoo = '/api/foos/2';
+  bar.associatedFoos = ['/api/foos/2'];
+  await flushPromises();
+  expect(fetcher).toHaveBeenCalledTimes(2);
+});
+
+it('waits for the source of a synchronized relation to be defined', async () => {
+  const fetcher = jest.fn(async (url) => mockResponse({body: JSON.stringify({'@id': new URL(url).pathname})}));
+  const store = await createStore();
+  await store.use(new HydraPlugin(new ApiClient({fetcher, baseUri: 'https://example.org'})));
+  const bar = reactive({associatedFoo: undefined, associatedFoos: undefined});
+  let item;
+  let items;
+  store.getRelation(() => bar.associatedFoo).then(relation => item = relation);
+  store.getRelations(() => bar.associatedFoos).then(relations => items = relations);
+  await flushPromises();
+  expect(item).toBeUndefined();
+  expect(items).toBeUndefined();
+  expect(fetcher).not.toHaveBeenCalled();
+
+  bar.associatedFoo = '/api/foos/1';
+  bar.associatedFoos = ['/api/foos/2'];
+  await flushPromises();
+  expect(unref(item)).toEqual({'@id': '/api/foos/1'});
+  expect(unref(items)).toEqual([{'@id': '/api/foos/2'}]);
+});
+
+it('waits for the source of synchronized relations to be neither undefined nor null', async () => {
+  const fetcher = jest.fn(async (url) => mockResponse({body: JSON.stringify({'@id': new URL(url).pathname})}));
+  const store = await createStore();
+  await store.use(new HydraPlugin(new ApiClient({fetcher, baseUri: 'https://example.org'})));
+  const bar = reactive({associatedFoos: null});
+  let items;
+  store.getRelations(() => bar.associatedFoos).then(relations => items = relations);
+  await flushPromises();
+  expect(items).toBeUndefined();
+
+  bar.associatedFoos = ['/api/foos/1'];
+  await flushPromises();
+  expect(unref(items)).toEqual([{'@id': '/api/foos/1'}]);
+});
+
+it('rejects a synchronized relation whose source, defined later, cannot be fetched', async () => {
+  const fetcher = jest.fn(async () => mockResponse({status: 404, body: JSON.stringify({'@type': 'hydra:Error'})}));
+  const store = await createStore();
+  await store.use(new HydraPlugin(new ApiClient({fetcher, baseUri: 'https://example.org'})));
+  const bar = reactive({associatedFoo: undefined, associatedFoos: undefined});
+  const relation = store.getRelation(() => bar.associatedFoo);
+  const relations = store.getRelations(() => bar.associatedFoos);
+  await flushPromises();
+  expect(fetcher).not.toHaveBeenCalled();
+
+  bar.associatedFoo = '/api/foos/1';
+  bar.associatedFoos = ['/api/foos/2'];
+  await expect(relation).rejects.toHaveProperty('statusCode', 404);
+  await expect(relations).rejects.toHaveProperty('statusCode', 404);
+});
+
+it('ignores the error of a superseded evaluation of a synchronized relation', async () => {
+  const fetcher = jest.fn(async (url) => {
+    const iri = new URL(url).pathname;
+    // The superseded request fails before the latest one succeeds
+    await flushPromises();
+    if (iri.endsWith('/missing')) {
+      return mockResponse({status: 404, body: JSON.stringify({'@type': 'hydra:Error'})});
+    }
+    await flushPromises();
+    return mockResponse({body: JSON.stringify({'@id': iri})});
+  });
+  const store = await createStore();
+  await store.use(new HydraPlugin(new ApiClient({fetcher, baseUri: 'https://example.org'})));
+  const bar = reactive({associatedFoo: '/api/foos/missing', associatedFoos: ['/api/foos/missing']});
+  const relation = store.getRelation(() => bar.associatedFoo);
+  const relations = store.getRelations(() => bar.associatedFoos);
+  bar.associatedFoo = '/api/foos/1';
+  bar.associatedFoos = ['/api/foos/2'];
+
+  expect(unref(await relation)).toEqual({'@id': '/api/foos/1'});
+  expect(unref(await relations)).toEqual([{'@id': '/api/foos/2'}]);
+  // The synchronization goes on
+  bar.associatedFoo = '/api/foos/3';
+  await flushPromises();
+  await flushPromises();
+  await flushPromises();
+  expect(unref(await relation)).toEqual({'@id': '/api/foos/3'});
+});
+
+it('resolves synchronized relations to undefined when the error handler does not throw', async () => {
+  const fetcher = async () => mockResponse({status: 404, body: JSON.stringify({'@type': 'hydra:Error'})});
+  const store = await createStore();
+  await store.use(new HydraPlugin(new ApiClient({fetcher, baseUri: 'https://example.org'}), {errorHandler: () => {}}));
+
+  const item = await store.getRelation(() => '/api/foos/1');
+  expect(isRef(item)).toBeTruthy();
+  expect(unref(item)).toBeUndefined();
+});
+
 it('fetches a collection', async () => {
   let collection;
   const store = await createStore();
@@ -433,6 +572,21 @@ it('fetches a collection', async () => {
   currentResponse.value = mockResponse({body: JSON.stringify(body)});
   await store.fetchCollection('/api/foos', {store: true});
   expect(Array.from(store.state.items)).toHaveLength(1);
+});
+
+it('types each member of a collection once', async () => {
+  const plugin = new HydraPlugin(api);
+  const store = await createStore();
+  await store.use(plugin);
+  const members = [
+    {'@id': '/api/foos/1', name: 'foo'},
+    {'@id': '/api/foos/2', name: 'bar'},
+  ];
+  const factory = jest.spyOn(plugin, 'factory');
+  currentResponse.value = mockResponse({body: JSON.stringify({'@type': 'hydra:Collection', 'hydra:member': members})});
+  await store.fetchCollection('/api/foos');
+  const memberCalls = factory.mock.calls.filter(([item]) => members.some(member => member['@id'] === item['@id']));
+  expect(memberCalls).toHaveLength(members.length);
 });
 
 it('appends a `groups` parameter to the query', async () => {
@@ -604,6 +758,29 @@ it('returns a typed error', async () => {
   }
 
   throw ShouldNotHappen;
+});
+
+it('resolves to undefined when the error handler does not throw', async () => {
+  const errorHandler = jest.fn();
+  const plugin = new HydraPlugin(api, {endpoints: {Foo: '/api/foos'}, errorHandler});
+  const store = await createStore();
+  await store.use(plugin);
+  const unauthorized = () => mockResponse({status: 401, body: JSON.stringify({'@type': 'hydra:Error'})});
+
+  currentResponse.value = unauthorized();
+  expect(await store.fetchItem('/api/foos/1')).toBeUndefined();
+  currentResponse.value = unauthorized();
+  expect(await store.getItem('/api/foos/1')).toBeUndefined();
+  currentResponse.value = unauthorized();
+  expect(await store.fetchCollection('/api/foos', {store: true})).toBeUndefined();
+  currentResponse.value = unauthorized();
+  expect(await store.createItem({'@type': 'Foo', name: 'foo'})).toBeUndefined();
+  currentResponse.value = unauthorized();
+  expect(await store.updateItem({'@type': 'Foo', '@id': '/api/foos/1', name: 'foo'})).toBeUndefined();
+
+  expect(errorHandler).toHaveBeenCalledTimes(5);
+  expect(errorHandler.mock.calls[0][0].statusCode).toBe(401);
+  expect(Array.from(store.state.items)).toHaveLength(0);
 });
 
 it('filters items by type', async () => {

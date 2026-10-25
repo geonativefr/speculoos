@@ -16,6 +16,25 @@ tags; see `RELEASING.md` for how a release is made.
   - `tz()` on an invalid date returns an invalid date instead of throwing;
   - the format regex changes from `Y{1,4}` to `YYYY|YY`, so a `YYY` or `Y` token is no longer
     parsed as a year.
+- A request's own headers, including the `Content-Type` of `post()` and `put()`, are merged into the
+  client's headers instead of replacing them: writes and Vulcain requests now keep the client's
+  `Accept-Language`, `Authorization`… A request's header replaces the client's header of the same
+  name, whatever its case.
+- `HttpError.isServerError()` is true for a 500.
+- When the `errorHandler` returns without throwing, `fetchItem()`, `getItem()`, `fetchCollection()`,
+  `createItem()` and `updateItem()` resolve to `undefined` instead of failing with a `TypeError`.
+- `getRelation(fn)` and `getRelations(fn)` reject with the error when the relation cannot be fetched,
+  instead of never settling, and stop synchronizing it.
+- Cached items are looked up by IRI: storing and getting items no longer slows down as the cache
+  grows, and an effect that gets an item no longer runs again when another item is stored.
+- `getRelation()` on an embedded object without `@id` returns the object, instead of throwing
+  `Invalid item.` when the cache holds any item.
+- `fetchCollection()` types each member once instead of twice.
+- A request made with an `aborted` ref stops watching it once the request is over.
+- `withoutDuplicates()` shares a pending request only with one of the same method, URL, body and
+  headers, never shares a request that carries a signal or a body other than a string, and no longer
+  turns itself off when the options hold a watched ref such as `isLoading`.
+- With `withoutDuplicates()`, a response body is read once.
 
 ## 1.13.1
 

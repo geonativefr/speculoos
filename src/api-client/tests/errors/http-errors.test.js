@@ -44,3 +44,9 @@ it('returns the appropriate status code', () => {
   expect(ServiceUnavailable.isStatusCode(HTTP_BAD_GATEWAY, HTTP_SERVICE_UNAVAILABLE)).toBeTruthy();
   expect(ServiceUnavailable.isStatusCode(HTTP_BAD_GATEWAY, HTTP_INTERNAL_SERVER_ERROR)).toBeFalsy();
 });
+
+it('treats a 500 as a server error', () => {
+  const InternalServerError = new HttpError({status: 500});
+  expect(InternalServerError.isClientError()).toBeFalsy();
+  expect(InternalServerError.isServerError()).toBeTruthy();
+});
