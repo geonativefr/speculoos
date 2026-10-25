@@ -5,6 +5,8 @@ tags; see `RELEASING.md` for how a release is made.
 
 ## Unreleased
 
+- `vue` and `vue-router` are now peer dependencies (`vue ^3.2.25`, `vue-router ^4.0.12 || ^5.0.0`), so
+  applications can use vue-router 5 and no longer get a second copy of either package.
 - `yarn.lock` is committed: installs and builds are reproducible.
 - The CI runs lint, tests and build on Node 22 with a frozen lockfile, and fails when the committed
   `dist/` is not the build of `src/`.
