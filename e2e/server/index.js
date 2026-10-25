@@ -10,7 +10,8 @@ const { API_PORT } = require('../ports.js');
  * the @type of a validation error: ConstraintViolationList, or ConstraintViolation as API Platform 4 sends it.
  *
  * The /_e2e/ endpoints drive the server from the tests: reset the data and the settings, set the settings, read the
- * requests received, make the next matching request fail, publish an update on the hub, list and drop its open streams.
+ * requests received, make the next matching request fail (with a Hydra error, or with the body given), publish an
+ * update on the hub, list and drop its open streams.
  */
 
 const fixtures = () => ({
@@ -270,7 +271,8 @@ const server = http.createServer(async (req, res) => {
     const failure = failures.find(({method, path}) => method === req.method && path === url.pathname);
     if (failure) {
       failures.splice(failures.indexOf(failure), 1);
-      send(res, failure.status, error(failure.status, http.STATUS_CODES[failure.status], 'The server failed on purpose.', settings.hydraPrefix));
+      const body = failure.body ?? error(failure.status, http.STATUS_CODES[failure.status], 'The server failed on purpose.', settings.hydraPrefix);
+      send(res, failure.status, body);
       return;
     }
 

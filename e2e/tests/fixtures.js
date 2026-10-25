@@ -26,8 +26,8 @@ export const test = base.extend({
       // they were answered with
       requests: async (method, path) => (await call('GET', 'requests'))
         .filter(request => (undefined === method || method === request.method) && (undefined === path || path === request.path)),
-      // The next request of that method and path fails with that status
-      fail: (method, path, status) => call('POST', 'fail', {method, path, status}),
+      // The next request of that method and path fails with that status, and that body instead of a Hydra error
+      fail: (method, path, status, body) => call('POST', 'fail', {method, path, status, body}),
       publish: (topic, data) => call('POST', 'publish', {topic, data}),
       // The topics of each open stream of the hub
       streams: () => call('GET', 'streams'),
