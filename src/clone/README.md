@@ -58,3 +58,11 @@ const clonedBook = clone(book, false);
 
 As you may have noticed, you can implement `__clone()` inside your clonable objects
 so that you can perform post-clone operations, similarly as [PHP](https://www.php.net/manual/fr/language.oop5.cloning.php#object.clone).
+
+## Supported values
+
+`Date`, `RegExp`, `Map` and `Set` instances are cloned with their data; the entries of a `Map` or a `Set`
+are cloned too, unless `deep` is `false`.
+
+Only own enumerable properties are copied: non-enumerable properties and private fields (`#field`) are
+not supported, and an object relying on them is not usable once cloned.

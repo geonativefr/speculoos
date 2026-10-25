@@ -76,3 +76,61 @@ it('doesnt clone unclonable stuff, without complaining', () => {
   expect(clone(13.37)).toBe(13.37);
   expect(clone(['foo', null, undefined, 42, 13.37])).toEqual(['foo', null, undefined, 42, 13.37]);
 });
+
+it('clones dates, maps, sets and regular expressions', () => {
+  class Day extends Date {}
+  const author = new Author({name: 'Alice'});
+  const orig = {
+    at: new Date('2024-01-15T10:00:00Z'),
+    day: new Day('2024-01-16T00:00:00Z'),
+    authors: new Map([['alice', author]]),
+    tags: new Set(['foo', author]),
+    pattern: /fo+/gi,
+  };
+  orig.pattern.lastIndex = 2;
+  orig.at.label = 'start';
+  const cloned = clone(orig);
+
+  expect(cloned.at).toBeInstanceOf(Date);
+  expect(cloned.at).not.toBe(orig.at);
+  expect(cloned.at.toISOString()).toBe('2024-01-15T10:00:00.000Z');
+  expect(cloned.at.label).toBe('start');
+  expect(cloned.day).toBeInstanceOf(Day);
+  expect(cloned.day.toISOString()).toBe('2024-01-16T00:00:00.000Z');
+  expect(JSON.stringify(cloned)).toBe(JSON.stringify(orig));
+
+  expect(cloned.authors).toBeInstanceOf(Map);
+  expect(cloned.authors).not.toBe(orig.authors);
+  expect(cloned.authors.get('alice')).toBeInstanceOf(Author);
+  expect(cloned.authors.get('alice')).not.toBe(author);
+  expect(cloned.authors.get('alice').name).toBe('Alice');
+
+  expect(cloned.tags).toBeInstanceOf(Set);
+  expect(cloned.tags).not.toBe(orig.tags);
+  expect(cloned.tags.size).toBe(2);
+  expect(cloned.tags.has('foo')).toBe(true);
+  expect(cloned.tags.has(cloned.authors.get('alice'))).toBe(true); // Generated clones are reused
+
+  expect(cloned.pattern).toBeInstanceOf(RegExp);
+  expect(cloned.pattern).not.toBe(orig.pattern);
+  expect(cloned.pattern.source).toBe('fo+');
+  expect(cloned.pattern.flags).toBe('gi');
+  expect(cloned.pattern.lastIndex).toBe(2);
+  expect(cloned.pattern.test('afoofoo')).toBe(true);
+
+  const shallow = clone(orig.authors, false);
+  expect(shallow).not.toBe(orig.authors);
+  expect(shallow.get('alice')).toBe(author);
+});
+
+it('clones objects that inherit from dates, maps, sets and regular expressions without being ones', () => {
+  [Date, Map, Set, RegExp].forEach(Native => {
+    const orig = Object.create(Native.prototype);
+    orig.name = 'foo';
+    const cloned = clone(orig);
+
+    expect(cloned).not.toBe(orig);
+    expect(Object.getPrototypeOf(cloned)).toBe(Native.prototype);
+    expect(cloned.name).toBe('foo');
+  });
+});

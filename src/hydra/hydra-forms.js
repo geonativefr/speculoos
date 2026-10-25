@@ -41,9 +41,14 @@ export function useItemForm(itemInitialState) {
   const item = reactive(clone(unref(itemInitialState)));
   const isCreationMode = computed(() => !hasIri(unref(item)));
   const isSubmitting = ref(false);
+  let savedItem;
+  if (isRef(itemInitialState)) {
+    // Once the caller's initial state changes, reset() follows it again instead of the last saved item.
+    watch(itemInitialState, () => savedItem = undefined, {deep: true, flush: 'sync'});
+  }
 
   const isUnsavedDraft = computed(() => JSON.stringify(unref(item)) !== JSON.stringify(unref(initialState)));
-  const reset = (resetItem) => recreateState(item, clone(unref(resetItem ?? itemInitialState)));
+  const reset = (resetItem) => recreateState(item, clone(unref(resetItem ?? savedItem ?? itemInitialState)));
 
   const submit = async (submittedItem) => {
     if (isRef(submittedItem)) {
@@ -52,7 +57,12 @@ export function useItemForm(itemInitialState) {
     try {
       isSubmitting.value = true;
       const updatedItem = await store.upsertItem(normalizeItemRelations(submittedItem ?? item));
+      // The error handler took care of a failed request without throwing: the form keeps what was typed
+      if (undefined === updatedItem) {
+        return undefined;
+      }
       initialState.value = updatedItem;
+      savedItem = updatedItem;
       recreateState(item, clone(updatedItem));
       return updatedItem;
     } finally {

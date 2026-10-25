@@ -8,7 +8,8 @@ import { createTestApp, useSetup } from '../../../vue-tests-setup.js';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc.js';
 import timezone from 'dayjs/plugin/timezone.js';
-import { reactive, unref } from 'vue';
+import { reactive, ref, unref } from 'vue';
+import { onBeforeRouteUpdate } from 'vue-router';
 import { ArrayFilter } from '../array-filter.js';
 import { getItemByIri } from '../../hydra/index.js';
 
@@ -84,6 +85,134 @@ it('should work', async () => {
     },
     account: '/api/accounts/1',
   });
+});
+
+it('resets the filters missing from the input to their initial state', async () => {
+  const filters = new FilterCollection({
+    name: new TextFilter(),
+    defaultName: new TextFilter('bar'),
+    tags: new ArrayFilter(['foo']),
+    price: new RangeFilter(),
+  });
+
+  await filters.denormalize({
+    name: 'foo',
+    defaultName: 'baz',
+    tags: ['bar'],
+    price: {gte: '10', lte: '20'},
+  });
+  filters.tags.values.push('baz');
+  await filters.denormalize({price: {gte: '15', lte: '20'}});
+
+  expect(filters.name.value).toBe(null);
+  expect(filters.defaultName.value).toBe('bar');
+  expect(filters.tags.values).toEqual(['foo']);
+  expect(filters.normalize()).toEqual({
+    defaultName: 'bar',
+    tags: ['foo'],
+    price: {gte: '15', lte: '20'},
+  });
+
+  filters.tags.values.push('qux');
+  await filters.denormalize({});
+  expect(filters.normalize()).toEqual({
+    defaultName: 'bar',
+    tags: ['foo'],
+  });
+});
+
+it('keeps the initial state of a filter changed in place before the first denormalization', async () => {
+  const filters = new FilterCollection({
+    tags: new ArrayFilter(['foo']),
+  });
+
+  filters.tags.values.push('bar');
+  await filters.denormalize({});
+
+  expect(filters.tags.values).toEqual(['foo']);
+});
+
+it('keeps the store of an item filter when resetting it', async () => {
+  const filters = new FilterCollection({
+    account: new ItemFilter(undefined, {store}),
+  });
+
+  await filters.denormalize({});
+
+  expect(filters.account.store).toBe(store);
+});
+
+it('resets the filters missing from the new route', async () => {
+  mockRoute.query.name = 'Johnson';
+  const {filters} = await useSetup(createTestApp(), async () => {
+    const initialState = () => new FilterCollection({
+      name: new TextFilter(),
+      country: new TextFilter('UK'),
+    });
+    return useFilters(initialState);
+  });
+  expect(unref(filters).name.value).toBe('Johnson');
+  unref(filters).country.value = 'GB';
+
+  const onRouteUpdate = onBeforeRouteUpdate.mock.calls.at(-1)[0];
+  await onRouteUpdate({query: {}});
+
+  expect(unref(filters).name.value).toBe(null);
+  expect(unref(filters).country.value).toBe('UK');
+});
+
+it('resets the filters missing from the new route to the current initial state', async () => {
+  const hiddenDays = ref(['sat', 'sun']);
+  const {filters} = await useSetup(createTestApp(), async () => {
+    const initialState = () => new FilterCollection({
+      hiddenDays: new ArrayFilter([...hiddenDays.value]),
+    });
+    return useFilters(initialState);
+  });
+  expect(unref(filters).hiddenDays.values).toEqual(['sat', 'sun']);
+
+  hiddenDays.value = [];
+  unref(filters).hiddenDays.values = [];
+  const onRouteUpdate = onBeforeRouteUpdate.mock.calls.at(-1)[0];
+  await onRouteUpdate({query: unref(filters).normalize()});
+
+  expect(unref(filters).hiddenDays.values).toEqual([]);
+});
+
+it('denormalizes filters without initial state', async () => {
+  mockRoute.query.name = 'Johnson';
+  const {filters} = await useSetup(createTestApp(), async () => {
+    const initialState = () => {
+      const filters = new FilterCollection({
+        name: new TextFilter(),
+      });
+      delete filters._initialStates;
+      return filters;
+    };
+    return useFilters(initialState);
+  });
+  expect(unref(filters).name.value).toBe('Johnson');
+
+  const onRouteUpdate = onBeforeRouteUpdate.mock.calls.at(-1)[0];
+  await onRouteUpdate({query: {}});
+
+  expect(unref(filters).name.value).toBe('Johnson');
+});
+
+it('doesnt list the initial states among the filters', async () => {
+  const {filters, clear} = await useSetup(createTestApp(), async () => {
+    const initialState = () => new FilterCollection({
+      name: new TextFilter(),
+    });
+    return useFilters(initialState);
+  });
+  expect(Object.keys(new FilterCollection({name: new TextFilter()}))).not.toContain('_initialStates');
+  expect(Object.keys(unref(filters))).not.toContain('_initialStates');
+
+  clear();
+  const onRouteUpdate = onBeforeRouteUpdate.mock.calls.at(-1)[0];
+  await onRouteUpdate({query: {}});
+  expect(Object.keys(unref(filters))).not.toContain('_initialStates');
 });
 
 it('dismisses the current query string by default', async () => {
