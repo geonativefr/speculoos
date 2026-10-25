@@ -198,11 +198,13 @@ export class HydraPlugin {
       const {data} = await call();
       return this.factory(data);
     } catch (error) {
+      // Read before the error is replaced by its body, which has no response when it is not a Hydra error
+      const status = error.response?.status;
       if ('object' === typeof error.response?.data && null != error.response?.data) {
         // eslint-disable-next-line no-ex-assign
-        error = this.factory(error.response.data, error.response?.status);
+        error = this.factory(error.response.data, status);
       }
-      error.statusCode = error.statusCode ?? error.response?.status;
+      error.statusCode = error.statusCode ?? status;
       errorHandler(error);
     }
   }

@@ -3,6 +3,12 @@
 Notable changes for applications that install Speculoos from this repository. Versions are the git
 tags; see `RELEASING.md` for how a release is made.
 
+## 1.14.1
+
+- The error passed to the `errorHandler` carries the HTTP status in `statusCode` when the error
+  response is JSON without `@type`, such as the `401` of an authentication firewall: until now its
+  `statusCode` was `undefined`.
+
 ## 1.14.0
 
 - `vue` and `vue-router` are now peer dependencies (`vue ^3.2.25`, `vue-router ^4.0.12 || ^5.0.0`), so
