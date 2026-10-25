@@ -20,16 +20,11 @@ jobs:
       - name: Install NodeJS
         uses: actions/setup-node@v4
         with:
-          node-version: '14'
-
-      - name: Cache dependencies
-        uses: actions/cache@v4
-        with:
-          path: '**/node_modules'
-          key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
+          node-version: '22'
+          cache: 'yarn'
 
       - name: Install dependencies
-        run: yarn install
+        run: yarn install --frozen-lockfile
 
       - name: Check code style
         run: yarn lint
@@ -45,19 +40,34 @@ jobs:
       - name: Install NodeJS
         uses: actions/setup-node@v4
         with:
-          node-version: '14'
-
-      - name: Cache dependencies
-        uses: actions/cache@v4
-        with:
-          path: '**/node_modules'
-          key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
+          node-version: '22'
+          cache: 'yarn'
 
       - name: Install dependencies
-        run: yarn install
-
-      - name: Enforce vue version to avoid warnings about missing <Suspense>
-        run: yarn add -D vue@3.2.31
+        run: yarn install --frozen-lockfile
 
       - name: Run unit tests
         run: yarn test
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install NodeJS
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build
+        run: yarn build
+
+      - name: Check that the committed dist is the build of src
+        run: git diff --exit-code dist/
